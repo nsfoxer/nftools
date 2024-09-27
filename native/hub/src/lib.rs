@@ -4,30 +4,39 @@
 mod common;
 mod messages;
 
+use std::time::Duration;
+use messages::basic::*;
+use rinf::debug_print;
 use crate::common::*;
-use tokio; // Comment this line to target the web.
-// use tokio_with_wasm::alias as tokio; // Uncomment this line to target the web.
+use tokio;
 
 rinf::write_interface!();
 
-// Use `tokio::spawn` to run concurrent tasks.
-// Always use non-blocking async functions
-// such as `tokio::fs::File::open`.
-// If you really need to use blocking code,
-// use `tokio::task::spawn_blocking`.
 async fn main() {
+    debug_print!("Hello, world!12");
+    debug_print!("Hello, world!12");
     tokio::spawn(communicate());
+    tokio::spawn(send());
+    debug_print!("Hello, world!");
 }
 
 async fn communicate() -> Result<()> {
-    use messages::basic::*;
     // Send signals to Dart like below.
-    SmallNumber { number: 7 }.send_signal_to_dart();
-    // Get receivers that listen to Dart signals like below.
-    let mut receiver = SmallText::get_dart_signal_receiver()?;
-    while let Some(dart_signal) = receiver.recv().await {
-        let message: SmallText = dart_signal.message;
-        rinf::debug_print!("{message:?}");
+    let mut receiver = Request::get_dart_signal_receiver()?;
+
+    while let Some(signal) = receiver.recv().await {
+        let msg = signal.message;
+        debug_print!("{:?}", msg);
     }
+    
     Ok(())
+}
+
+async fn send() -> Result<()> {
+    let mut num = 1;
+    loop {
+        tokio::time::sleep(Duration::from_secs(3)).await;
+        Response { resp: num.to_string()  }.send_signal_to_dart(); // GENERATED
+        num += 1;
+    }
 }

@@ -4,11 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/controller/MainPageController.dart';
+import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
+import 'package:rinf/rinf.dart';
 import 'package:tolyui/tolyui.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  await initializeRust(assignRustSignal);
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -17,7 +20,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var fonts = Platform.isWindows ? "微软雅黑" : null;
-    return GetMaterialApp(
+    return TolyMessage(
+        child: GetMaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
           brightness: Brightness.light, useMaterial3: true, fontFamily: fonts),
@@ -35,7 +39,7 @@ class MyApp extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 

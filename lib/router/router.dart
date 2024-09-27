@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:nftools/pages/main_page.dart';
 import 'package:nftools/utils/page-cache.dart';
 
 class MyRouterConfig {
   static List<_MenuData> menuDatas = [
-    const _MenuData(
-        Icons.home, "/", "主页", KeepAliveWrapper(child: Text("sada"))),
+    const _MenuData(Icons.home, "/", "主页", KeepAliveWrapper(child: MainPage())),
     const _MenuData(Icons.display_settings, "/display", "显示",
         KeepAliveWrapper(child: Text("data1"))),
     const _MenuData(
