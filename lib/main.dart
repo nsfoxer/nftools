@@ -5,8 +5,6 @@ import 'package:get/get.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/controller/MainPageController.dart';
 import 'package:nftools/router/router.dart';
-import 'package:nftools/state/MainPageState.dart';
-import 'package:nftools/utils/page-cache.dart';
 import 'package:tolyui/tolyui.dart';
 
 void main() {
@@ -14,7 +12,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  MyApp({super.key});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +24,7 @@ class MyApp extends StatelessWidget {
       darkTheme: ThemeData(
           brightness: Brightness.dark, useMaterial3: true, fontFamily: fonts),
       initialBinding: GlobalControllerBindings(),
-      home: Scaffold(
+      home: const Scaffold(
         body: Row(
           children: [
             MenuBar(),
@@ -42,7 +40,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MenuBar extends StatelessWidget {
-  MenuBar({Key? key}) : super(key: key);
+  const MenuBar({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -64,45 +62,49 @@ class MenuBar extends StatelessWidget {
               radius: 24,
               child: Text("张"),
             )),
-        tail: (type) => const Padding(
-          padding: EdgeInsets.only(bottom: 15),
-          child: Icon(Icons.settings),
+        tail: (type) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 15),
+              child: TolyAction(
+                  child:
+                      Icon(Get.isDarkMode ? Icons.dark_mode : Icons.light_mode),
+                  onTap: () {
+                    Get.changeThemeMode(
+                        Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
+                  }),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 15),
+              child: GetBuilder<MainPageController>(
+                  builder: (logic) => TolyAction(
+                      child: const Icon(Icons.settings),
+                      onTap: () {
+                        logic.openSetting();
+                      })),
+            )
+          ],
         ),
       );
     });
   }
 }
 
-class MyPage extends StatefulWidget {
-  const MyPage({Key? key, required this.desc}) : super(key: key);
-  final String desc;
-
-  @override
-  _MyPageState createState() => _MyPageState();
-}
-
-class _MyPageState extends State<MyPage> {
-  @override
-  Widget build(BuildContext context) {
-    print(widget.desc);
-    return Center(
-      child: Text("页面:" + widget.desc),
-    );
-  }
-}
-
 class PageBody extends StatelessWidget {
-  PageBody({Key? key}) : super(key: key);
+  const PageBody({super.key});
 
   @override
   Widget build(BuildContext context) {
     return GetBuilder<MainPageController>(builder: (logic) {
       var pageState = logic.pageState;
+      var pages = MyRouterConfig.pages;
+      pages.add(MyRouterConfig.settingData.page);
       return PageView(
+        pageSnapping: false,
         scrollDirection: Axis.vertical,
         controller: pageState.pageController,
         physics: const NeverScrollableScrollPhysics(),
-        children: MyRouterConfig.pages,
+        children: pages,
       );
     });
   }

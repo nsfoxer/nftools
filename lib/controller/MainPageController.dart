@@ -14,4 +14,8 @@ class MainPageController extends GetxController {
     }
     update();
   }
+
+  void openSetting() {
+    pageState.pageController.jumpToPage(MyRouterConfig.menuDatas.length);
+  }
 }

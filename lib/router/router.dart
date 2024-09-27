@@ -16,6 +16,14 @@ class MyRouterConfig {
         )),
   ];
 
+  static _MenuData settingData = const _MenuData(
+      Icons.settings,
+      "/setting",
+      "设置",
+      KeepAliveWrapper(
+        child: Text("setting"),
+      ));
+
   static List<Widget> pages = menuDatas.map((x) => x.page).toList();
 }
 
