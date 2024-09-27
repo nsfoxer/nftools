@@ -1,0 +1,7 @@
+syntax = "proto3";
+package display;
+
+// display支持
+message DisplaySupport {
+    bool support = 1;
+}
