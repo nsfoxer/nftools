@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:nftools/api/display_api.dart';
 import 'package:nftools/utils/time.dart';
@@ -16,14 +17,15 @@ class _MainPageState extends State<MainPage> {
 
   @override
   void initState() {
-    _initData();
+
     super.initState();
   }
 
   void _initData() {
     var delay = measureDelay(() async {
       desc = await displaySupport();
-      setState(() {});
+      setState(() {
+      });
     });
     $message.info(message: "耗时${delay.inMicroseconds}us");
   }
@@ -33,7 +35,7 @@ class _MainPageState extends State<MainPage> {
     return Container(
       child: Center(
         child: TolyAction(
-          child: Text(desc.toString()),
+          child: Icon(CupertinoIcons.info),
           onTap: () {
             _initData();
           },
