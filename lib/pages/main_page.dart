@@ -1,27 +1,43 @@
 import 'package:flutter/material.dart';
-import 'package:nftools/messages/basic.pbserver.dart';
+import 'package:nftools/api/display_api.dart';
+import 'package:nftools/utils/time.dart';
+import 'package:tolyui/basic/button/toly_action.dart';
 import 'package:tolyui/tolyui.dart';
 
-class MainPage extends StatelessWidget {
+class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
 
   @override
+  _MainPageState createState() => _MainPageState();
+}
+
+class _MainPageState extends State<MainPage> {
+  bool desc = false;
+
+  @override
+  void initState() {
+    _initData();
+    super.initState();
+  }
+
+  void _initData() {
+    var delay = measureDelay(() async {
+      desc = await displaySupport();
+      setState(() {});
+    });
+    $message.info(message: "耗时${delay.inMicroseconds}us");
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Center(
-      child: TolyAction(
-        child: StreamBuilder(
-            stream: Response.rustSignalStream,
-            builder: (context, snapshot) {
-              final signal = snapshot.data;
-              if (signal == null) {
-                return Text("None");
-              }
-              return Text(signal.message.resp);
-            }),
-        onTap: () {
-          Request(req: "请求一些数据").sendSignalToRust();
-          $message.success(message: "message");
-        },
+    return Container(
+      child: Center(
+        child: TolyAction(
+          child: Text(desc.toString()),
+          onTap: () {
+            _initData();
+          },
+        ),
       ),
     );
   }

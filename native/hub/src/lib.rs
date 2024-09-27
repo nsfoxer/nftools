@@ -5,38 +5,34 @@ mod common;
 mod messages;
 
 use std::time::Duration;
-use messages::basic::*;
+use prost::Message;
 use rinf::debug_print;
 use crate::common::*;
 use tokio;
+use crate::messages::base::{BaseRequest, BaseResponse};
+use crate::messages::display::DisplaySupport;
 
 rinf::write_interface!();
 
 async fn main() {
-    debug_print!("Hello, world!12");
-    debug_print!("Hello, world!12");
-    tokio::spawn(communicate());
-    tokio::spawn(send());
-    debug_print!("Hello, world!");
+    tokio::spawn(base_request());
 }
 
-async fn communicate() -> Result<()> {
-    // Send signals to Dart like below.
-    let mut receiver = Request::get_dart_signal_receiver()?;
-
+async fn base_request() -> Result<()> {
+    let mut receiver = BaseRequest::get_dart_signal_receiver()?;
     while let Some(signal) = receiver.recv().await {
         let msg = signal.message;
         debug_print!("{:?}", msg);
+        if msg.service == "display" {
+            BaseResponse {
+                id: msg.id,
+                msg: "".to_string(),
+                response: DisplaySupport{
+                    support: true,
+                }.encode_to_vec(),
+            }.send_signal_to_dart();
+        }
     }
-    
-    Ok(())
-}
 
-async fn send() -> Result<()> {
-    let mut num = 1;
-    loop {
-        tokio::time::sleep(Duration::from_secs(3)).await;
-        Response { resp: num.to_string()  }.send_signal_to_dart(); // GENERATED
-        num += 1;
-    }
+    Ok(())
 }

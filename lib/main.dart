@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:nftools/api/api.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/controller/MainPageController.dart';
 import 'package:nftools/messages/generated.dart';
@@ -10,7 +11,11 @@ import 'package:rinf/rinf.dart';
 import 'package:tolyui/tolyui.dart';
 
 void main() async {
+  // 初始化
   await initializeRust(assignRustSignal);
+  initMsg();
+
+  // 启动GUI
   runApp(const MyApp());
 }
 

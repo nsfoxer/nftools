@@ -1,0 +1,26 @@
+syntax = "proto3";
+package base;
+
+// [RINF:DART-SIGNAL]
+// 基础请求
+message BaseRequest {
+  // 请求id
+  uint64 id = 1;
+  // 请求服务
+  string service = 2;
+  // 请求方法
+  string func = 3;
+  // 请求体
+  bytes request = 4;
+}
+
+// [RINF:RUST-SIGNAL]
+// 基础响应
+message BaseResponse {
+  // 响应id
+  uint64 id = 1;
+  // 响应错误信息,当存在时，则response无意义
+  string msg = 2;
+  // 响应体
+  bytes response = 3;
+}
