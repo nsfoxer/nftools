@@ -3,6 +3,7 @@
 
 mod common;
 mod messages;
+mod service;
 
 use std::time::Duration;
 use prost::Message;
