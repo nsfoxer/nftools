@@ -17,7 +17,7 @@ enum ServiceEnum {
 }
 
 /// 服务分发
-struct ApiService {
+pub struct ApiService {
     services: AHashMap<&'static str, ServiceEnum>,
 }
 
