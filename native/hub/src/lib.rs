@@ -4,14 +4,11 @@
 mod common;
 mod messages;
 mod service;
+mod api;
 
-use std::time::Duration;
-use prost::Message;
 use rinf::debug_print;
 use crate::common::*;
-use tokio;
 use crate::messages::base::{BaseRequest, BaseResponse};
-use crate::messages::display::DisplaySupport;
 
 rinf::write_interface!();
 
@@ -24,15 +21,6 @@ async fn base_request() -> Result<()> {
     while let Some(signal) = receiver.recv().await {
         let msg = signal.message;
         debug_print!("{:?}", msg);
-        if msg.service == "display" {
-            BaseResponse {
-                id: msg.id,
-                msg: "".to_string(),
-                response: DisplaySupport{
-                    support: true,
-                }.encode_to_vec(),
-            }.send_signal_to_dart();
-        }
     }
 
     Ok(())
