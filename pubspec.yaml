@@ -40,6 +40,8 @@ dependencies:
   tolyui: ^0.0.2+20
   fixnum: ^1.1.0
   cupertino_icons: ^1.0.8
+  easy_debounce: ^2.0.3
+  tolyui_color: ^0.0.1
 
 dev_dependencies:
 
