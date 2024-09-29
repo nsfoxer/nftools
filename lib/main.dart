@@ -26,18 +26,18 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var fonts = Platform.isWindows ? "微软雅黑" : null;
-    final ThemeData light = FlexThemeData.light(
+    final ThemeData _light = FlexThemeData.light(
         scheme: FlexScheme.amber, useMaterial3: true, fontFamily: fonts);
-    final ThemeData dark = FlexThemeData.dark(
+    final ThemeData _dark = FlexThemeData.dark(
         scheme: FlexScheme.damask, useMaterial3: true, fontFamily: fonts);
     return TolyMessage(
-        theme: light,
-        darkTheme: dark,
-        themeMode: context.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+        theme: _light,
+        darkTheme: _dark,
+        themeMode: ThemeMode.dark,
         child: GetMaterialApp(
           title: 'Flutter Demo',
-          theme: light,
-          darkTheme: dark,
+          theme: _light,
+          darkTheme: _dark,
           initialBinding: GlobalControllerBindings(),
           home: const Scaffold(
             body: Row(
