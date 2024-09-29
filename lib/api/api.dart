@@ -33,12 +33,12 @@ void initMsg() {
 
 // 发送请求，并响应
 // 返回序列化后的响应数据
-Future<Uint8List> sendRequest<T extends $pb.GeneratedMessage>(
+Future<List<int>> sendRequest<T extends $pb.GeneratedMessage>(
     String service, String func, T? request) {
   // 序列号
   final id = _seq++;
   // 记录发送信息
-  Completer<Uint8List> completer = Completer();
+  Completer<List<int>> completer = Completer();
   _reqMap[id] = completer;
   // 发送
   BaseRequest(

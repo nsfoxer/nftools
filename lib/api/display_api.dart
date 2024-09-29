@@ -3,7 +3,7 @@
 import 'package:nftools/api/api.dart';
 import 'package:nftools/messages/display.pb.dart';
 
-const String _service = "display";
+const String _service = "display_info";
 const String _func_support = "support";
 
 Future<bool> displaySupport() async {

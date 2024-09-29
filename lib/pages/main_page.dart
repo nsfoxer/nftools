@@ -17,17 +17,17 @@ class _MainPageState extends State<MainPage> {
 
   @override
   void initState() {
-
     super.initState();
   }
 
-  void _initData() {
-    var delay = measureDelay(() async {
+  void _initData(i) async {
+    var delay = await measureDelay(() async {
       desc = await displaySupport();
-      setState(() {
-      });
+      setState(() {});
     });
-    $message.info(message: "耗时${delay.inMicroseconds}us");
+    final s = "${i} 耗时${delay}us";
+    debugPrint(s);
+    $message.info(message: s);
   }
 
   @override
@@ -37,7 +37,9 @@ class _MainPageState extends State<MainPage> {
         child: TolyAction(
           child: Icon(CupertinoIcons.info),
           onTap: () {
-            _initData();
+            for (var i = 0; i < 100; i++) {
+              _initData(i);
+            }
           },
         ),
       ),
