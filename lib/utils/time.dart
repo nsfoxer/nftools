@@ -1,7 +1,8 @@
 // 时间操作
 
-Duration measureDelay(Function func) {
-  var start = DateTime.timestamp();
-  func();
-  return DateTime.timestamp().difference(start);
+Future<int> measureDelay(Future<void> Function() func) async {
+  var watch = Stopwatch()..start();
+  await func();
+  watch.stop();
+  return watch.elapsedMicroseconds;
 }

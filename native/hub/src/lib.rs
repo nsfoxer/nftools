@@ -6,6 +6,7 @@ mod messages;
 mod service;
 mod api;
 
+use std::sync::atomic::{AtomicU8, AtomicUsize};
 use rinf::debug_print;
 use crate::api::api::ApiService;
 use crate::common::*;
@@ -23,7 +24,8 @@ async fn main() {
 fn init_service() -> ApiService {
     let mut api = ApiService::new();
     
-    api.add_service(Box::new(DisplayInfo{}));
+    api.add_imm_service(Box::new(DisplayInfo{
+    }));
     
     api
 }
