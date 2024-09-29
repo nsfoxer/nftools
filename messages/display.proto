@@ -5,3 +5,18 @@ package display;
 message DisplaySupport {
     bool support = 1;
 }
+
+
+message DisplayInfo {
+    // 屏幕名称
+    string screen = 1;
+    // 亮度
+    uint32 value = 2;
+}
+
+// 请求亮度信息
+// 请求体：无
+// 响应
+message DisplayInfoResponse {
+    repeated DisplayInfo infos = 1;
+}

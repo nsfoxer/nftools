@@ -1,7 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:nftools/api/display_api.dart';
-import 'package:nftools/utils/time.dart';
 import 'package:tolyui/basic/button/toly_action.dart';
 import 'package:tolyui/tolyui.dart';
 
@@ -20,27 +17,13 @@ class _MainPageState extends State<MainPage> {
     super.initState();
   }
 
-  void _initData(i) async {
-    var delay = await measureDelay(() async {
-      desc = await displaySupport();
-      setState(() {});
-    });
-    final s = "${i} 耗时${delay}us";
-    debugPrint(s);
-    $message.info(message: s);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
       child: Center(
         child: TolyAction(
           child: Icon(CupertinoIcons.info),
-          onTap: () {
-            for (var i = 0; i < 100; i++) {
-              _initData(i);
-            }
-          },
+          onTap: () {},
         ),
       ),
     );

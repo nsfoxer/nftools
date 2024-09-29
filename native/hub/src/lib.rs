@@ -6,14 +6,12 @@ mod messages;
 mod service;
 mod api;
 
-use std::sync::atomic::{AtomicU8, AtomicUsize};
 use rinf::debug_print;
 use crate::api::api::ApiService;
 use crate::common::*;
-use crate::messages::base::{BaseRequest, BaseResponse};
-use crate::messages::display::DisplaySupport;
-use crate::service::display::DisplayInfo;
+use crate::messages::base::BaseRequest;
 use tokio;
+use crate::service::display::display_light::DisplayLight;
 
 rinf::write_interface!();
 
@@ -24,7 +22,7 @@ async fn main() {
 fn init_service() -> ApiService {
     let mut api = ApiService::new();
     
-    api.add_imm_service(Box::new(DisplayInfo{
+    api.add_imm_service(Box::new(DisplayLight{
     }));
     
     api
