@@ -24,7 +24,7 @@ class DisplayController extends GetxController {
   setLight(String screen, int value) {
     state.displayLight[screen] = value;
     update();
-    EasyDebounce.debounce("display/setLight", const Duration(milliseconds: 500),
+    EasyDebounce.debounce("display/setLight", const Duration(milliseconds: 20),
         () async {
       var light = value;
       $api.setLight(DisplayInfo(screen: screen, value: light)).catchError((e) {
