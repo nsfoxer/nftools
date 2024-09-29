@@ -1,6 +1,5 @@
 // display service
 
-import 'package:flutter/foundation.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/messages/common.pb.dart';
 import 'package:nftools/messages/display.pb.dart';

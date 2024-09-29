@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
 class MainPagestate {
-  String selected = "/";
+  String? selected = "/";
   PageController pageController = PageController();
 }

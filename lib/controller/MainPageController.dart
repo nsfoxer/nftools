@@ -10,12 +10,15 @@ class MainPageController extends GetxController {
     for (var i = 0; i < MyRouterConfig.menuDatas.length; i++) {
       if (value == MyRouterConfig.menuDatas[i].router) {
         pageState.pageController.jumpToPage(i);
+        update();
+        return;
       }
     }
-    update();
   }
 
   void openSetting() {
+    pageState.selected = null;
     pageState.pageController.jumpToPage(MyRouterConfig.menuDatas.length);
+    update();
   }
 }

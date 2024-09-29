@@ -1,6 +1,4 @@
-import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/display_controller.dart';
