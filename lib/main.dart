@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nftools/api/api.dart';
@@ -25,26 +26,31 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var fonts = Platform.isWindows ? "微软雅黑" : null;
+    final ThemeData light = FlexThemeData.light(
+        scheme: FlexScheme.amber, useMaterial3: true, fontFamily: fonts);
+    final ThemeData dark = FlexThemeData.dark(
+        scheme: FlexScheme.damask, useMaterial3: true, fontFamily: fonts);
     return TolyMessage(
+        theme: light,
+        darkTheme: dark,
+        themeMode: context.isDarkMode ? ThemeMode.dark : ThemeMode.light,
         child: GetMaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-          brightness: Brightness.light, useMaterial3: true, fontFamily: fonts),
-      darkTheme: ThemeData(
-          brightness: Brightness.dark, useMaterial3: true, fontFamily: fonts),
-      initialBinding: GlobalControllerBindings(),
-      home: const Scaffold(
-        body: Row(
-          children: [
-            MenuBar(),
-            Expanded(
-              flex: 8,
-              child: PageBody(),
+          title: 'Flutter Demo',
+          theme: light,
+          darkTheme: dark,
+          initialBinding: GlobalControllerBindings(),
+          home: const Scaffold(
+            body: Row(
+              children: [
+                MenuBar(),
+                Expanded(
+                  flex: 8,
+                  child: PageBody(),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    ));
+          ),
+        ));
   }
 }
 

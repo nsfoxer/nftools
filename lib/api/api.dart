@@ -19,7 +19,10 @@ void initMsg() {
     var complete = _reqMap.remove(rsp.id);
     if (complete == null) {
       $message.errorNotice(
-          title: const Text("请求处理出错"), subtitle: Text("无法找到标识为${rsp.id}的请求"));
+          title: const Text(
+            "请求处理出错",
+          ),
+          subtitle: Text("无法找到标识为${rsp.id}的请求"));
       return;
     }
     if (rsp.msg.isNotEmpty) {
