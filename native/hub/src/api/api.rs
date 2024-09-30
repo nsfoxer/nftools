@@ -4,6 +4,7 @@ use crate::service::service::{ImmService, LazyService, Service};
 use crate::service_handle;
 use ahash::AHashMap;
 use std::sync::Arc;
+use rinf::DartSignal;
 use tokio::sync::Mutex;
 
 /// 服务类型枚举
@@ -53,34 +54,34 @@ impl ApiService {
 
     /// 处理服务
     /// 如果该服务已被使用，则阻塞
-    pub fn handle(&self, request: BaseRequest) {
+    pub fn handle(&self, signal: DartSignal<BaseRequest>) {
         // 获取服务
-        let Some(service) = self.services.get(request.service.as_str()) else {
-            generate_error_response(request.id, format!("未知服务 {}", request.service))
-                .send_signal_to_dart();
+        let Some(service) = self.services.get(signal.message.service.as_str()) else {
+            generate_error_response(signal.message.id, format!("未知服务 {}", signal.message.service))
+                .send_signal_to_dart(Vec::with_capacity(0));
             return;
         };
 
         // 执行服务
         match service {
             ServiceEnum::LazyService(service) => {
-                Self::lazy_service_handle(service.clone(), request);
+                Self::lazy_service_handle(service.clone(), signal);
             }
             ServiceEnum::Service(service) => {
-                Self::service_handle(service.clone(), request);
+                Self::service_handle(service.clone(), signal);
             }
             ServiceEnum::ImmService(service) => {
-                Self::imm_service_handle(service.clone(), request);
+                Self::imm_service_handle(service.clone(), signal);
             }
         };
     }
 
     fn lazy_service_handle(
         service: Arc<Mutex<(Box<dyn LazyService>, bool)>>,
-        request: BaseRequest,
+        signal: DartSignal<BaseRequest>,
     ) {
         tokio::spawn(async move {
-            service_handle!(_lazy_handle, service, request);
+            service_handle!(_lazy_handle, service, signal);
         });
     }
 
@@ -102,9 +103,9 @@ impl ApiService {
             .unwrap_or(Vec::with_capacity(0)))
     }
 
-    fn service_handle(service: Arc<Mutex<Box<dyn Service>>>, request: BaseRequest) {
+    fn service_handle(service: Arc<Mutex<Box<dyn Service>>>, signal: DartSignal<BaseRequest>) {
         tokio::spawn(async move {
-            service_handle!(_handle, service, request);
+            service_handle!(_handle, service, signal);
         });
     }
 
@@ -120,9 +121,9 @@ impl ApiService {
             .unwrap_or(Vec::with_capacity(0)))
     }
 
-    fn imm_service_handle(service: Arc<Box<dyn ImmService>>, request: BaseRequest) {
+    fn imm_service_handle(service: Arc<Box<dyn ImmService>>, signal: DartSignal<BaseRequest>) {
         tokio::spawn(async move {
-            service_handle!(_imm_handle, service, request);
+            service_handle!(_imm_handle, service, signal);
         });
     }
 
@@ -143,29 +144,27 @@ fn generate_error_response(id: u64, error: String) -> BaseResponse {
     BaseResponse {
         id,
         msg: error,
-        response: Vec::with_capacity(0),
     }
 }
 
 mod macros {
     #[macro_export]
     macro_rules! service_handle {
-        ($func: ident, $service: ident, $request: ident) => {
-            match Self::$func($service, &$request.func, $request.request).await {
+        ($func: ident, $service: ident, $signal: ident) => {
+            match Self::$func($service, &$signal.message.func, $signal.binary).await {
                 Ok(r) => {
                     BaseResponse {
-                        id: $request.id,
+                        id: $signal.message.id,
                         msg: String::with_capacity(0),
-                        response: r,
                     }
-                    .send_signal_to_dart();
+                    .send_signal_to_dart(r);
                 }
                 Err(e) => {
                     generate_error_response(
-                        $request.id,
-                        format!("处理请求错误{}-{}:{}", $request.service, $request.func, e),
+                        $signal.message.id,
+                        format!("处理请求错误{}-{}:{}", $signal.message.service, $signal.message.func, e),
                     )
-                    .send_signal_to_dart();
+                    .send_signal_to_dart(Vec::with_capacity(0));
                 }
             }
         };
