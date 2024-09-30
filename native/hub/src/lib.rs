@@ -11,7 +11,7 @@ use crate::api::api::ApiService;
 use crate::common::*;
 use crate::messages::base::BaseRequest;
 use tokio;
-use crate::service::display::display_light::DisplayLight;
+use crate::service::display::display::{DisplayLight, DisplayMode};
 
 rinf::write_interface!();
 
@@ -21,9 +21,12 @@ async fn main() {
 
 fn init_service() -> ApiService {
     let mut api = ApiService::new();
-    
-    api.add_imm_service(Box::new(DisplayLight{
-    }));
+
+    #[cfg(target_os = "windows")]
+    {
+        api.add_imm_service(Box::new(DisplayLight::new()));
+        api.add_lazy_service(Box::new(DisplayMode::new()));
+    }
     
     api
 }

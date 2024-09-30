@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/display_controller.dart';
+import 'package:nftools/controller/display_mode_controller.dart';
 import 'package:tolyui/tolyui.dart';
 
 class DisplayPage extends StatelessWidget {
@@ -26,6 +29,10 @@ class DisplayPage extends StatelessWidget {
           ),
           NFLayout.vlineh2,
           _DisplayLight(),
+          NFLayout.vlineh1,
+          Text("主题", style: NFTextStyle.h2),
+          NFLayout.vlineh2,
+          _DisplayMode(),
         ],
       ),
     ));
@@ -75,5 +82,80 @@ class _DisplayLight extends StatelessWidget {
             children: displays,
           ));
     });
+  }
+}
+
+class _DisplayMode extends StatelessWidget {
+  const _DisplayMode();
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<DisplayModeController>(builder: (logic) {
+      var state = logic.state;
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Container(),
+          GestureDetector(
+            onTap: () => logic.setMode(true),
+            child: _Mode(
+              display: const Text(
+                "亮色模式",
+                style: NFTextStyle.p3,
+              ),
+              isSelect: state.isLight ?? false,
+              picFile: state.lightWallpaper,
+            ),
+          ),
+          GestureDetector(
+            onTap: () => logic.setMode(false),
+            child: _Mode(
+              display: const Text(
+                "暗色模式",
+                style: NFTextStyle.p3,
+              ),
+              isSelect: !(state.isLight ?? true),
+              picFile: state.darkWallpaper,
+            ),
+          ),
+          Container(),
+        ],
+      );
+    });
+  }
+}
+
+class _Mode extends StatelessWidget {
+  final Widget display;
+  final bool isSelect;
+  final String? picFile;
+  const _Mode({
+    Key? key,
+    required this.display,
+    required this.isSelect,
+    this.picFile,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    List<BoxShadow>? boxShadow;
+    if (isSelect) {
+      boxShadow = [
+        BoxShadow(
+            color: Colors.blue.withOpacity(0.5),
+            spreadRadius: 5,
+            blurRadius: 20)
+      ];
+    }
+    return Column(children: [
+      Container(
+        height: 150,
+        width: 267,
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8), boxShadow: boxShadow),
+        child: picFile == null ? null : Image.file(File(picFile!)),
+      ),
+      display
+    ]);
   }
 }
