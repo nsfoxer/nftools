@@ -1,18 +1,14 @@
-use crate::service::service::{ImmService, Service};
-use prost::Message;
-
 
 #[cfg(target_os = "windows")]
 pub mod display_light {
+    use crate::messages::display::{DisplayInfo, DisplayInfoResponse};
+    use crate::service::service::ImmService;
+    use crate::{func_end, func_notype, func_typeno};
+    use anyhow::{anyhow, Result};
     use async_trait::async_trait;
     use ddc::{Ddc, VcpValue};
     use ddc_winapi::Monitor;
-    use crate::{func_end, func_notype, func_typeno};
-    use crate::messages::display::{DisplayInfo, DisplayInfoResponse};
-    use crate::service::service::ImmService;
-    use anyhow::{anyhow, Result};
     use prost::Message;
-    use rinf::debug_print;
 
     pub struct DisplayLight {}
 

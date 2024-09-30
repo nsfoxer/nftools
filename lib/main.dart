@@ -20,30 +20,45 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode mode = ThemeMode.system;
+
+  void _changeMode(bool isDark) {
+    mode = isDark ? ThemeMode.dark : ThemeMode.light;
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
     var fonts = Platform.isWindows ? "微软雅黑" : null;
-    final ThemeData _light = FlexThemeData.light(
+    final ThemeData light = FlexThemeData.light(
         scheme: FlexScheme.amber, useMaterial3: true, fontFamily: fonts);
-    final ThemeData _dark = FlexThemeData.dark(
+    final ThemeData dark = FlexThemeData.dark(
         scheme: FlexScheme.damask, useMaterial3: true, fontFamily: fonts);
     return TolyMessage(
-        theme: _light,
-        darkTheme: _dark,
-        themeMode: ThemeMode.dark,
+        theme: light,
+        darkTheme: dark,
+        themeMode: mode,
         child: GetMaterialApp(
           title: 'Flutter Demo',
-          theme: _light,
-          darkTheme: _dark,
+          theme: light,
+          darkTheme: dark,
+          themeMode: mode,
           initialBinding: GlobalControllerBindings(),
-          home: const Scaffold(
+          home: Scaffold(
             body: Row(
               children: [
-                MenuBar(),
-                Expanded(
+                MenuBar(
+                  changeTheme: _changeMode,
+                ),
+                const Expanded(
                   flex: 8,
                   child: PageBody(),
                 ),
@@ -55,7 +70,8 @@ class MyApp extends StatelessWidget {
 }
 
 class MenuBar extends StatelessWidget {
-  const MenuBar({super.key});
+  const MenuBar({super.key, required this.changeTheme});
+  final ValueChanged<bool> changeTheme;
 
   @override
   Widget build(BuildContext context) {
@@ -85,8 +101,7 @@ class MenuBar extends StatelessWidget {
                   child:
                       Icon(Get.isDarkMode ? Icons.dark_mode : Icons.light_mode),
                   onTap: () {
-                    Get.changeThemeMode(
-                        Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
+                    changeTheme(!Get.isDarkMode);
                   }),
             ),
             Padding(

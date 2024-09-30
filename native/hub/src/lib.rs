@@ -32,9 +32,8 @@ async fn base_request() -> Result<()> {
     let api = init_service();
     let mut receiver = BaseRequest::get_dart_signal_receiver()?;
     while let Some(signal) = receiver.recv().await {
-        let msg = signal.message;
-        debug_print!("{:?}", msg);
-        api.handle(msg);
+        debug_print!("Received message {:?}", &signal.message);
+        api.handle(signal);
     }
 
     Ok(())

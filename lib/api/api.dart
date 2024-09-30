@@ -29,7 +29,7 @@ void initMsg() {
       $message.errorNotice(title: const Text("处理出错"), subtitle: Text(rsp.msg));
       complete.completeError(rsp.msg);
     } else {
-      complete.complete(rsp.response);
+      complete.complete(data.binary);
     }
   });
 }
@@ -45,11 +45,12 @@ Future<List<int>> sendRequest<T extends $pb.GeneratedMessage>(
   _reqMap[id] = completer;
   // 发送
   BaseRequest(
-          id: id,
-          service: service,
-          func: func,
-          request: request?.writeToBuffer())
-      .sendSignalToRust();
+    id: id,
+    service: service,
+    func: func,
+  )
+      // request: request?.writeToBuffer())
+      .sendSignalToRust(request?.writeToBuffer() ?? Uint8List(0));
   // 返回
   return completer.future;
 }

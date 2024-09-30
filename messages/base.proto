@@ -1,7 +1,7 @@
 syntax = "proto3";
 package base;
 
-// [RINF:DART-SIGNAL]
+// [RINF:DART-SIGNAL-BINARY]
 // 基础请求
 message BaseRequest {
   // 请求id
@@ -11,10 +11,10 @@ message BaseRequest {
   // 请求方法
   string func = 3;
   // 请求体
-  bytes request = 4;
+  // bytes request = 4;
 }
 
-// [RINF:RUST-SIGNAL]
+// [RINF:RUST-SIGNAL-BINARY]
 // 基础响应
 message BaseResponse {
   // 响应id
@@ -22,5 +22,5 @@ message BaseResponse {
   // 响应错误信息,当存在时，则response无意义
   string msg = 2;
   // 响应体
-  bytes response = 3;
+  // bytes response = 3;
 }
