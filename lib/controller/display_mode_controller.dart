@@ -1,4 +1,5 @@
 import 'package:easy_debounce/easy_debounce.dart';
+import 'package:easy_debounce/easy_throttle.dart';
 import 'package:get/get.dart';
 import 'package:nftools/messages/display.pb.dart';
 import 'package:nftools/state/display_mode_state.dart';
@@ -25,7 +26,7 @@ class DisplayModeController extends GetxController {
     $api.getCurrentMode();
   }
   void setMode(bool light) {
-    EasyDebounce.debounce("display-mode/set-mode", const Duration(seconds: 2), () {
+    EasyThrottle.throttle("display-mode/set-mode", const Duration(seconds: 2), () {
       state.isLight = light;
       update();
       $api.setMode(DisplayMode(isLight: light)).catchError((e) {
