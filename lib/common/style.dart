@@ -4,7 +4,14 @@ final class NFTextStyle {
   static const TextStyle h1 =
       TextStyle(fontSize: 28, fontWeight: FontWeight.bold);
   static const TextStyle h2 =
-      TextStyle(fontSize: 26, fontWeight: FontWeight.w500);
+      TextStyle(fontSize: 24, fontWeight: FontWeight.w500);
+
+  static const TextStyle p1 =
+      TextStyle(fontSize: 16, fontWeight: FontWeight.w500);
+  static const TextStyle p2 =
+      TextStyle(fontSize: 14, fontWeight: FontWeight.w500);
+  static const TextStyle p3 =
+      TextStyle(fontSize: 12, fontWeight: FontWeight.w500);
 }
 
 final class NFLayout {
