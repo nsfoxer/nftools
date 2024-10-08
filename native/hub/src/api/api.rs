@@ -1,10 +1,10 @@
-use std::ops::DerefMut;
 use crate::messages::base::{BaseRequest, BaseResponse};
 use crate::service::service::{ImmService, LazyService, Service};
 use crate::service_handle;
 use ahash::AHashMap;
-use std::sync::Arc;
 use rinf::DartSignal;
+use std::ops::DerefMut;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// 服务类型枚举
@@ -57,8 +57,11 @@ impl ApiService {
     pub fn handle(&self, signal: DartSignal<BaseRequest>) {
         // 获取服务
         let Some(service) = self.services.get(signal.message.service.as_str()) else {
-            generate_error_response(signal.message.id, format!("未知服务 {}", signal.message.service))
-                .send_signal_to_dart(Vec::with_capacity(0));
+            generate_error_response(
+                signal.message.id,
+                format!("未知服务 {}", signal.message.service),
+            )
+            .send_signal_to_dart(Vec::with_capacity(0));
             return;
         };
 
@@ -141,10 +144,7 @@ impl ApiService {
 
 /// 生成错误响应
 fn generate_error_response(id: u64, error: String) -> BaseResponse {
-    BaseResponse {
-        id,
-        msg: error,
-    }
+    BaseResponse { id, msg: error }
 }
 
 mod macros {
@@ -162,7 +162,10 @@ mod macros {
                 Err(e) => {
                     generate_error_response(
                         $signal.message.id,
-                        format!("处理请求错误{}-{}:{}", $signal.message.service, $signal.message.func, e),
+                        format!(
+                            "处理请求错误{}-{}:{}",
+                            $signal.message.service, $signal.message.func, e
+                        ),
                     )
                     .send_signal_to_dart(Vec::with_capacity(0));
                 }
