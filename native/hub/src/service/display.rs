@@ -1,8 +1,8 @@
-
 #[cfg(target_os = "windows")]
 pub mod display {
-    use std::path::PathBuf;
-    use crate::messages::display::{DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp};
+    use crate::messages::display::{
+        DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp,
+    };
     use crate::service::service::{ImmService, LazyService, Service};
     use crate::{async_func_notype, func_end, func_notype, func_typeno};
     use anyhow::{anyhow, Error, Result};
@@ -10,8 +10,9 @@ pub mod display {
     use ddc::{Ddc, VcpValue};
     use ddc_winapi::Monitor;
     use prost::Message;
-    use tokio_stream::StreamExt;
+    use std::path::PathBuf;
     use tokio_stream::wrappers::ReadDirStream;
+    use tokio_stream::StreamExt;
     use winreg::enums::{KEY_READ, KEY_WRITE};
     use winreg::RegKey;
 
@@ -20,7 +21,6 @@ pub mod display {
 
     #[async_trait]
     impl ImmService for DisplayLight {
-
         fn get_service_name(&self) -> &'static str {
             "DisplayLight"
         }
@@ -60,7 +60,7 @@ pub mod display {
             };
             Ok(result)
         }
-        
+
         fn set_light(&self, display_info: DisplayInfo) -> Result<()> {
             let m = Monitor::enumerate()
                 .unwrap_or(Vec::new())
@@ -72,15 +72,13 @@ pub mod display {
                     v.set_vcp_feature(16, display_info.value as u16)?;
                     Ok(())
                 }
-                None => {
-                    Err(anyhow!("无法找到显示器 {}", display_info.screen))
-                }
+                None => Err(anyhow!("无法找到显示器 {}", display_info.screen)),
             }
         }
     }
 
     /// 显示壁纸
-    pub struct DisplayMode{
+    pub struct DisplayMode {
         theme_reg: RegKey,
     }
 
@@ -93,7 +91,13 @@ pub mod display {
         async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
             func_notype!(self, func, get_current_mode);
             async_func_notype!(self, func, get_wallpaper);
-            func_typeno!(self, func, req_data, set_mode, crate::messages::display::DisplayMode);
+            func_typeno!(
+                self,
+                func,
+                req_data,
+                set_mode,
+                crate::messages::display::DisplayMode
+            );
             func_end!(func)
         }
     }
@@ -113,20 +117,14 @@ pub mod display {
     impl DisplayMode {
         pub fn new() -> Self {
             let hklm = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
-            Self {
-                theme_reg: hklm
-            }
+            Self { theme_reg: hklm }
         }
-        
+
         fn get_current_mode(&self) -> Result<GetDisplayModeRsp> {
             let theme = &self.theme_reg;
             let v: u32 = theme.get_value("SystemUsesLightTheme")?;
-            let mode = crate::messages::display::DisplayMode{
-                is_light: v == 1,
-            };
-            Ok(GetDisplayModeRsp {
-                mode: Some(mode),
-            })
+            let mode = crate::messages::display::DisplayMode { is_light: v == 1 };
+            Ok(GetDisplayModeRsp { mode: Some(mode) })
         }
 
         fn set_mode(&self, mode: crate::messages::display::DisplayMode) -> Result<()> {
@@ -181,6 +179,4 @@ pub mod display {
             Err(Error::msg("无法找到对应的图片"))
         }
     }
-
 }
-

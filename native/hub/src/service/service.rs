@@ -172,7 +172,10 @@ mod macros {
     #[macro_export]
     macro_rules! func_end {
         ($function:ident) => {
-            Err(anyhow::Error::msg(format!("没有function[{}]匹配", $function)))
+            Err(anyhow::Error::msg(format!(
+                "没有function[{}]匹配",
+                $function
+            )))
         };
     }
 }

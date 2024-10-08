@@ -213,6 +213,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "from-attr"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "493352b344154b6d7cc9ddef3571f9162e00ba5179f381650a66e0c6e16942b6"
+dependencies = [
+ "from-attr-core",
+ "from-attr-macro",
+ "proc-macro2",
+ "syn",
+]
+
+[[package]]
+name = "from-attr-core"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed5cd972ebc982a03cd79a87f2a30d2935f4f8081ddbd11c69c134b3937ffd4f"
+dependencies = [
+ "syn",
+]
+
+[[package]]
+name = "from-attr-macro"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9189dd22ca0f79ab93ac0b29336cefd9fb884c48e4f7db2371885a486891d81"
+dependencies = [
+ "from-attr-core",
+ "proc-macro2",
+ "quote",
+ "quote-use",
+ "syn",
+]
+
+[[package]]
 name = "futures-core"
 version = "0.3.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -274,6 +308,7 @@ dependencies = [
  "ddc-winapi",
  "prost",
  "rinf",
+ "rudi",
  "tokio",
  "tokio-stream",
  "winreg",
@@ -288,6 +323,12 @@ dependencies = [
  "unicode-bidi",
  "unicode-normalization",
 ]
+
+[[package]]
+name = "inventory"
+version = "0.3.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f958d3d68f4167080a18141e10381e7634563984a537f2a49a30fd8e53ac5767"
 
 [[package]]
 name = "itertools"
@@ -432,6 +473,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bda66fc9667c18cb2758a2ac84d1167245054bcf85d5d1aaa6923f45801bdd02"
 
 [[package]]
+name = "proc-macro-utils"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eeaf08a13de400bc215877b5bdc088f241b12eb42f0a548d3390dc1c56bb7071"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "smallvec",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -483,6 +535,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "quote-use"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9619db1197b497a36178cfc736dc96b271fe918875fbf1344c436a7e93d0321e"
+dependencies = [
+ "quote",
+ "quote-use-macros",
+]
+
+[[package]]
+name = "quote-use-macros"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82ebfb7faafadc06a7ab141a6f67bcfb24cb8beb158c6fe933f2f035afa99f35"
+dependencies = [
+ "proc-macro-utils",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -521,6 +595,36 @@ dependencies = [
  "spin",
  "untrusted",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "rudi"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba13600a8354cf67d7f7dfd06252e8af253ae5ec036bb669c4615a8d05580d54"
+dependencies = [
+ "inventory",
+ "rudi-core",
+ "rudi-macro",
+]
+
+[[package]]
+name = "rudi-core"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f86701107ec8c5aefd855e7740e42c3cc3f2e8676b84a2807cdec67b964f2a5"
+
+[[package]]
+name = "rudi-macro"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "420923dcd2413e220180523dde7f5bd02808b671de7353ecb059768b8977e85c"
+dependencies = [
+ "from-attr",
+ "proc-macro2",
+ "quote",
+ "rudi-core",
+ "syn",
 ]
 
 [[package]]

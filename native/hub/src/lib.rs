@@ -1,17 +1,17 @@
 //! This `hub` crate is the
 //! entry point of the Rust logic.
 
+mod api;
 mod common;
 mod messages;
 mod service;
-mod api;
 
-use rinf::debug_print;
 use crate::api::api::ApiService;
 use crate::common::*;
 use crate::messages::base::BaseRequest;
-use tokio;
 use crate::service::display::display::{DisplayLight, DisplayMode};
+use rinf::debug_print;
+use tokio;
 
 rinf::write_interface!();
 
@@ -27,7 +27,7 @@ fn init_service() -> ApiService {
         api.add_imm_service(Box::new(DisplayLight::new()));
         api.add_lazy_service(Box::new(DisplayMode::new()));
     }
-    
+
     api
 }
 
