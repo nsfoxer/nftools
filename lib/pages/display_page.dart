@@ -5,10 +5,11 @@ import 'package:get/get.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/display_controller.dart';
 import 'package:nftools/controller/display_mode_controller.dart';
+import 'package:nftools/utils/nf-widgets.dart';
 import 'package:tolyui/tolyui.dart';
 
 class DisplayPage extends StatelessWidget {
-  const DisplayPage({Key? key}) : super(key: key);
+  const DisplayPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,11 +29,11 @@ class DisplayPage extends StatelessWidget {
             style: NFTextStyle.h2,
           ),
           NFLayout.vlineh2,
-          _DisplayLight(),
+          NFCard(child: _DisplayLight()),
           NFLayout.vlineh1,
           Text("主题", style: NFTextStyle.h2),
           NFLayout.vlineh2,
-          _DisplayMode(),
+          NFCard(child: _DisplayMode()),
         ],
       ),
     ));
@@ -154,6 +155,7 @@ class _Mode extends StatelessWidget {
       ];
     }
     return Column(children: [
+      const SizedBox(height: 15,),
       Container(
         height: 150,
         width: 267,
@@ -161,7 +163,8 @@ class _Mode extends StatelessWidget {
             borderRadius: BorderRadius.circular(8), boxShadow: boxShadow),
         child: picFile == null ? null : Image.file(File(picFile!)),
       ),
-      display
+      display,
+      const SizedBox(height: 10,),
     ]);
   }
 }
