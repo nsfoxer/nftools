@@ -1,4 +1,4 @@
 pub mod display;
 pub mod service;
-mod global_settings;
-mod syncfile;
+pub mod global_settings;
+pub mod syncfile;

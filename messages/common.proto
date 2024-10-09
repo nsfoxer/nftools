@@ -5,3 +5,10 @@ package common;
 message EmptyMessage {
 }
 
+message StringMessage {
+  string value = 1;
+}
+
+message VecStringMessage {
+  repeated string values = 1;
+}
