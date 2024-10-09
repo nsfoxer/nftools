@@ -1,3 +1,4 @@
+import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -41,12 +42,43 @@ class _MainPageState extends State<MainPage> {
                   style: NFTextStyle.h2,
                 ),
                 NFLayout.vlineh2,
+                _SyncFileHead(),
                 NFCard(
                   child: SyncFile(),
                 )
               ],
             )));
   }
+}
+
+Future<void> _dialogBuilder(BuildContext context) {
+  return showDialog(context: context, builder: (BuildContext context) {
+    return Dialog(
+
+      child: Padding(
+        padding: EdgeInsets.all(NFLayout.v1),
+        child: Text("asd"),
+      )
+    );
+  });
+}
+
+class _SyncFileHead extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+
+    return GetBuilder<SyncFileController>(builder: (logic) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          TolyAction(tooltip: "配置", child: Icon(Icons.settings), onTap: () {
+            _dialogBuilder(context);
+          })
+        ],
+      );
+    });
+  }
+
 }
 
 class SyncFile extends StatelessWidget {
@@ -81,8 +113,38 @@ class SyncFile extends StatelessWidget {
         ),
       ));
 
-      return Column(
-        children: children,
+      return SizedBox(
+        height: 500,
+        child: DataTable2(
+          columnSpacing: 2,
+          horizontalMargin: 2,
+          headingRowHeight: 40,
+          dataRowHeight: 30,
+          // minWidth: 100,
+          columns: [
+            DataColumn(
+              label: Text("文件"),
+            ),
+            DataColumn(
+              label: Text("本地更新时间"),
+            ),
+            DataColumn(
+              label: Text("远端更新时间"),
+            ),
+            DataColumn2(label: Text("同步状态")),
+            DataColumn2(label: Text("操作"), size: ColumnSize.S),
+          ],
+          rows: List<DataRow>.generate(
+              100,
+              (index) => DataRow(
+                  cells: [
+                    DataCell(Text('A' * (10 - index % 10))),
+                    DataCell(Text('B' * (10 - (index + 5) % 10))),
+                    DataCell(Text('C' * (15 - (index + 5) % 10))),
+                    DataCell(Text('C' * (15 - (index + 5) % 10))),
+                    DataCell(Text('C' * (15 - (index + 5) % 10))),
+                  ])),
+        ),
       );
     });
   }
