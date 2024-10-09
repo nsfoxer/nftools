@@ -1,18 +1,21 @@
+use prost::Message;
 use std::sync::Arc;
+use ahash::HashSet;
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize, Serializer};
-use crate::func_end;
+use serde::{Deserialize, Serialize};
+use crate::{func_end, func_notype, func_typeno};
 use crate::service::global_settings::GlobalData;
 use crate::service::service::Service;
 use anyhow::Result;
-use crate::messages::common::EmptyMessage;
+use rinf::debug_print;
+use crate::messages::common::{StringMessage, VecStringMessage};
 
 pub struct SyncFile {
     global_data: Arc<GlobalData>,
-    files: Vec<String>,
+    files: HashSet<String>,
 }
 
-const NAME: &str = "SyncFile"; 
+const NAME: &str = "SyncFile";
 
 #[async_trait]
 impl Service for SyncFile {
@@ -21,12 +24,15 @@ impl Service for SyncFile {
     }
 
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
+        func_typeno!(self, func, req_data, add_file, StringMessage, del_file, StringMessage);
+        func_notype!(self, func, get_files);
+        
         func_end!(func)
     }
 }
 
 #[derive(Serialize, Deserialize)]
-struct A{
+struct A {
     f: String,
 }
 
@@ -41,12 +47,25 @@ impl SyncFile {
 }
 
 impl SyncFile {
-    fn add_file(&mut self, file: String) -> Result<EmptyMessage> {
-        self.files.push(file);
-        Ok(EmptyMessage{})
+    fn add_file(&mut self, file: StringMessage) -> Result<()> {
+        self.files.insert(file.value);
+        Ok(())
     }
-    
-    fn get_files(&mut self, file: String) -> Result<> {
-        self.files
+
+    fn del_file(&mut self, file: StringMessage) -> Result<()> {
+        self.files.remove(&file.value);
+        Ok(())
+    }
+
+    fn get_files(&mut self) -> Result<VecStringMessage> {
+        Ok(VecStringMessage { values: self.files.iter().map(|x| x.clone()).collect() })
+    }
+}
+
+impl Drop for SyncFile {
+    fn drop(&mut self) {
+        if let Err(e) = self.global_data.set_data(NAME.to_string(), &self.files) {
+            debug_print!("{}", e);
+        }
     }
 }
