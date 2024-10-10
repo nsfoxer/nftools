@@ -5,6 +5,7 @@ mod api;
 mod common;
 mod messages;
 mod service;
+mod r#do;
 
 use std::sync::Arc;
 use crate::api::api::ApiService;

@@ -25,6 +25,7 @@ serde = { version = "1.0.210", features = ["derive"] }
 chrono = "0.4.38"
 dirs = "5.0.1"
 serde_json = "1.0.128"
+reqwest_dav = "0.1.13"
 
 # Uncomment below to target the web.
 # tokio_with_wasm = { version = "0.6.0", features = ["sync", "rt"] }
