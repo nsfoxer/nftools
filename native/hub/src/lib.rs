@@ -13,7 +13,7 @@ use crate::messages::base::BaseRequest;
 use crate::service::display::display::{DisplayLight, DisplayMode};
 use rinf::debug_print;
 use tokio;
-use crate::service::global_settings::GlobalData;
+use common::global_data::GlobalData;
 use crate::service::syncfile::SyncFile;
 
 rinf::write_interface!();

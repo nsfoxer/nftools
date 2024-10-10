@@ -4,7 +4,7 @@ use ahash::HashSet;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use crate::{func_end, func_notype, func_typeno};
-use crate::service::global_settings::GlobalData;
+use crate::common::global_data::GlobalData;
 use crate::service::service::Service;
 use anyhow::Result;
 use rinf::debug_print;
@@ -60,6 +60,7 @@ impl SyncFile {
     fn get_files(&mut self) -> Result<VecStringMessage> {
         Ok(VecStringMessage { values: self.files.iter().map(|x| x.clone()).collect() })
     }
+    
 }
 
 impl Drop for SyncFile {

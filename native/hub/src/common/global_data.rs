@@ -112,7 +112,7 @@ fn config_dir() -> Result<PathBuf> {
 }
 
 mod tests {
-    use crate::service::global_settings::GlobalData;
+    use crate::common::global_data::GlobalData;
 
     #[test]
     fn a() {
