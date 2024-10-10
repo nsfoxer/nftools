@@ -1,9 +1,8 @@
 import 'package:data_table_2/data_table_2.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:get/get.dart';
 import 'package:nftools/controller/sync_file_controller.dart';
-import 'package:tolyui/form/form.dart';
 import 'package:tolyui/tolyui.dart';
 
 import '../common/style.dart';
@@ -28,16 +27,16 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
         child: Padding(
-            padding: EdgeInsets.all(NFLayout.v1),
+            padding: const EdgeInsets.all(NFLayout.v1),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   "主页",
                   style: NFTextStyle.h1,
                 ),
                 NFLayout.vlineh1,
-                Text(
+                const Text(
                   "同步",
                   style: NFTextStyle.h2,
                 ),
@@ -52,33 +51,76 @@ class _MainPageState extends State<MainPage> {
 }
 
 Future<void> _dialogBuilder(BuildContext context) {
-  return showDialog(context: context, builder: (BuildContext context) {
-    return Dialog(
+  return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return GetBuilder<SyncFileController>(builder: (logic) {
+          return Dialog(
+              child: Container(
+            padding: const EdgeInsets.all(NFLayout.v1 * 2),
+            width: 600,
+            height: 400,
+            child: Column(
+              children: [
+                TextField(
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: "服务器地址",
+                    hintText : "https://dav.jianguoyun.com/dav/",
+                    prefixIcon: Icon(Icons.web)
+                  ),
+                  keyboardType: TextInputType.url,
+                  controller: logic.state.controller1,
+                ),
+                TextField(
+                  decoration: const InputDecoration(
+                      labelText: "账户",
+                      prefixIcon: Icon(Icons.person)
+                  ),
+                  controller: logic.state.controller2,
+                ),
+                TextField(
+                  decoration: const InputDecoration(
+                      labelText: "密码",
+                      prefixIcon: Icon(Icons.password)
+                  ),
+                  controller: logic.state.controller3,
+                  obscureText: true,
+                ),
+                NFLayout.vlineh1,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton.icon(onPressed: () {
 
-      child: Padding(
-        padding: EdgeInsets.all(NFLayout.v1),
-        child: Text("asd"),
-      )
-    );
-  });
+                    }, label: Text("确认"), icon: Icon(Icons.save))
+                  ],
+                )
+
+              ],
+            ),
+          ));
+        });
+      });
 }
 
 class _SyncFileHead extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-
     return GetBuilder<SyncFileController>(builder: (logic) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          TolyAction(tooltip: "配置", child: Icon(Icons.settings), onTap: () {
-            _dialogBuilder(context);
-          })
+          TolyAction(
+              tooltip: "配置",
+              child: const Icon(Icons.settings),
+              onTap: () {
+                _dialogBuilder(context);
+              })
         ],
       );
     });
   }
-
 }
 
 class SyncFile extends StatelessWidget {
@@ -108,7 +150,7 @@ class SyncFile extends StatelessWidget {
         controller: _textEditingController,
         onSubmitted: (_) => _submit(logic),
         tailingBuilder: SlotBuilder(
-          builder: (_, __) => Icon(Icons.add),
+          builder: (_, __) => const Icon(Icons.add),
           onTap: () => _submit(logic),
         ),
       ));
@@ -122,22 +164,21 @@ class SyncFile extends StatelessWidget {
           dataRowHeight: 30,
           // minWidth: 100,
           columns: [
-            DataColumn(
+            const DataColumn(
               label: Text("文件"),
             ),
-            DataColumn(
+            const DataColumn(
               label: Text("本地更新时间"),
             ),
-            DataColumn(
+            const DataColumn(
               label: Text("远端更新时间"),
             ),
-            DataColumn2(label: Text("同步状态")),
-            DataColumn2(label: Text("操作"), size: ColumnSize.S),
+            const DataColumn2(label: Text("同步状态")),
+            const DataColumn2(label: Text("操作"), size: ColumnSize.S),
           ],
           rows: List<DataRow>.generate(
               100,
-              (index) => DataRow(
-                  cells: [
+              (index) => DataRow(cells: [
                     DataCell(Text('A' * (10 - index % 10))),
                     DataCell(Text('B' * (10 - (index + 5) % 10))),
                     DataCell(Text('C' * (15 - (index + 5) % 10))),
