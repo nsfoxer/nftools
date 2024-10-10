@@ -2,3 +2,9 @@ syntax = "proto3";
 package syncfile;
 
 
+// 配置webdav
+message WebDavConfig {
+	string url = 1;
+	string account = 2;
+	string passwd = 3;
+}

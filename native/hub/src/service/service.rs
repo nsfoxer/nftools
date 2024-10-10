@@ -82,9 +82,6 @@ mod macros {
     match $function {
         $(
         stringify!($name) => {
-            if $data.is_none() {
-                return Err(anyhow::Error::msg("数据不能为空"));
-            }
             let req = <$req>::decode(&data.unwrap()[..])?;
             let rsp = $self.$name(req)?;
             let mut buf = Vec::new();
@@ -136,10 +133,7 @@ mod macros {
     match $function {
         $(
         stringify!($name) => {
-            if $data.is_none() {
-                return Err(anyhow::Error::msg("数据不能为空"));
-            }
-            let req = <$req>::decode(&$data.unwrap()[..])?;
+            let req = <$req>::decode(&$data[..])?;
             $self.$name(req).await?;
             return Ok(None);
         }
@@ -155,9 +149,6 @@ mod macros {
     match $function {
         $(
         stringify!($name) => {
-            if $data.is_none() {
-                return Err(anyhow::Error::msg("数据不能为空"));
-            }
             let req = <$req>::decode(&data.unwrap()[..])?;
             let rsp = $self.$name(req).await?;
             let mut buf = Vec::new();

@@ -41,6 +41,7 @@ impl GlobalData {
     }
 }
 
+
 impl Drop for GlobalData {
     fn drop(&mut self) {
         let data: GlobalDataCopy = self.into();
