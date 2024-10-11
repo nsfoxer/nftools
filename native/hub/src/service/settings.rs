@@ -1,27 +1,29 @@
 use crate::messages::syncfile::WebDavConfig;
 use std::sync::Arc;
-use crate::common::global_data::GlobalData;
+use crate::common::global_data::{DataDO, GlobalData};
 use crate::{async_func_typeno, func_end};
 use crate::service::service::Service;
 use anyhow::Result;
 use reqwest_dav::{Auth, ClientBuilder, Depth};
 use prost::Message;
 use serde::{Deserialize, Serialize};
+use crate::r#do::webdav_account_do::WebDavAccountDO;
 
 struct GlobalSettings {
     global_data: Arc<GlobalData>,
-    data: Data,
+    web_dav_account_do: WebDavAccountDO,
 }
 
 impl GlobalSettings {
     fn new(global_data: Arc<GlobalData>) -> Self {
-        let data =  global_data.get_data(NAME).unwrap_or(Data::default());
-        Self { global_data, data }
+        Self {
+            web_dav_account_do: WebDavAccountDO::get_data(&global_data).unwrap_or(Default::default()),
+            global_data,
+        }
     }
 }
 
 const NAME: &str = "GlobalSettings";
-pub const WEBDAV_ACCOUNT: &str = "GlobalSettings:WebDavAccount";
 
 #[async_trait::async_trait]
 impl Service for GlobalSettings {
@@ -36,29 +38,20 @@ impl Service for GlobalSettings {
 }
 
 impl GlobalSettings {
-    async fn set_webdav_account(&mut self, dav_config: WebDavConfig) -> Result<()>{
+    async fn set_webdav_account(&mut self, dav_config: WebDavConfig) -> Result<()> {
         let client = ClientBuilder::new()
             .set_host(dav_config.url.clone())
             .set_auth(Auth::Basic(dav_config.account.clone(), dav_config.passwd.clone()))
             .build()?;
         let _ = client.list("/", Depth::Number(0)).await?;
-        
-        
-        
-        self.data.web_dav_config = (dav_config.url, dav_config.account, dav_config.passwd);
-        Ok(())
-    }
-    
-    
-}
-impl Drop for GlobalSettings {
-    fn drop(&mut self) {
-        self.global_data.set_data(NAME.to_string(), &self.data).unwrap_or_else(|e| {
-           eprintln!("Failed to set global data: {}", e); 
-        });
-    }
-}
 
+        self.web_dav_account_do.url = dav_config.url;
+        self.web_dav_account_do.account = dav_config.account;
+        self.web_dav_account_do.passwd = dav_config.passwd;
+
+        self.web_dav_account_do.set_data(&self.global_data)
+    }
+}
 
 
 mod test {
