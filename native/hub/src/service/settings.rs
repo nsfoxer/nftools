@@ -1,7 +1,7 @@
 use crate::messages::syncfile::WebDavConfig;
 use std::sync::Arc;
-use crate::common::global_data::{DataDO, GlobalData};
-use crate::{async_func_typeno, func_end};
+use crate::common::global_data::{DataPersist, GlobalData};
+use crate::{async_func_typeno, func_end, func_notype};
 use crate::service::service::Service;
 use anyhow::Result;
 use reqwest_dav::{Auth, ClientBuilder, Depth};
@@ -33,6 +33,8 @@ impl Service for GlobalSettings {
 
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         async_func_typeno!(self, func, req_data, set_webdav_account, WebDavConfig);
+        func_notype!(self, func, get_webav_account);
+        
         func_end!(func)
     }
 }
@@ -50,6 +52,14 @@ impl GlobalSettings {
         self.web_dav_account_do.passwd = dav_config.passwd;
 
         self.web_dav_account_do.set_data(&self.global_data)
+    }
+    
+    fn get_webav_account(&self) -> Result<WebDavConfig> {
+        Ok(WebDavConfig {
+            url: self.web_dav_account_do.url.clone(),
+            account: self.web_dav_account_do.account.clone(),
+            passwd: self.web_dav_account_do.passwd.clone(),
+        })
     }
 }
 

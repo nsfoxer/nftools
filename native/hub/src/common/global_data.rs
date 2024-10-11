@@ -115,7 +115,7 @@ fn config_dir() -> Result<PathBuf> {
 
 
 /// 数据存储服务
-pub trait DataDO: Serialize + DeserializeOwned {
+pub trait DataPersist: Serialize + DeserializeOwned {
     fn id() -> &'static str;
 
     fn set_data(&self, global_data: &GlobalData) -> Result<()> {
