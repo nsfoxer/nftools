@@ -2,17 +2,19 @@ use prost::Message;
 use std::sync::Arc;
 use ahash::HashSet;
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use crate::{func_end, func_notype, func_typeno};
-use crate::common::global_data::GlobalData;
+use crate::common::global_data::{DataPersist, GlobalData};
 use crate::service::service::Service;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use reqwest_dav::{Auth, Client, ClientBuilder};
 use rinf::debug_print;
 use crate::messages::common::{StringMessage, VecStringMessage};
+use crate::r#do::webdav_account_do::WebDavAccountDO;
 
 pub struct SyncFile {
     global_data: Arc<GlobalData>,
     files: HashSet<String>,
+    client: Option<Client>,
 }
 
 const NAME: &str = "SyncFile";
@@ -31,17 +33,13 @@ impl Service for SyncFile {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-struct A {
-    f: String,
-}
-
 impl SyncFile {
     pub fn new(global_data: Arc<GlobalData>) -> Self {
         let files = global_data.get_data(NAME).unwrap_or_default();
         Self {
             global_data,
             files,
+            client: None,
         }
     }
 }
@@ -61,6 +59,29 @@ impl SyncFile {
         Ok(VecStringMessage { values: self.files.iter().map(|x| x.clone()).collect() })
     }
     
+    async fn sync_file(&self) -> Result<()> {
+        unimplemented!()
+    }
+    
+    async fn file_status(&mut self) -> Result<()> {
+        self.init_dav().await?;
+        
+        
+        Ok(())
+    }
+    
+}
+
+impl SyncFile {
+    async fn init_dav(&mut self) -> Result<()> {
+        let dav = WebDavAccountDO::get_data(&self.global_data).ok_or_else(|| anyhow!("账户未配置，请先在设置中配置账户"))?;
+        let client = ClientBuilder::new()
+            .set_host(dav.url)
+            .set_auth(Auth::Basic(dav.account, dav.passwd))
+            .build()?;
+        self.client = Some(client);
+        Ok(())
+    }
 }
 
 impl Drop for SyncFile {

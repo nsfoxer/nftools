@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
-use std::sync::Arc;
 use dirs::config_local_dir;
 use anyhow::Result;
 use serde::de::DeserializeOwned;
