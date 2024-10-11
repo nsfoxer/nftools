@@ -92,8 +92,9 @@ Future<void> _dialogBuilder(BuildContext context) {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     ElevatedButton.icon(onPressed: () {
-
-                    }, label: Text("确认"), icon: Icon(Icons.save))
+                    }, label: const Text("确认"), icon: const Icon(Icons.save), style: NFButtonStyle.normal.style),
+                    ElevatedButton.icon(onPressed: () {
+                    }, label: const Text("取消"), icon: const Icon(Icons.save), style: NFButtonStyle.normal.style),
                   ],
                 )
 
