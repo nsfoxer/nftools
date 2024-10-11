@@ -51,6 +51,7 @@ class _MainPageState extends State<MainPage> {
 
 Future<void> _dialogBuilder(BuildContext context) {
   return showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (BuildContext context) {
         return GetBuilder<SyncFileController>(builder: (logic) {

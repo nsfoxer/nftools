@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
+use std::sync::Arc;
 use dirs::config_local_dir;
 use anyhow::Result;
 use serde::de::DeserializeOwned;
@@ -110,6 +111,20 @@ fn config_dir() -> Result<PathBuf> {
     }
     config.push("global.json");
     Ok(config)
+}
+
+
+/// 数据存储服务
+pub trait DataDO: Serialize + DeserializeOwned {
+    fn id() -> &'static str;
+
+    fn set_data(&self, global_data: &GlobalData) -> Result<()> {
+        global_data.set_data(Self::id().to_string(), self)
+    }
+
+    fn get_data(global_data: &GlobalData) -> Option<Self> {
+        global_data.get_data(Self::id())
+    }
 }
 
 mod tests {
