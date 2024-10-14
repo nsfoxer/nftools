@@ -6,7 +6,6 @@ import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/display_controller.dart';
 import 'package:nftools/controller/display_mode_controller.dart';
 import 'package:nftools/utils/nf-widgets.dart';
-import 'package:tolyui/tolyui.dart';
 
 class DisplayPage extends StatelessWidget {
   const DisplayPage({super.key});
@@ -55,12 +54,12 @@ class _DisplayLight extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Expanded(
-                    flex: 1,
-                    child: TolyTooltip(
-                        message: item.key,
-                        child:
-                            Text(item.key, overflow: TextOverflow.ellipsis))),
+                // Expanded(
+                //     flex: 1,
+                //     child: TolyTooltip(
+                //         message: item.key,
+                //         child:
+                //             Text(item.key, overflow: TextOverflow.ellipsis))),
                 Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3.0),
                     child: Text("${item.value.toInt()}%")),

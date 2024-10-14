@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:tolyui/basic/basic.dart';
 
 final class NFTextStyle {
   static const TextStyle h1 =
@@ -25,11 +24,3 @@ final class NFLayout {
   static const SizedBox vlineh3 = SizedBox(height: v3);
 }
 
-final class NFButtonStyle {
-  static final FillButtonPalette normal = FillButtonPalette(
-      backgroundPalette: const Palette(
-          normal: Color(0xff1890ff),
-          hover: Color(0xff40a9ff),
-          pressed: Color(0xff096dd9)),
-      foregroundPalette: const Palette.all(Colors.white));
-}

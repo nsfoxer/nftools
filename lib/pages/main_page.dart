@@ -2,7 +2,6 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nftools/controller/sync_file_controller.dart';
-import 'package:tolyui/tolyui.dart';
 
 import '../common/style.dart';
 import '../utils/nf-widgets.dart';
@@ -92,9 +91,9 @@ Future<void> _dialogBuilder(BuildContext context) {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     ElevatedButton.icon(onPressed: () {
-                    }, label: const Text("确认"), icon: const Icon(Icons.save), style: NFButtonStyle.normal.style),
+                    }, label: const Text("确认"), icon: const Icon(Icons.save)),
                     ElevatedButton.icon(onPressed: () {
-                    }, label: const Text("取消"), icon: const Icon(Icons.save), style: NFButtonStyle.normal.style),
+                    }, label: const Text("取消"), icon: const Icon(Icons.save)),
                   ],
                 )
 
@@ -112,12 +111,12 @@ class _SyncFileHead extends StatelessWidget {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          TolyAction(
-              tooltip: "配置",
-              child: const Icon(Icons.settings),
-              onTap: () {
-                _dialogBuilder(context);
-              })
+          // TolyAction(
+          //     tooltip: "配置",
+          //     child: const Icon(Icons.settings),
+          //     onTap: () {
+          //       _dialogBuilder(context);
+          //     })
         ],
       );
     });
@@ -146,15 +145,15 @@ class SyncFile extends StatelessWidget {
         ));
       }
 
-      children.add(TolyInput(
-        hintText: "添加数据",
-        controller: _textEditingController,
-        onSubmitted: (_) => _submit(logic),
-        tailingBuilder: SlotBuilder(
-          builder: (_, __) => const Icon(Icons.add),
-          onTap: () => _submit(logic),
-        ),
-      ));
+      // children.add(TolyInput(
+      //   hintText: "添加数据",
+      //   controller: _textEditingController,
+      //   onSubmitted: (_) => _submit(logic),
+      //   tailingBuilder: SlotBuilder(
+      //     builder: (_, __) => const Icon(Icons.add),
+      //     onTap: () => _submit(logic),
+      //   ),
+      // ));
 
       return SizedBox(
         height: 500,

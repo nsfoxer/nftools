@@ -65,7 +65,7 @@ impl SyncFile {
     
     async fn file_status(&mut self) -> Result<()> {
         self.init_dav().await?;
-        
+        // 1. 查询远端
         
         Ok(())
     }
