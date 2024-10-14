@@ -17,6 +17,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.0"
+  clock:
+    dependency: transitive
+    description:
+      name: clock
+      sha256: cb6d7f03e1de671e34607e909a7213e31d7752be4fb66a86d29fe1eb14bfb5cf
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
   collection:
     dependency: transitive
     description:
@@ -81,19 +89,27 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
+  fluent_ui:
+    dependency: "direct main"
+    description:
+      name: fluent_ui
+      sha256: e7804bf3bbb3ecf9e77d5498181dc36375f5ca736ccfb3862fea17c50050eb89
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.9.2"
+  fluentui_system_icons:
+    dependency: "direct main"
+    description:
+      name: fluentui_system_icons
+      sha256: "0ff2d03ca3b388c41750abbe6214dbf455b57c215c489155c97989b0a9d3f78d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.260"
   flutter:
     dependency: "direct main"
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_hooks:
-    dependency: "direct main"
-    description:
-      name: flutter_hooks
-      sha256: cde36b12f7188c85286fba9b38cc5a902e7279f36dd676967106c041dc9dde70
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.20.5"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -102,6 +118,11 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  flutter_localizations:
+    dependency: transitive
+    description: flutter
+    source: sdk
+    version: "0.0.0"
   get:
     dependency: "direct main"
     description:
@@ -118,6 +139,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0+1"
+  intl:
+    dependency: transitive
+    description:
+      name: intl
+      sha256: d6f56758b7d3014a48af9701c085700aac781a92a87a62b1333b46d8879661cf
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.19.0"
   lints:
     dependency: transitive
     description:
@@ -142,6 +171,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.0"
+  math_expressions:
+    dependency: transitive
+    description:
+      name: math_expressions
+      sha256: e32d803d758ace61cc6c4bdfed1226ff60a6a23646b35685670d28b5616139f8
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.6.0"
   meta:
     dependency: transitive
     description:
@@ -174,6 +211,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.0"
+  recase:
+    dependency: transitive
+    description:
+      name: recase
+      sha256: e4eb4ec2dcdee52dcf99cb4ceabaffc631d7424ee55e56f280bc039737f89213
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.0"
   rinf:
     dependency: "direct main"
     description:
@@ -182,6 +227,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.15.0"
+  scroll_pos:
+    dependency: transitive
+    description:
+      name: scroll_pos
+      sha256: cebf602b2dd939de6832bb902ffefb574608d1b84f420b82b381a4007d3c1e1b
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -211,54 +264,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
-  tolyui:
-    dependency: "direct main"
-    description:
-      name: tolyui
-      sha256: "6c3c2b4c041f8f31cf814ee1cac179cf4c1fe1276156d4a89b38e7bdceafea63"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.2+20"
-  tolyui_color:
-    dependency: transitive
-    description:
-      name: tolyui_color
-      sha256: "410c378344d47a5f170e70a78cc1ac6a4f2665ea40f02c9aaa67da4072fde0e1"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.1"
-  tolyui_feedback:
-    dependency: transitive
-    description:
-      name: tolyui_feedback
-      sha256: "0d76846141e3ea0d2172d87508f7f6a98a79204611aa0d2519eb5c064d905bf1"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.4+7"
-  tolyui_message:
-    dependency: transitive
-    description:
-      name: tolyui_message
-      sha256: "4e9046d65d1a5f98f0ebd423815be683c7fbf637caa9e0bf88d83148b42764cb"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.2"
-  tolyui_navigation:
-    dependency: transitive
-    description:
-      name: tolyui_navigation
-      sha256: b18ba71e890313ad0494c3a77754f8df36224dc6201a050bbb14764d22e5c6f4
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.8+9"
-  tolyui_rx_layout:
-    dependency: transitive
-    description:
-      name: tolyui_rx_layout
-      sha256: "559198f0bc1d2b3d2beb75be54ae17b8d9fc4276d7ff099967e8007450ce0719"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
   vector_math:
     dependency: transitive
     description:
@@ -285,4 +290,4 @@ packages:
     version: "3.1.2"
 sdks:
   dart: ">=3.4.0 <4.0.0"
-  flutter: ">=3.13.0"
+  flutter: ">=3.19.0"

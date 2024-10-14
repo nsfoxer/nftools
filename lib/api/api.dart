@@ -5,7 +5,6 @@ import 'package:fixnum/fixnum.dart';
 import 'package:flutter/widgets.dart';
 import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:nftools/messages/base.pb.dart';
-import 'package:tolyui/tolyui.dart';
 
 // 请求序列
 Int64 _seq = Int64.ZERO;
@@ -18,15 +17,15 @@ void initMsg() {
     final rsp = data.message;
     var complete = _reqMap.remove(rsp.id);
     if (complete == null) {
-      $message.errorNotice(
-          title: const Text(
-            "请求处理出错",
-          ),
-          subtitle: Text("无法找到标识为${rsp.id}的请求"));
+      // $message.errorNotice(
+      //     title: const Text(
+      //       "请求处理出错",
+      //     ),
+      //     subtitle: Text("无法找到标识为${rsp.id}的请求"));
       return;
     }
     if (rsp.msg.isNotEmpty) {
-      $message.errorNotice(title: const Text("处理出错"), subtitle: Text(rsp.msg));
+      // $message.errorNotice(title: const Text("处理出错"), subtitle: Text(rsp.msg));
       complete.completeError(rsp.msg);
     } else {
       complete.complete(data.binary);
