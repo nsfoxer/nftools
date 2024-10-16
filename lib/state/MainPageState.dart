@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:nftools/router/router.dart';
 
 class MainPagestate {
-  String? selected = "/";
-  PageController pageController = PageController();
+  int selected = 0;
 }

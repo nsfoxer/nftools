@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/controller/GlobalController.dart';
@@ -12,7 +11,6 @@ import 'package:nftools/controller/MainPageController.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
 import 'package:rinf/rinf.dart';
-import 'package:system_theme/system_theme.dart';
 
 void main() async {
   // 初始化
@@ -51,6 +49,22 @@ class _MyAppState extends State<MyApp> {
     super.dispose();
   }
 
+  static List<NavigationPaneItem> _buildPaneItem(List<MenuData>? datas) {
+    List<NavigationPaneItem> children = [];
+    if (datas == null) {
+      return children;
+    }
+    for (var value in datas) {
+      if (value.children != null) {
+        children.add(PaneItemExpander(icon: Icon(value.icon), title: Text(value.label), items: _buildPaneItem(value.children), body: value.body));
+      } else {
+        children.add(PaneItem(icon: Icon(value.icon), title: Text(value.label), body: value.body));
+      }
+    }
+
+    return children;
+  }
+
   @override
   Widget build(BuildContext context) {
     var fonts = Platform.isWindows ? "微软雅黑" : null;
@@ -65,24 +79,24 @@ class _MyAppState extends State<MyApp> {
           themeMode: mode,
           localizationsDelegates: FluentLocalizations.localizationsDelegates,
           initialBinding: GlobalControllerBindings(),
-          home: NavigationView(
-            appBar: NavigationAppBar(title: Text("appbar")),
-            pane: NavigationPane(
-                header: Text("paneHeader"),
-                autoSuggestBox: AutoSuggestBox(
-                  items: [AutoSuggestBoxItem(value: "value", label: "label")],
-                ),
-                autoSuggestBoxReplacement: Icon(Icons.search),
-                items: [
-                  PaneItem(
-                      icon: Icon(Icons.home),
-                      title: Text("主页"),
-                      body: Text("home"))
-                ],
-                footerItems: [
-                  PaneItem(icon: Icon(Icons.settings), body: Text("setting"))
-                ]),
-          ),
+          home: GetBuilder<MainPageController>(builder: (logic) {
+            return NavigationView(
+              appBar: NavigationAppBar(title: Text("appbar")),
+              pane: NavigationPane(
+                  onChanged: (v) {
+                    logic.selectPage(v);
+                  },
+                  selected: logic.pageState.selected,
+                  header: Text("paneHeader"),
+                  autoSuggestBox: AutoSuggestBox(
+                    items: [AutoSuggestBoxItem(value: "value", label: "label")],
+                  ),
+                  autoSuggestBoxReplacement: Icon(Icons.search),
+                  items: _buildPaneItem(MyRouterConfig.menuDatas),
+                  footerItems: _buildPaneItem(MyRouterConfig.footerDatas),
+              ),
+            );
+          }),
         ));
   }
 }

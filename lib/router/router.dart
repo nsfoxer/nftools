@@ -4,35 +4,22 @@ import 'package:nftools/pages/main_page.dart';
 import 'package:nftools/utils/page-cache.dart';
 
 class MyRouterConfig {
-  static List<_MenuData> menuDatas = [
-    const _MenuData(Icons.home, "/", "主页", KeepAliveWrapper(child: MainPage())),
-    const _MenuData(Icons.display_settings, "/display", "显示",
-        KeepAliveWrapper(child: DisplayPage())),
-    const _MenuData(
-        Icons.explore,
-        "/test",
-        "测试",
-        KeepAliveWrapper(
-          child: Text("data2"),
-        )),
+  static List<MenuData> menuDatas = [
+    const MenuData(Icons.home, "主页", null, MainPage()),
+    const MenuData(Icons.display_settings, "显示", null, DisplayPage()),
+    const MenuData(Icons.explore, "测试", null, Text("data2")),
   ];
 
-  static _MenuData settingData = const _MenuData(
-      Icons.settings,
-      "/setting",
-      "设置",
-      KeepAliveWrapper(
-        child: Text("setting"),
-      ));
-
-  static List<Widget> pages = menuDatas.map((x) => x.page).toList();
+  static List<MenuData> footerDatas = [
+    const MenuData(Icons.settings, "设置", null, Text("setting")),
+  ];
 }
 
-class _MenuData {
+class MenuData {
   final String label;
   final IconData icon;
-  final String router;
-  final Widget page;
+  final List<MenuData>? children;
+  final Widget body;
 
-  const _MenuData(this.icon, this.router, this.label, this.page);
+  const MenuData(this.icon, this.label, this.children, this.body);
 }
