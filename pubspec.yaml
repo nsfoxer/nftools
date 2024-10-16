@@ -45,6 +45,7 @@ dependencies:
   material_table_view: ^5.0.0
   fluentui_system_icons: ^1.1.260
   fluent_ui: ^4.9.2
+  go_router: ^14.3.0
 
 dev_dependencies:
 

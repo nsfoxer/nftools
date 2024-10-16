@@ -1,25 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:nftools/pages/display_page.dart';
 import 'package:nftools/pages/main_page.dart';
-import 'package:nftools/utils/page-cache.dart';
 
 class MyRouterConfig {
   static List<MenuData> menuDatas = [
-    const MenuData(Icons.home, "主页", null, MainPage()),
-    const MenuData(Icons.display_settings, "显示", null, DisplayPage()),
-    const MenuData(Icons.explore, "测试", null, Text("data2")),
+    const MenuData("/", Icons.home, "主页",Text("main"), null, false),
+    const MenuData("/display", Icons.display_settings, "显示",  DisplayPage(), null, false),
+    const MenuData("/test", Icons.explore, "测试", Text("data2"), null, true),
+    const MenuData("/test/A", Icons.explore, "测试1", Text("data3"), "/test", false),
+    const MenuData("/test/B", Icons.explore, "测试2", Text("data4"), "/test", false),
   ];
 
   static List<MenuData> footerDatas = [
-    const MenuData(Icons.settings, "设置", null, Text("setting")),
+    const MenuData("/settings", Icons.settings, "设置", Text("setting"), null, false),
   ];
+
 }
 
 class MenuData {
   final String label;
+  final String url;
   final IconData icon;
-  final List<MenuData>? children;
+  final String? parentUrl;
   final Widget body;
+  final bool isParent;
 
-  const MenuData(this.icon, this.label, this.children, this.body);
+  const MenuData(this.url, this.icon, this.label, this.body, this.parentUrl, this.isParent);
 }
+
+
