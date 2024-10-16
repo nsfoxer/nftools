@@ -5,6 +5,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/controller/MainPageController.dart';
@@ -49,22 +50,6 @@ class _MyAppState extends State<MyApp> {
     super.dispose();
   }
 
-  static List<NavigationPaneItem> _buildPaneItem(List<MenuData>? datas) {
-    List<NavigationPaneItem> children = [];
-    if (datas == null) {
-      return children;
-    }
-    for (var value in datas) {
-      if (value.children != null) {
-        children.add(PaneItemExpander(icon: Icon(value.icon), title: Text(value.label), items: _buildPaneItem(value.children), body: value.body));
-      } else {
-        children.add(PaneItem(icon: Icon(value.icon), title: Text(value.label), body: value.body));
-      }
-    }
-
-    return children;
-  }
-
   @override
   Widget build(BuildContext context) {
     var fonts = Platform.isWindows ? "微软雅黑" : null;
@@ -72,34 +57,128 @@ class _MyAppState extends State<MyApp> {
     if (View.of(context).platformDispatcher.platformBrightness.isDark) {
       m = FluentThemeData(brightness: Brightness.dark, fontFamily: fonts);
     }
-    return AnimatedFluentTheme(
-        data: m,
-        child: GetMaterialApp(
+    return
+         GetMaterialApp(
           title: 'Flutter Demo',
-          themeMode: mode,
-          localizationsDelegates: FluentLocalizations.localizationsDelegates,
           initialBinding: GlobalControllerBindings(),
-          home: GetBuilder<MainPageController>(builder: (logic) {
-            return NavigationView(
-              appBar: NavigationAppBar(title: Text("appbar")),
-              pane: NavigationPane(
-                  onChanged: (v) {
-                    logic.selectPage(v);
-                  },
-                  selected: logic.pageState.selected,
-                  header: Text("paneHeader"),
-                  autoSuggestBox: AutoSuggestBox(
-                    items: [AutoSuggestBoxItem(value: "value", label: "label")],
-                  ),
-                  autoSuggestBoxReplacement: Icon(Icons.search),
-                  items: _buildPaneItem(MyRouterConfig.menuDatas),
-                  footerItems: _buildPaneItem(MyRouterConfig.footerDatas),
-              ),
-            );
-          }),
-        ));
+          defaultTransition: Transition.native,
+           home:FluentApp.router(
+            theme: m,
+            title: "App Title",
+            builder: (context, child) {
+              debugPrint("build child <----");
+              return child!;
+            },
+            routeInformationParser: router.routeInformationParser,
+            routerDelegate: router.routerDelegate,
+            routeInformationProvider: router.routeInformationProvider,
+          ),
+        );
   }
 }
+
+List<GoRoute> _generateRoute(List<MenuData> datas) {
+  List<GoRoute> result = [];
+  for (var value in datas) {
+    result.add(GoRoute(path: value.url, builder: (context, state) => value.body));
+  }
+
+  return result;
+}
+
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
+final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
+  ShellRoute(navigatorKey: _shellNavigatorKey, builder: (context, state, child) {
+    return MainPage(
+      buildContext: _shellNavigatorKey.currentContext,
+      child: child,
+    );
+  }, routes: () {
+    var routers = _generateRoute(MyRouterConfig.menuDatas);
+    routers.addAll(_generateRoute(MyRouterConfig.footerDatas));
+    return routers;
+  }(),
+  )
+]);
+
+class MainPage extends StatelessWidget {
+  final BuildContext? buildContext;
+  final Widget child;
+
+  const MainPage({super.key, this.buildContext, required this.child});
+
+  static List<NavigationPaneItem> _buildPaneItem(List<MenuData> datas, BuildContext context) {
+    List<NavigationPaneItem> children = [];
+    for (var value in datas) {
+      if (value.isParent) {
+        List<NavigationPaneItem> items = [];
+        for (var value2 in datas) {
+          if (value2.parentUrl == value.url) {
+            items.add(PaneItem(icon: Icon(value2.icon), title: Text(value2.label), body: value2.body, onTap: () {
+              context.go(value2.url);
+            }));
+          }
+        }
+        children.add(PaneItemExpander(icon: Icon(value.icon), title: Text(value.label),
+            items: items, body: value.body,
+            onTap: () {
+              context.go(value.url);
+            }));
+      } else if (value.parentUrl == null) {
+        children.add(PaneItem(icon: Icon(value.icon), title: Text(value.label), body: value.body, onTap: () {
+          context.go(value.url);
+        }));
+      }
+    }
+    return children;
+  }
+
+  int _calculateIndex(BuildContext context) {
+    final local = GoRouterState.of(context).uri.toString();
+    List<MenuData> tmp = [];
+    tmp.addAll(MyRouterConfig.menuDatas);
+    tmp.addAll(MyRouterConfig.footerDatas);
+
+    return tmp.indexWhere((x) => x.url == local);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NavigationView(
+      appBar: NavigationAppBar(
+        automaticallyImplyLeading: false,
+        leading: () {
+          final enabled = buildContext != null && router.canPop();
+          final onPressed = enabled ? () {
+            if (router.canPop()) {
+              context.pop();
+            }
+          }: null;
+          return PaneItem(icon: Icon(FluentIcons.back), enabled: enabled, body: SizedBox.shrink())
+              .build(context, false, onPressed, displayMode: PaneDisplayMode.compact);
+        }(),
+        title: Text("titles"),
+        actions: Text("actions"),
+      ),
+      pane: NavigationPane(
+        selected: _calculateIndex(context),
+        header: Text("pane Header"),
+        indicator: StickyNavigationIndicator(),
+        items: _buildPaneItem(MyRouterConfig.menuDatas, context),
+        footerItems: _buildPaneItem(MyRouterConfig.footerDatas, context),
+      ),
+      paneBodyBuilder: (item, child) {
+        debugPrint(item.toString());
+        return FocusTraversalGroup(child: this.child);
+      },
+    );
+  }
+
+}
+
+
+
 
 // class MenuBar extends StatelessWidget {
 //   const MenuBar({super.key, required this.changeTheme});

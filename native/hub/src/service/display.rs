@@ -180,3 +180,12 @@ pub mod display {
         }
     }
 }
+
+#[cfg(target_os = "linux")]
+pub mod display {
+
+    /// 显示器亮度调节
+    pub struct DisplayLight {}
+    /// 显示壁纸
+    pub struct DisplayMode {}
+}
