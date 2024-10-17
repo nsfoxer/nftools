@@ -6,6 +6,7 @@ mod common;
 mod messages;
 mod service;
 mod r#do;
+mod dbus;
 
 use std::sync::Arc;
 use log::error;
@@ -23,7 +24,7 @@ rinf::write_interface!();
 async fn main() {
     debug_print!("lib start");
     let global_data = GlobalData::new().expect("Global data initialized");
-    let join =  tokio::spawn(base_request(global_data));
+    tokio::spawn(base_request(global_data));
     debug_print!("lib end");
 }
 
@@ -42,6 +43,11 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
             api.add_service(Box::new(display));
         } else {
             error!("display light 服务创建失败");
+        }
+        
+        match DisplayMode::default() {
+            Ok(mode) => api.add_service(Box::new(mode)),
+            Err(e) => error!("display mode服务创建失败。原因:{e}"),
         }
     }
     api.add_service(Box::new(SyncFile::new(gd.clone())));

@@ -183,9 +183,15 @@ pub mod display {
 
 #[cfg(target_os = "linux")]
 pub mod display {
+    use std::path::PathBuf;
+    use std::sync::Arc;
+    use std::time::Duration;
     use ahash::{HashMap, HashMapExt};
     use async_trait::async_trait;
     use anyhow::{Error, Result};
+    use dbus::arg::RefArg;
+    use dbus::nonblock::{Proxy, SyncConnection};
+    use dbus_tokio::connection;
     use ddc::Ddc;
     use ddc_i2c::I2cDeviceDdc;
     use log::error;
@@ -193,8 +199,11 @@ pub mod display {
     use tokio::fs::{File, read_dir};
     use tokio::io::AsyncReadExt;
     use tokio_stream::StreamExt;
-    use crate::{func_end, func_notype, func_typeno};
-    use crate::messages::display::{DisplayInfo, DisplayInfoResponse, SetDisplayModeReq};
+    use tokio_stream::wrappers::ReadDirStream;
+    use xdg::BaseDirectories;
+    use crate::{async_func_notype, async_func_typeno, func_end, func_notype, func_typeno};
+    use crate::dbus::wallpaper::OrgKdePlasmaShell;
+    use crate::messages::display::{DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp, SetDisplayModeReq};
     use crate::service::service::{ImmService, Service};
 
     // DRM位置
@@ -210,7 +219,7 @@ pub mod display {
             "DisplayLight"
         }
 
-        async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> anyhow::Result<Option<Vec<u8>>> {
+        async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
             func_notype!(self, func, get_all_devices);
             func_typeno!(self, func, req_data, set_light, DisplayInfo);
             func_end!(func)
@@ -328,5 +337,137 @@ pub mod display {
 
 
     /// 显示壁纸
-    pub struct DisplayMode {}
+    pub struct DisplayMode {
+        theme_mode_path: String,
+        proxy: Proxy<'static, Arc<SyncConnection>>,
+    }
+
+    #[async_trait]
+    impl Service for DisplayMode {
+        fn get_service_name(&self) -> &'static str {
+            "DisplayMode"
+        }
+
+        async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
+            async_func_notype!(self, func, get_wallpaper, get_current_mode);
+            async_func_typeno!(
+                self,
+                func,
+                req_data,
+                set_mode,
+                crate::messages::display::DisplayMode
+            );
+            func_end!(func)
+        }
+    }
+
+
+    impl DisplayMode {
+        pub fn default() -> Result<Self> {
+            // 1. 获取主题颜色
+            let mut xdg = BaseDirectories::new()?.get_config_home();
+            xdg.push("kdedefaults");
+            xdg.push("package");
+
+            // 2. 连接dbus
+            let (resource, conn) = connection::new_session_sync()?;
+            tokio::spawn(async {
+                let err = resource.await;
+                error!("Lost connection to D-Bus: {}", err);
+            });
+
+            let proxy = Proxy::new(
+                "org.kde.plasmashell",
+                "/PlasmaShell",
+                Duration::from_secs(2),
+                conn,
+            );
+
+            Ok(Self {
+                theme_mode_path: xdg.to_str().unwrap().to_string(),
+                proxy,
+            })
+        }
+
+        /// 设置显示模式
+        async fn set_mode(&self, req: crate::messages::display::DisplayMode) -> Result<()> {
+            let mut cmd = tokio::process::Command::new("plasma-apply-lookandfeel");
+            cmd.arg("-a");
+
+            if req.is_light {
+                cmd.arg("org.kde.breeze.desktop");
+            } else {
+                cmd.arg("org.kde.breezedark.desktop");
+            }
+
+            let result = cmd.status().await?;
+            if !result.success() {
+                Err(Error::msg("切换模式失败"))
+            } else {
+                Ok(())
+            }
+        }
+
+        /// 获取当前模式
+        async fn get_current_mode(&self) -> Result<GetDisplayModeRsp> {
+            let file = &self.theme_mode_path;
+            let r = match tokio::fs::read_to_string(file).await {
+                Ok(data) => !data.contains("dark"),
+                Err(e) => {
+                    return Err(Error::msg(format!("读取数据失败:{}", e.to_string())));
+                }
+            };
+
+            Ok(GetDisplayModeRsp {mode: Some(crate::messages::display::DisplayMode{
+                is_light: r
+            })  })
+        }
+
+        /// 获取壁纸
+        async fn get_wallpaper(&self) -> Result<GetWallpaperRsp> {
+            let proxy = &self.proxy;
+            let reply = proxy.wallpaper(0).await?;
+            let image = reply.get("Image");
+            if image.is_none() {
+                return Err(Error::msg("没有壁纸信息"));
+            }
+
+            let image = image.unwrap().as_str().unwrap();
+            let mut path = PathBuf::from(image);
+            // 非文件夹直接返回
+            if !path.is_dir() {
+                return Ok(GetWallpaperRsp {
+                    light_wallpaper: image.to_string(),
+                    dark_wallpaper: image.to_string(),
+                });
+            }
+            // 文件夹读取
+            path.push("contents");
+            path.push("images");
+            let light = Self::read_first_pic(&path).await?;
+            path.pop();
+            path.push("images_dark");
+            let dark = Self::read_first_pic(&path).await?;
+
+            Ok(GetWallpaperRsp {
+                light_wallpaper: light,
+                dark_wallpaper: dark,
+            })
+        }
+
+        // 读取指定文件夹下第一个图片格式文件
+        async fn read_first_pic(path_buf: &PathBuf) -> Result<String> {
+            let dir = read_dir(path_buf).await?;
+            let mut entries = ReadDirStream::new(dir);
+            while let Some(Ok(entry)) = entries.next().await {
+                let file = entry.path();
+                let file = file.to_str().unwrap();
+                if file.ends_with(".jpg") || file.ends_with(".png") || file.ends_with(".webp") {
+                    return Ok(file.to_string());
+                }
+            }
+
+            Err(Error::msg("无法找到图片"))
+        }
+    }
 }
