@@ -50,7 +50,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    var fonts = Platform.isWindows ? "微软雅黑" : null;
+    var fonts = Platform.isWindows ? "微软雅黑" : "Source Han Sans SC";
     var m = FluentThemeData(brightness: Brightness.light, fontFamily: fonts);
     if (View.of(context).platformDispatcher.platformBrightness.isDark) {
       m = FluentThemeData(brightness: Brightness.dark, fontFamily: fonts);
