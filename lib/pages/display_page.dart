@@ -30,9 +30,12 @@ class DisplayPage extends StatelessWidget {
             Text("主题", style: typography.subtitle),
             NFLayout.vlineh2,
             const NFCard(child: _DisplayMode()),
-
+            Tooltip(
+              message: "test",
+              child: Text("asda"),
+            ),
             Button(child: const Text("info"), onPressed: () async {
-              info("message");
+              info(",sss", context: context);
             })
           ],
         ));

@@ -1,6 +1,6 @@
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:nftools/pages/display_page.dart';
-import 'package:nftools/pages/main_page.dart';
 
 class MyRouterConfig {
   static List<MenuData> menuDatas = [
