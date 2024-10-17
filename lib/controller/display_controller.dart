@@ -1,4 +1,5 @@
 import 'package:easy_debounce/easy_debounce.dart';
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/messages/display.pb.dart';
 import 'package:nftools/state/display_state.dart';
@@ -15,6 +16,7 @@ class DisplayController extends GetxController {
 
   // 初始化数据
   _init() async {
+    debugPrint("init");
     for (var item in await $api.displaySupport()) {
       state.displayLight[item.screen] = item.value;
     }

@@ -57,30 +57,48 @@ class _MyAppState extends State<MyApp> {
     if (View.of(context).platformDispatcher.platformBrightness.isDark) {
       m = FluentThemeData(brightness: Brightness.dark, fontFamily: fonts);
     }
-    return
-         GetMaterialApp(
-          title: 'Flutter Demo',
-          initialBinding: GlobalControllerBindings(),
-          defaultTransition: Transition.native,
-           home:FluentApp.router(
-            theme: m,
-            title: "App Title",
-            builder: (context, child) {
-              debugPrint("build child <----");
-              return child!;
-            },
-            routeInformationParser: router.routeInformationParser,
-            routerDelegate: router.routerDelegate,
-            routeInformationProvider: router.routeInformationProvider,
-          ),
-        );
+
+    return GetMaterialApp(
+      title: 'Flutter Demo',
+      initialBinding: GlobalControllerBindings(),
+      defaultTransition: Transition.native,
+      theme: ThemeData(),
+      home: FluentApp.router(
+        theme: m,
+        title: "App Title",
+        builder: (context, child) {
+          debugPrint("build child <----");
+          return child!;
+        },
+        routeInformationParser: router.routeInformationParser,
+        routerDelegate: router.routerDelegate,
+        routeInformationProvider: router.routeInformationProvider,
+      ),
+    );
   }
 }
 
 List<GoRoute> _generateRoute(List<MenuData> datas) {
   List<GoRoute> result = [];
   for (var value in datas) {
-    result.add(GoRoute(path: value.url, builder: (context, state) => value.body));
+    result.add(GoRoute(
+        path: value.url,
+        pageBuilder: (context, state) {
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: value.body,
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              const begin = Offset(0.0, 1.0);
+              const end = Offset.zero;
+              const curve = Curves.ease;
+              var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+              return SlideTransition(
+                position: animation.drive(tween),
+                child: child,
+              );
+            },
+          );
+        }));
   }
 
   return result;
@@ -89,16 +107,19 @@ List<GoRoute> _generateRoute(List<MenuData> datas) {
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
-  ShellRoute(navigatorKey: _shellNavigatorKey, builder: (context, state, child) {
-    return MainPage(
-      buildContext: _shellNavigatorKey.currentContext,
-      child: child,
-    );
-  }, routes: () {
-    var routers = _generateRoute(MyRouterConfig.menuDatas);
-    routers.addAll(_generateRoute(MyRouterConfig.footerDatas));
-    return routers;
-  }(),
+  ShellRoute(
+    navigatorKey: _shellNavigatorKey,
+    builder: (context, state, child) {
+      return MainPage(
+        buildContext: _shellNavigatorKey.currentContext,
+        child: child,
+      );
+    },
+    routes: () {
+      var routers = _generateRoute(MyRouterConfig.menuDatas);
+      routers.addAll(_generateRoute(MyRouterConfig.footerDatas));
+      return routers;
+    }(),
   )
 ]);
 
@@ -108,27 +129,39 @@ class MainPage extends StatelessWidget {
 
   const MainPage({super.key, this.buildContext, required this.child});
 
-  static List<NavigationPaneItem> _buildPaneItem(List<MenuData> datas, BuildContext context) {
+  static List<NavigationPaneItem> _buildPaneItem(
+      List<MenuData> datas, BuildContext context) {
     List<NavigationPaneItem> children = [];
     for (var value in datas) {
       if (value.isParent) {
         List<NavigationPaneItem> items = [];
         for (var value2 in datas) {
           if (value2.parentUrl == value.url) {
-            items.add(PaneItem(icon: Icon(value2.icon), title: Text(value2.label), body: value2.body, onTap: () {
-              context.go(value2.url);
-            }));
+            items.add(PaneItem(
+                icon: Icon(value2.icon),
+                title: Text(value2.label),
+                body: value2.body,
+                onTap: () {
+                  context.go(value2.url);
+                }));
           }
         }
-        children.add(PaneItemExpander(icon: Icon(value.icon), title: Text(value.label),
-            items: items, body: value.body,
+        children.add(PaneItemExpander(
+            icon: Icon(value.icon),
+            title: Text(value.label),
+            items: items,
+            body: value.body,
             onTap: () {
               context.go(value.url);
             }));
       } else if (value.parentUrl == null) {
-        children.add(PaneItem(icon: Icon(value.icon), title: Text(value.label), body: value.body, onTap: () {
-          context.go(value.url);
-        }));
+        children.add(PaneItem(
+            icon: Icon(value.icon),
+            title: Text(value.label),
+            body: value.body,
+            onTap: () {
+              context.go(value.url);
+            }));
       }
     }
     return children;
@@ -150,13 +183,19 @@ class MainPage extends StatelessWidget {
         automaticallyImplyLeading: false,
         leading: () {
           final enabled = buildContext != null && router.canPop();
-          final onPressed = enabled ? () {
-            if (router.canPop()) {
-              context.pop();
-            }
-          }: null;
-          return PaneItem(icon: Icon(FluentIcons.back), enabled: enabled, body: SizedBox.shrink())
-              .build(context, false, onPressed, displayMode: PaneDisplayMode.compact);
+          final onPressed = enabled
+              ? () {
+                  if (router.canPop()) {
+                    context.pop();
+                  }
+                }
+              : null;
+          return PaneItem(
+                  icon: Icon(FluentIcons.back),
+                  enabled: enabled,
+                  body: SizedBox.shrink())
+              .build(context, false, onPressed,
+                  displayMode: PaneDisplayMode.compact);
         }(),
         title: Text("titles"),
         actions: Text("actions"),
@@ -174,11 +213,7 @@ class MainPage extends StatelessWidget {
       },
     );
   }
-
 }
-
-
-
 
 // class MenuBar extends StatelessWidget {
 //   const MenuBar({super.key, required this.changeTheme});
