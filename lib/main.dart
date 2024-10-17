@@ -1,14 +1,12 @@
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/controller/GlobalController.dart';
-import 'package:nftools/controller/MainPageController.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
 import 'package:rinf/rinf.dart';
@@ -61,13 +59,11 @@ class _MyAppState extends State<MyApp> {
     return GetMaterialApp(
       title: 'Flutter Demo',
       initialBinding: GlobalControllerBindings(),
-      defaultTransition: Transition.native,
-      theme: ThemeData(),
       home: FluentApp.router(
         theme: m,
+        darkTheme: m,
         title: "App Title",
         builder: (context, child) {
-          debugPrint("build child <----");
           return child!;
         },
         routeInformationParser: router.routeInformationParser,

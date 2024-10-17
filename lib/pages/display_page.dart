@@ -14,24 +14,23 @@ class DisplayPage extends StatelessWidget {
   Widget build(BuildContext context) {
     Typography typography = FluentTheme.of(context).typography;
     return ScaffoldPage.withPadding(
-      header: PageHeader(
-        title: Text("显示工具"),
-      ),
-      content:
-        // crossAxisAlignment: CrossAxisAlignment.start,
-        // children: [
-        //   Text(
-        //     "显示器亮度",
-        //     style: typography.subtitle,
-        //   ),
-          _DisplayLight(),
-          // NFLayout.vlineh1,
-          // Text("主题", style: NFTextStyle.h2),
-          // NFLayout.vlineh2,
-          // NFCard(child: _DisplayMode()),
-        // ],
-
-    );
+        header: const PageHeader(
+          title: Text("显示工具"),
+        ),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "显示器亮度",
+              style: typography.subtitle,
+            ),
+            const NFCard(child: _DisplayLight()),
+            NFLayout.vlineh1,
+            Text("主题", style: typography.subtitle),
+            NFLayout.vlineh2,
+            const NFCard(child: _DisplayMode()),
+          ],
+        ));
   }
 }
 
@@ -41,33 +40,40 @@ class _DisplayLight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<DisplayController>(builder: (logic) {
-      debugPrint("adssa");
       var state = logic.state;
+      Typography typography = FluentTheme.of(context).typography;
 
       List<Widget> displays = [];
       for (var item in state.displayLight.entries) {
-        // displays.add(SizedBox(
-        //     height: 25,
-        //     child: Row(
-        //       mainAxisAlignment: MainAxisAlignment.center,
-        //       children: [
-        //         Padding(
-        //             padding: const EdgeInsets.symmetric(horizontal: 3.0),
-        //             child: Text("${item.value.toInt()}%")),
-        //         Expanded(
-        //             flex: 4,
-        //             child: Slider(
-        //                 min: 0,
-        //                 max: 100,
-        //                 divisions: 100,
-        //                 label: "${item.value}%",
-        //                 value: item.value.toDouble(),
-        //                 onChanged: (v) async =>
-        //                     await logic.setLight(item.key, v.toInt()))),
-        //       ],
-        //     )));
+        displays.add(SizedBox(
+            height: 25,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                    flex: 1,
+                    child: Text(item.key,
+                        style: typography.body,
+                        overflow: TextOverflow.ellipsis)),
+                Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                    child: Text("${item.value.toInt()}%")),
+                Expanded(
+                    flex: 4,
+                    child: Slider(
+                        min: 0,
+                        max: 100,
+                        divisions: 100,
+                        label: "${item.value}%",
+                        value: item.value.toDouble(),
+                        onChanged: (v) async =>
+                            await logic.setLight(item.key, v.toInt()))),
+              ],
+            )));
       }
-      return Text("adasaa");
+      return Column(
+        children: displays,
+      );
     });
   }
 }
