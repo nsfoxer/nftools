@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/display_controller.dart';
@@ -12,30 +12,26 @@ class DisplayPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-        child: Padding(
-      padding: EdgeInsets.all(NFLayout.v1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "显示工具",
-            style: NFTextStyle.h1,
-          ),
-          NFLayout.vlineh1,
-          Text(
-            "显示器亮度",
-            style: NFTextStyle.h2,
-          ),
-          NFLayout.vlineh2,
-          NFCard(child: _DisplayLight()),
-          NFLayout.vlineh1,
-          Text("主题", style: NFTextStyle.h2),
-          NFLayout.vlineh2,
-          NFCard(child: _DisplayMode()),
-        ],
+    Typography typography = FluentTheme.of(context).typography;
+    return ScaffoldPage.withPadding(
+      header: PageHeader(
+        title: Text("显示工具"),
       ),
-    ));
+      content:
+        // crossAxisAlignment: CrossAxisAlignment.start,
+        // children: [
+        //   Text(
+        //     "显示器亮度",
+        //     style: typography.subtitle,
+        //   ),
+          _DisplayLight(),
+          // NFLayout.vlineh1,
+          // Text("主题", style: NFTextStyle.h2),
+          // NFLayout.vlineh2,
+          // NFCard(child: _DisplayMode()),
+        // ],
+
+    );
   }
 }
 
@@ -45,42 +41,33 @@ class _DisplayLight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<DisplayController>(builder: (logic) {
+      debugPrint("adssa");
       var state = logic.state;
 
       List<Widget> displays = [];
       for (var item in state.displayLight.entries) {
-        displays.add(SizedBox(
-            height: 25,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Expanded(
-                //     flex: 1,
-                //     child: TolyTooltip(
-                //         message: item.key,
-                //         child:
-                //             Text(item.key, overflow: TextOverflow.ellipsis))),
-                Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3.0),
-                    child: Text("${item.value.toInt()}%")),
-                Expanded(
-                    flex: 4,
-                    child: Slider(
-                        min: 0,
-                        max: 100,
-                        divisions: 100,
-                        label: "${item.value}%",
-                        value: item.value.toDouble(),
-                        onChanged: (v) async =>
-                            await logic.setLight(item.key, v.toInt()))),
-              ],
-            )));
+        // displays.add(SizedBox(
+        //     height: 25,
+        //     child: Row(
+        //       mainAxisAlignment: MainAxisAlignment.center,
+        //       children: [
+        //         Padding(
+        //             padding: const EdgeInsets.symmetric(horizontal: 3.0),
+        //             child: Text("${item.value.toInt()}%")),
+        //         Expanded(
+        //             flex: 4,
+        //             child: Slider(
+        //                 min: 0,
+        //                 max: 100,
+        //                 divisions: 100,
+        //                 label: "${item.value}%",
+        //                 value: item.value.toDouble(),
+        //                 onChanged: (v) async =>
+        //                     await logic.setLight(item.key, v.toInt()))),
+        //       ],
+        //     )));
       }
-      return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: NFLayout.v1 * 2),
-          child: Column(
-            children: displays,
-          ));
+      return Text("adasaa");
     });
   }
 }
@@ -154,7 +141,9 @@ class _Mode extends StatelessWidget {
       ];
     }
     return Column(children: [
-      const SizedBox(height: 15,),
+      const SizedBox(
+        height: 15,
+      ),
       Container(
         height: 150,
         width: 267,
@@ -163,7 +152,9 @@ class _Mode extends StatelessWidget {
         child: picFile == null ? null : Image.file(File(picFile!)),
       ),
       display,
-      const SizedBox(height: 10,),
+      const SizedBox(
+        height: 10,
+      ),
     ]);
   }
 }

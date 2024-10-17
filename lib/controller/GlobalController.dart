@@ -7,9 +7,9 @@ import 'package:nftools/controller/sync_file_controller.dart';
 class GlobalControllerBindings implements Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<MainPageController>(() => MainPageController());
-    Get.lazyPut<DisplayController>(() => DisplayController());
-    Get.lazyPut<DisplayModeController>(() => DisplayModeController());
-    Get.lazyPut<SyncFileController>(() => SyncFileController());
+    Get.lazyPut<MainPageController>(() => MainPageController(), fenix: true);
+    Get.lazyPut<DisplayController>(() => DisplayController(), fenix: true);
+    Get.lazyPut<DisplayModeController>(() => DisplayModeController(), fenix: true);
+    Get.lazyPut<SyncFileController>(() => SyncFileController(), fenix: true);
   }
 }
