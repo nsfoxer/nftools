@@ -183,9 +183,150 @@ pub mod display {
 
 #[cfg(target_os = "linux")]
 pub mod display {
+    use ahash::{HashMap, HashMapExt};
+    use async_trait::async_trait;
+    use anyhow::{Error, Result};
+    use ddc::Ddc;
+    use ddc_i2c::I2cDeviceDdc;
+    use log::error;
+    use prost::Message;
+    use tokio::fs::{File, read_dir};
+    use tokio::io::AsyncReadExt;
+    use tokio_stream::StreamExt;
+    use crate::{func_end, func_notype, func_typeno};
+    use crate::messages::display::{DisplayInfo, DisplayInfoResponse, SetDisplayModeReq};
+    use crate::service::service::{ImmService, Service};
 
+    // DRM位置
+    const DRM_PATH: &str = "/sys/class/drm/";
     /// 显示器亮度调节
-    pub struct DisplayLight {}
+    pub struct DisplayLight {
+        devices: HashMap<String, I2cDeviceDdc>,
+    }
+
+    #[async_trait]
+    impl Service for DisplayLight {
+        fn get_service_name(&self) -> &'static str {
+            "DisplayLight"
+        }
+
+        async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> anyhow::Result<Option<Vec<u8>>> {
+            func_notype!(self, func, get_all_devices);
+            func_typeno!(self, func, req_data, set_light, DisplayInfo);
+            func_end!(func)
+        }
+    }
+    impl DisplayLight {
+        pub async fn new() -> Option<Self> {
+            match Self::get_all_enable_display().await {
+                Ok(r) => Some(Self { devices: r }),
+                Err(e) => {
+                    error!("{}", e.to_string());
+                    None
+                }
+            }
+        }
+
+        /// 获取所有设备信息
+        fn get_all_devices(&mut self) -> Result<DisplayInfoResponse> {
+            let displays: Vec<String> = self.devices.keys().map(|k| k.to_string()).collect();
+            let displays = displays
+                .into_iter()
+                .map(|x| DisplayInfo {
+                    screen: x.to_string(),
+                    value: self.get_now_light(x.as_str()).unwrap_or(0) as u32,
+                })
+                .collect();
+            let resp = DisplayInfoResponse {
+                infos: displays,
+            };
+            Ok(resp)
+        }
+
+        fn get_now_light(&mut self, device: &str) -> Option<u16> {
+            match self.devices.get_mut(device) {
+                None => {
+                    error!("获取设备失败");
+                    None
+                }
+                Some(device) => match device.get_vcp_feature(16) {
+                    Ok(v) => Some(v.value()),
+                    Err(_) => {
+                        error!("获取亮度失败");
+                        None
+                    }
+                },
+            }
+        }
+
+        /// 设置亮度
+        fn set_light(&mut self, display: DisplayInfo) -> Result<()> {
+            match self.devices.get_mut(&display.screen) {
+                None => {
+                    error!("获取设备失败");
+                }
+                Some(device) => {
+                    if let Err(e) = device.set_vcp_feature(16, display.value as u16) {
+                        error!("设置亮度失败: {}", e.to_string());
+                    }
+                }
+            };
+            Ok(())
+        }
+
+        /// 获取所有已经启用的显示卡
+        async fn get_all_enable_display() -> Result<HashMap<String, I2cDeviceDdc>> {
+            // 获取所有可用的card
+            let mut cards = Vec::new();
+            let entries = match read_dir(DRM_PATH).await {
+                Ok(en) => en,
+                Err(_) => {
+                    return Err(Error::msg("无法获取信息，是否加载i2c-dev模块？"));
+                }
+            };
+            let mut entries = tokio_stream::wrappers::ReadDirStream::new(entries);
+            let mut tmp_content = String::new();
+            while let Some(Ok(entry)) = entries.next().await {
+                let file_name = entry.file_name();
+                let file_name = file_name.to_str().unwrap();
+                if file_name.starts_with("card") && file_name.contains("-") {
+                    let mut path = entry.path();
+                    path.push("enabled");
+                    if let Ok(mut file) = File::open(path).await {
+                        tmp_content.clear();
+                        if let Ok(_) = file.read_to_string(&mut tmp_content).await {
+                            if tmp_content.trim() == "enabled" {
+                                cards.push(entry);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 获取设备路由
+            let mut result = HashMap::new();
+            for entry in cards {
+                let file_name = entry.file_name();
+                let file_name = file_name.to_str().unwrap();
+                let (_, display_name) = file_name.split_once("-").unwrap();
+                let entries = read_dir(entry.path()).await?;
+                let mut entries = tokio_stream::wrappers::ReadDirStream::new(entries);
+                while let Some(Ok(entry)) = entries.next().await {
+                    let file_name = entry.file_name();
+                    let name = file_name.to_str().unwrap();
+                    if name.starts_with("i2c") {
+                        let ddc = ddc_i2c::from_i2c_device(format!("/dev/{name}"))?;
+                        result.insert(display_name.to_owned(), ddc);
+                        break;
+                    }
+                }
+            }
+
+            anyhow::Ok(result)
+        }
+    }
+
+
     /// 显示壁纸
     pub struct DisplayMode {}
 }
