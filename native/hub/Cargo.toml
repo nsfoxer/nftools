@@ -26,6 +26,7 @@ chrono = "0.4.38"
 dirs = "5.0.1"
 serde_json = "1.0.128"
 reqwest_dav = "0.1.13"
+log = "0.4.22"
 
 # Uncomment below to target the web.
 # tokio_with_wasm = { version = "0.6.0", features = ["sync", "rt"] }
@@ -34,3 +35,9 @@ reqwest_dav = "0.1.13"
 [target."cfg(windows)".dependencies]
 ddc-winapi = "0.2.2"
 winreg = "0.52.0"
+
+[target."cfg(unix)".dependencies]
+dbus = "0.9.7"
+dbus-tokio = "0.7.6"
+ddc-i2c = { version = "0.2.2", features = ["i2c-linux"] }
+xdg = "2.5.2"

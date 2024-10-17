@@ -8,6 +8,7 @@ mod service;
 mod r#do;
 
 use std::sync::Arc;
+use log::error;
 use crate::api::api::ApiService;
 use crate::common::*;
 use crate::messages::base::BaseRequest;
@@ -26,7 +27,7 @@ async fn main() {
     debug_print!("lib end");
 }
 
-fn init_service(gd: Arc<GlobalData>) -> ApiService {
+async fn init_service(gd: Arc<GlobalData>) -> ApiService {
     let mut api = ApiService::new();
 
     #[cfg(target_os = "windows")]
@@ -34,7 +35,15 @@ fn init_service(gd: Arc<GlobalData>) -> ApiService {
         api.add_imm_service(Box::new(DisplayLight::new()));
         api.add_lazy_service(Box::new(DisplayMode::new()));
     }
-    
+
+    #[cfg(target_os = "linux")]
+    {
+        if let Some(display) = DisplayLight::new().await {
+            api.add_service(Box::new(display));
+        } else {
+            error!("display light 服务创建失败");
+        }
+    }
     api.add_service(Box::new(SyncFile::new(gd.clone())));
 
     api
@@ -42,7 +51,7 @@ fn init_service(gd: Arc<GlobalData>) -> ApiService {
 
 async fn base_request(gd: GlobalData) -> Result<()> {
     let gd = Arc::new(gd);
-    let api = init_service(gd.clone());
+    let api = init_service(gd.clone()).await;
     let mut receiver = BaseRequest::get_dart_signal_receiver()?;
     while let Some(signal) = receiver.recv().await {
         debug_print!("Received message {:?}", &signal.message);
