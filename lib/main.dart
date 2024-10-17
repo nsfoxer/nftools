@@ -56,21 +56,24 @@ class _MyAppState extends State<MyApp> {
       m = FluentThemeData(brightness: Brightness.dark, fontFamily: fonts);
     }
 
-    return GetMaterialApp(
-      title: 'Flutter Demo',
-      initialBinding: GlobalControllerBindings(),
-      home: FluentApp.router(
-        theme: m,
-        darkTheme: m,
-        title: "App Title",
-        builder: (context, child) {
-          return child!;
-        },
-        routeInformationParser: router.routeInformationParser,
-        routerDelegate: router.routerDelegate,
-        routeInformationProvider: router.routeInformationProvider,
-      ),
-    );
+    return AnimatedFluentTheme(
+        data: m,
+        child: GetMaterialApp(
+          title: 'Flutter Demo',
+          initialBinding: GlobalControllerBindings(),
+          home: FluentApp.router(
+            theme: m,
+            darkTheme: m,
+            title: "App Title",
+            localizationsDelegates: FluentLocalizations.localizationsDelegates,
+            builder: (context, child) {
+              return child!;
+            },
+            routeInformationParser: router.routeInformationParser,
+            routerDelegate: router.routerDelegate,
+            routeInformationProvider: router.routeInformationProvider,
+          ),
+        ));
   }
 }
 
@@ -83,11 +86,13 @@ List<GoRoute> _generateRoute(List<MenuData> datas) {
           return CustomTransitionPage(
             key: state.pageKey,
             child: value.body,
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
               const begin = Offset(0.0, 1.0);
               const end = Offset.zero;
               const curve = Curves.ease;
-              var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+              var tween =
+                  Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
               return SlideTransition(
                 position: animation.drive(tween),
                 child: child,

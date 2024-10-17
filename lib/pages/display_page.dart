@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/display_controller.dart';
 import 'package:nftools/controller/display_mode_controller.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf-widgets.dart';
 
 class DisplayPage extends StatelessWidget {
@@ -29,10 +30,15 @@ class DisplayPage extends StatelessWidget {
             Text("主题", style: typography.subtitle),
             NFLayout.vlineh2,
             const NFCard(child: _DisplayMode()),
+
+            Button(child: const Text("info"), onPressed: () async {
+              info("message");
+            })
           ],
         ));
   }
 }
+
 
 class _DisplayLight extends StatelessWidget {
   const _DisplayLight({Key? key}) : super(key: key);
