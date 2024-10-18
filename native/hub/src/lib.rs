@@ -18,6 +18,7 @@ use rinf::debug_print;
 use tokio;
 use common::global_data::GlobalData;
 use crate::service::syncfile::SyncFile;
+use crate::service::system_info::SystemInfoService;
 
 rinf::write_interface!();
 
@@ -51,6 +52,7 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
         }
     }
     api.add_service(Box::new(SyncFile::new(gd.clone())));
+    api.add_lazy_service(Box::new(SystemInfoService::default()));
 
     api
 }
