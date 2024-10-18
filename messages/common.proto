@@ -12,3 +12,11 @@ message StringMessage {
 message VecStringMessage {
   repeated string values = 1;
 }
+
+message Uint32Message {
+  uint32 value = 1;
+}
+
+message Uint64Message {
+  uint64 value = 1;
+}

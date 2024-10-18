@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:nftools/pages/display_page.dart';
+import 'package:nftools/pages/system_info.dart';
 
 class MyRouterConfig {
   static List<MenuData> menuDatas = [
@@ -9,6 +10,7 @@ class MyRouterConfig {
     const MenuData("/test", Icons.explore, "测试", Text("data2"), null, true),
     const MenuData("/test/A", Icons.explore, "测试1", Text("data3"), "/test", false),
     const MenuData("/test/B", Icons.explore, "测试2", Text("data4"), "/test", false),
+    MenuData("/systemInfo", Icons.area_chart, "系统监控", SystemInfoPage(), null, false),
   ];
 
   static List<MenuData> footerDatas = [
