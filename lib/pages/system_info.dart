@@ -14,8 +14,30 @@ class SystemInfoPage extends StatelessWidget {
     Typography typography = FluentTheme.of(context).typography;
     return GetBuilder<SystemInfoController>(builder: (logic) {
       return ScaffoldPage.scrollable(
-          header: const PageHeader(
-            title: Text("系统信息"),
+          header: PageHeader(
+            title: const Text("系统信息"),
+            commandBar:
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text("时间跨度", style: typography.body,),
+              const SizedBox(width: 10,),
+              ComboBox<String>(
+              items: logic.state.timeSpanCombo.keys
+                  .map((x) => ComboBoxItem<String>(
+                        value: x,
+                        child: Text(x),
+                      ))
+                  .toList(growable: false),
+              value: logic.state.selected,
+              onChanged: (v) {
+                if (v != null) {
+                  logic.setTimeSpan(v);
+                }
+              },
+            ),
+                ],
+              )
           ),
           children: [
             Center(
