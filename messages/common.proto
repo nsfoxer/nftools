@@ -20,3 +20,11 @@ message Uint32Message {
 message Uint64Message {
   uint64 value = 1;
 }
+
+message FloatMessage {
+  float value = 1;
+}
+
+message DoubleMessage {
+  double value = 1;
+}
