@@ -54,8 +54,7 @@ impl SystemInfoService {
     fn get_ram(&mut self) -> Result<RamInfoRsp> {
         let sys = self.sys.as_mut().unwrap();
         sys.refresh_memory();
-        let value = 1.0 - (sys.used_memory() as f32 / sys.total_memory() as f32);
-        debug_print!("{}", value);
+        let value = sys.used_memory() as f32 / sys.total_memory() as f32;
         Ok(RamInfoRsp {
             percent: value * 100.0,
             used: sys.used_memory(),
