@@ -1,2 +1,13 @@
 syntax = "proto3";
 package system_info;
+
+message CpuInfoRsp {
+  float percent = 1;
+  uint64 frequency = 2;
+}
+
+message RamInfoRsp {
+  float percent = 1;
+  uint64 used = 2;
+  uint64 total = 3;
+}
