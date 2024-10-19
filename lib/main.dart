@@ -10,6 +10,7 @@ import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
 import 'package:rinf/rinf.dart';
+import 'package:system_theme/system_theme.dart';
 
 void main() async {
   // 初始化
@@ -50,10 +51,21 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    final systemAccentColor = SystemTheme.accentColor;
+    final Map<String, Color> watch = {};
+    watch["normal"] = systemAccentColor.accent;
+    watch["darkest"] = systemAccentColor.darkest;
+    watch["darker"] = systemAccentColor.darker;
+    watch["dark"] = systemAccentColor.dark;
+    watch["light"] = systemAccentColor.light;
+    watch["lighter"] = systemAccentColor.lighter;
+    watch["lightest"] = systemAccentColor.lightest;
+
+
     var fonts = Platform.isWindows ? "微软雅黑" : "Source Han Sans SC";
-    var m = FluentThemeData(brightness: Brightness.light, fontFamily: fonts);
+    var m = FluentThemeData(brightness: Brightness.light, fontFamily: fonts, accentColor: AccentColor.swatch(watch));
     if (View.of(context).platformDispatcher.platformBrightness.isDark) {
-      m = FluentThemeData(brightness: Brightness.dark, fontFamily: fonts);
+      m = FluentThemeData(brightness: Brightness.dark, fontFamily: fonts, accentColor: AccentColor.swatch(watch));
     }
 
     return AnimatedFluentTheme(

@@ -42,7 +42,7 @@ class SystemInfoPage extends StatelessWidget {
           children: [
             Center(
                 child: Text(
-              "Cpu信息",
+              "CPU信息",
               style: typography.subtitle,
             )),
             CpuInfoPage(datas: logic.state.cpuInfos),
