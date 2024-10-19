@@ -2,6 +2,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:graphic/graphic.dart';
 import 'package:intl/intl.dart';
+import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/system_info_controller.dart';
 import 'package:nftools/state/system_info_state.dart';
 
@@ -23,6 +24,7 @@ class SystemInfoPage extends StatelessWidget {
               style: typography.subtitle,
             )),
             CpuInfoPage(datas: logic.state.cpuInfos),
+            NFLayout.vlineh1,
             Center(
                 child: Text(
               "内存信息",
