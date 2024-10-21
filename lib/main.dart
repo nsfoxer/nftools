@@ -216,12 +216,11 @@ class MainPage extends StatelessWidget {
       pane: NavigationPane(
         selected: _calculateIndex(context),
         header: Text("pane Header"),
-        indicator: StickyNavigationIndicator(),
+        displayMode: PaneDisplayMode.compact,
         items: _buildPaneItem(MyRouterConfig.menuDatas, context),
         footerItems: _buildPaneItem(MyRouterConfig.footerDatas, context),
       ),
       paneBodyBuilder: (item, child) {
-        debugPrint(item.toString());
         return FocusTraversalGroup(child: this.child);
       },
     );
