@@ -21,3 +21,10 @@ message ChartInfo {
   // 使用率 如使用率为87.75%，则此值为8775 
   uint32 value= 2;
 }
+
+
+// lib cache
+message SystemInfoCache {
+  ChartInfoRsp cpu_datas = 1;
+  ChartInfoRsp mem_datas = 2;
+}
