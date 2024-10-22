@@ -1,15 +1,14 @@
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
-use crate::messages::common::{FloatMessage};
 use crate::service::service::{LazyService, Service};
 use anyhow::Result;
 use crate::{func_end, func_notype};
 use prost::Message;
-use rinf::debug_print;
-use crate::messages::system_info::{CpuInfoRsp, RamInfoRsp};
-
+use crate::common::utils::second_timestamp;
+use crate::messages::system_info::{ChartInfo};
 #[derive(Default)]
 pub struct SystemInfoService {
     sys: Option<System>,
+    history_datas: Option<Vec<ChartInfo>>,
 }
 
 #[async_trait::async_trait]
@@ -40,25 +39,39 @@ impl LazyService for SystemInfoService {
 
 
 impl SystemInfoService {
-    fn get_cpu(&mut self) -> Result<CpuInfoRsp> {
+    fn get_cpu(&mut self) -> Result<ChartInfo> {
         let sys = self.sys.as_mut().unwrap();
-        let value = sys.global_cpu_usage();
-        let freq: u64 = sys.cpus().iter().map(|x|x.frequency()).sum();
+        let value = (sys.global_cpu_usage() * 10000.0) as u32;
         sys.refresh_cpu_usage();
-        Ok(CpuInfoRsp {
-            percent: value,
-            frequency: freq / sys.cpus().len() as u64,
-        })
+        let info = ChartInfo {
+            timestamp: second_timestamp(),
+            value,
+        };
+
+        Ok(info)
     }
 
-    fn get_ram(&mut self) -> Result<RamInfoRsp> {
+    fn get_ram(&mut self) -> Result<ChartInfo> {
         let sys = self.sys.as_mut().unwrap();
         sys.refresh_memory();
-        let value = sys.used_memory() as f32 / sys.total_memory() as f32;
-        Ok(RamInfoRsp {
-            percent: value * 100.0,
-            used: sys.used_memory(),
-            total: sys.total_memory(),
-        })
+        let value = sys.used_memory() * 1000 / sys.total_memory();
+        let info = ChartInfo {
+            timestamp: second_timestamp(),
+            value: value as u32,
+        };
+
+        Ok(info)
+    }
+}
+
+impl SystemInfoService {
+    fn add_cpu_infos() {
+
+    }
+}
+
+impl Drop for SystemInfoService {
+    fn drop(&mut self) {
+        todo!()
     }
 }
