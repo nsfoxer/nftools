@@ -7,10 +7,10 @@ use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
-use crate::{func_end, func_notype};
 use crate::common::utils::second_timestamp;
-use crate::messages::system_info::{ChartInfo, ChartInfoRsp, SystemInfoCache};
+use crate::messages::system_info::{ChartInfo, ChartInfoReq, ChartInfoRsp, SystemInfoCache};
 use crate::service::service::Service;
+use crate::{func_end, func_notype, func_typetype};
 
 /// 系统信息服务
 pub struct SystemInfoService {
@@ -30,11 +30,13 @@ impl Service for SystemInfoService {
 
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         func_notype!(self, func, get_cpu, get_ram);
+        func_typetype!(self, func, req_data, get_cpu_datas, ChartInfoReq, get_mem_datas, ChartInfoReq);
         func_end!(func)
     }
 }
 
 impl SystemInfoService {
+    /// 获取cpu实时数据
     fn get_cpu(&mut self) -> Result<ChartInfo> {
         let value = (self.sys.global_cpu_usage() * 10000.0) as u32;
         self.sys.refresh_cpu_usage();
@@ -46,6 +48,7 @@ impl SystemInfoService {
         Ok(info)
     }
 
+    /// 获取ram实时数据
     fn get_ram(&mut self) -> Result<ChartInfo> {
         self.sys.refresh_memory();
         let value = self.sys.used_memory() * 1000 / self.sys.total_memory();
@@ -56,27 +59,39 @@ impl SystemInfoService {
         self.add_mem_info(info.clone());
         Ok(info)
     }
+    
+    fn get_cpu_datas(&self, req: ChartInfoReq) -> Result<ChartInfoRsp>{
+        Self::get_data(req, &self.cpu_datas)
+    }
+    
+    fn get_mem_datas(&self, req: ChartInfoReq) -> Result<ChartInfoRsp>{
+        Self::get_data(req, &self.mem_datas)
+    }
+
+ 
 }
 
 impl SystemInfoService {
+    /// 新建
     pub async fn new() -> Self {
         let res = RefreshKind::new()
             .with_cpu(CpuRefreshKind::everything())
             .with_memory(MemoryRefreshKind::new().with_ram());
         let mut sys = System::new_with_specifics(res);
         sys.refresh_all();
-        
+
         let (cpu_datas, memory_datas) = Self::load_datas().await;
-        
+
         Self {
             sys,
             cpu_datas,
-            mem_datas: memory_datas
+            mem_datas: memory_datas,
         }
     }
 
+    /// 加载本地数据
     async fn load_datas() -> (Vec<ChartInfo>, Vec<ChartInfo>) {
-        let mut path= data_local_dir().unwrap_or_default();
+        let mut path = data_local_dir().unwrap_or_default();
         path.push("system_info.cache");
 
         let mut cpu_datas = Vec::new();
@@ -85,7 +100,7 @@ impl SystemInfoService {
             // SystemInfoCache::decode();
             let mut buf = Vec::new();
             let _ = file.read_to_end(&mut buf).await;
-            if let Ok(r)  = SystemInfoCache::decode(&buf[..]) {
+            if let Ok(r) = SystemInfoCache::decode(&buf[..]) {
                 cpu_datas = r.cpu_datas.unwrap_or_default().infos;
                 mem_datas = r.mem_datas.unwrap_or_default().infos;
             }
@@ -94,32 +109,83 @@ impl SystemInfoService {
         (cpu_datas, mem_datas)
     }
 
+    /// 追加cpu历史数据
     fn add_cpu_info(&mut self, info: ChartInfo) {
         self.cpu_datas.push(info);
     }
+
+    /// 追加memory历史数据
     fn add_mem_info(&mut self, info: ChartInfo) {
         self.cpu_datas.push(info);
+    }   
+    
+    /// 获取一定范围内的数据
+    fn get_data(req: ChartInfoReq, datas: &Vec<ChartInfo>) -> Result<ChartInfoRsp> {
+        if datas.len() < 2 {
+            return Ok(ChartInfoRsp::default());
+        }
+
+        if req.start_time >  datas.last().unwrap().timestamp
+            || req.end_time < datas.first().unwrap().timestamp
+        {
+            return Ok(ChartInfoRsp::default());
+        }
+
+        let start = find_index(req.start_time, datas);
+        let end = find_index(req.end_time, datas);
+        if start>= end {
+            return Ok(ChartInfoRsp::default());
+        }
+
+        Ok(
+            ChartInfoRsp{
+                infos: datas.iter().skip(start).take(end-start).cloned().collect(),
+            }
+        )
     }
 }
 
 impl Drop for SystemInfoService {
     fn drop(&mut self) {
-        let mut path= data_local_dir().unwrap_or_default();
+        let mut path = data_local_dir().unwrap_or_default();
         path.push("system_info.cache");
 
-        let cache = SystemInfoCache{
-            mem_datas: Some(ChartInfoRsp{
+        let cache = SystemInfoCache {
+            mem_datas: Some(ChartInfoRsp {
                 infos: self.mem_datas.clone(),
             }),
-            cpu_datas: Some(ChartInfoRsp{
+            cpu_datas: Some(ChartInfoRsp {
                 infos: self.cpu_datas.clone(),
             }),
         };
 
         let buf = cache.encode_to_vec();
-        if let  Ok(mut file) = std::fs::File::create(path) {
+        if let Ok(mut file) = std::fs::File::create(path) {
             let _ = file.write_all(&buf);
         }
-
     }
+}
+
+fn find_index(data: u32, datas: &Vec<ChartInfo>) -> usize {
+    let mut start = 0;
+    let mut end = datas.len() - 1;
+    let mut mid;
+    while start <= end {
+        mid = (end - start) / 2 + start;
+        if data < datas[mid].timestamp {
+            end = mid - 1;
+            if mid - 1 > 0 && data > datas[mid - 1].timestamp {
+                return mid;
+            }
+        } else if data > datas[mid].timestamp {
+            start = mid + 1;
+            if mid + 1 < datas.len() && data < datas[mid + 1].timestamp {
+                return mid;
+            }
+        } else {
+            return mid;
+        }
+    }
+
+    start
 }
