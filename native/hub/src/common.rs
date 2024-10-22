@@ -1,6 +1,7 @@
 use std::error::Error;
 
 pub mod global_data;
+pub mod utils;
 
 /// Using this `Result` type alias allows
 /// handling any error type that implements the `Error` trait.
