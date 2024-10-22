@@ -52,7 +52,7 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
         }
     }
     api.add_service(Box::new(SyncFile::new(gd.clone())));
-    api.add_lazy_service(Box::new(SystemInfoService::default()));
+    api.add_service(Box::new(SystemInfoService::new().await));
 
     api
 }
