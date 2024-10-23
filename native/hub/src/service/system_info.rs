@@ -2,12 +2,13 @@ use std::io::Write;
 
 use anyhow::Result;
 use dirs::data_local_dir;
+use log::error;
 use prost::Message;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
-use crate::common::utils::second_timestamp;
+use crate::common::utils::{get_data_dir, second_timestamp};
 use crate::messages::system_info::{ChartInfo, ChartInfoReq, ChartInfoRsp, SystemInfoCache};
 use crate::service::service::Service;
 use crate::{func_end, func_notype, func_typetype};
@@ -21,6 +22,8 @@ pub struct SystemInfoService {
     /// mem所有数据
     mem_datas: Vec<ChartInfo>,
 }
+
+const CACHE_FILE: &str = "system_info.cache";
 
 #[async_trait::async_trait]
 impl Service for SystemInfoService {
@@ -91,11 +94,15 @@ impl SystemInfoService {
 
     /// 加载本地数据
     async fn load_datas() -> (Vec<ChartInfo>, Vec<ChartInfo>) {
-        let mut path = data_local_dir().unwrap_or_default();
-        path.push("system_info.cache");
-
         let mut cpu_datas = Vec::new();
         let mut mem_datas = Vec::new();
+        let mut path = match get_data_dir() {
+            Ok(r) => {r},
+            Err(_) => {
+                return (cpu_datas, mem_datas);
+            }
+        };
+        path.push(CACHE_FILE);
         if let Ok(mut file) = File::open(path).await {
             // SystemInfoCache::decode();
             let mut buf = Vec::new();
@@ -147,8 +154,14 @@ impl SystemInfoService {
 
 impl Drop for SystemInfoService {
     fn drop(&mut self) {
-        let mut path = data_local_dir().unwrap_or_default();
-        path.push("system_info.cache");
+        let mut path = match get_data_dir() {
+            Ok(r) => {r},
+            Err(e) => {
+                error!("保存system_info数据失败{e}");
+                return;
+            }
+        };
+        path.push(CACHE_FILE);
 
         let cache = SystemInfoCache {
             mem_datas: Some(ChartInfoRsp {
