@@ -1,5 +1,5 @@
 use std::io::Write;
-
+use std::os::raw::c_double;
 use anyhow::{anyhow, Result};
 use dirs::data_local_dir;
 use log::error;
@@ -216,6 +216,11 @@ fn find_index(data: u32, datas: &Vec<ChartInfo>) -> Option<usize> {
     }
 
     Some(mid)
+}
+
+struct LineEquation {
+    k: f64,
+    b: f64
 }
 
 mod test {
