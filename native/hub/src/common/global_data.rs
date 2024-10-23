@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use dirs::config_local_dir;
 use anyhow::Result;
 use serde::de::DeserializeOwned;
+use crate::common::utils::get_config_dir;
 
 /// 全局数据
 pub struct GlobalData {
@@ -103,11 +104,7 @@ impl GlobalDataCopy {
 
 
 fn config_dir() -> Result<PathBuf> {
-    let mut config = config_local_dir().unwrap_or_default();
-    config.push("nftools");
-    if !config.exists() {
-        create_dir_all(&config)?;
-    }
+    let mut config = get_config_dir()?;
     config.push("global.json");
     Ok(config)
 }
