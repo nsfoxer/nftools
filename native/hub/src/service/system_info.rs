@@ -69,12 +69,14 @@ impl SystemInfoService {
         Ok(info)
     }
     
-    fn get_cpu_datas(&self, req: ChartInfoReq) -> Result<ChartInfoRsp>{
-        Self::get_data(req, &self.cpu_datas)
+    fn get_cpu_datas(&mut self, req: ChartInfoReq) -> Result<ChartInfoRsp>{
+        // todo 合并
+        Self::get_data(req, &self.history_cpu_datas)
     }
     
     fn get_mem_datas(&self, req: ChartInfoReq) -> Result<ChartInfoRsp>{
-        Self::get_data(req, &self.mem_datas)
+        // todo 合并
+        Self::get_data(req, &self.history_mem_datas)
     }
 
  
@@ -89,12 +91,14 @@ impl SystemInfoService {
         let mut sys = System::new_with_specifics(res);
         sys.refresh_all();
 
-        let (cpu_datas, memory_datas) = Self::load_datas().await;
+        let (history_cpu_datas, history_mem_datas) = Self::load_datas().await;
 
         Self {
             sys,
-            cpu_datas,
-            mem_datas: memory_datas,
+            cpu_datas: Vec::new(),
+            mem_datas: Vec::new(),
+            history_mem_datas,
+            history_cpu_datas
         }
     }
 
@@ -129,7 +133,7 @@ impl SystemInfoService {
 
     /// 追加memory历史数据
     fn add_mem_info(&mut self, info: ChartInfo) {
-        self.cpu_datas.push(info);
+        self.mem_datas.push(info);
     }   
     
     /// 获取一定范围内的数据
@@ -191,10 +195,6 @@ fn find_index(data: u32, datas: &Vec<ChartInfo>) -> Option<usize> {
         return None;
     }
 
-    if data < datas.first().unwrap().timestamp || data > datas.last().unwrap().timestamp {
-        return None;
-    }
-
     let mut start = 0;
     let mut end = datas.len() - 1;
     let mut mid = (end - start) / 2 + start;
@@ -232,8 +232,10 @@ mod test {
             })
         }
 
-        let r = find_index(99, &datas).unwrap();
-        assert_eq!(r, 49);
+        let r = find_index(0, &datas).unwrap();
+        assert_eq!(r, 0);
+        let r = find_index(400, &datas).unwrap();
+        assert_eq!(r, 99);
 
     }
 }
