@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use dirs::data_local_dir;
 use log::error;
 use prost::Message;
@@ -13,17 +13,23 @@ use crate::messages::system_info::{ChartInfo, ChartInfoReq, ChartInfoRsp, System
 use crate::service::service::Service;
 use crate::{func_end, func_notype, func_typetype};
 
+// 缓存文件
+const CACHE_FILE: &str = "system_info.cache";
+
 /// 系统信息服务
 pub struct SystemInfoService {
     /// 系统信息读取
     sys: System,
     /// cpu所有数据
     cpu_datas: Vec<ChartInfo>,
+    /// 已优化的cpu数据
+    history_cpu_datas: Vec<ChartInfo>,
     /// mem所有数据
     mem_datas: Vec<ChartInfo>,
+    /// 已优化的mem数据
+    history_mem_datas: Vec<ChartInfo>,
 }
 
-const CACHE_FILE: &str = "system_info.cache";
 
 #[async_trait::async_trait]
 impl Service for SystemInfoService {
@@ -128,18 +134,19 @@ impl SystemInfoService {
     
     /// 获取一定范围内的数据
     fn get_data(req: ChartInfoReq, datas: &Vec<ChartInfo>) -> Result<ChartInfoRsp> {
-        if datas.len() < 2 {
-            return Ok(ChartInfoRsp::default());
-        }
+        let start = match find_index(req.start_time, datas){
+            None => {
+                return Ok(ChartInfoRsp::default());
+            }
+            Some(r) => {r}
+        };
+        let end = match find_index(req.end_time, datas) {
+            None => {
+                return Ok(ChartInfoRsp::default());
+            }
+            Some(r) => r,
+        };
 
-        if req.start_time >  datas.last().unwrap().timestamp
-            || req.end_time < datas.first().unwrap().timestamp
-        {
-            return Ok(ChartInfoRsp::default());
-        }
-
-        let start = find_index(req.start_time, datas);
-        let end = find_index(req.end_time, datas);
         if start>= end {
             return Ok(ChartInfoRsp::default());
         }
@@ -179,28 +186,36 @@ impl Drop for SystemInfoService {
     }
 }
 
-fn find_index(data: u32, datas: &Vec<ChartInfo>) -> usize {
+fn find_index(data: u32, datas: &Vec<ChartInfo>) -> Option<usize> {
+    if datas.len() < 2 {
+        return None;
+    }
+
+    if data < datas.first().unwrap().timestamp || data > datas.last().unwrap().timestamp {
+        return None;
+    }
+
     let mut start = 0;
     let mut end = datas.len() - 1;
-    let mut mid;
+    let mut mid = (end - start) / 2 + start;
     while start <= end {
         mid = (end - start) / 2 + start;
         if data < datas[mid].timestamp {
             end = mid - 1;
             if mid - 1 > 0 && data > datas[mid - 1].timestamp {
-                return mid;
+                break;
             }
         } else if data > datas[mid].timestamp {
             start = mid + 1;
             if mid + 1 < datas.len() && data < datas[mid + 1].timestamp {
-                return mid;
+                break
             }
         } else {
-            return mid;
+            break;
         }
     }
 
-    start
+    Some(mid)
 }
 
 mod test {
@@ -217,7 +232,7 @@ mod test {
             })
         }
 
-        let r = find_index(99, &datas);
+        let r = find_index(99, &datas).unwrap();
         assert_eq!(r, 49);
 
     }
