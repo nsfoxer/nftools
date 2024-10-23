@@ -202,3 +202,23 @@ fn find_index(data: u32, datas: &Vec<ChartInfo>) -> usize {
 
     start
 }
+
+mod test {
+    use crate::messages::system_info::ChartInfo;
+    use crate::service::system_info::find_index;
+
+    #[test]
+    fn test_index() {
+        let mut datas = Vec::new();
+        for i in 0..100 {
+            datas.push(ChartInfo {
+                timestamp: i * 2,
+                value: i,
+            })
+        }
+
+        let r = find_index(99, &datas);
+        assert_eq!(r, 49);
+
+    }
+}
