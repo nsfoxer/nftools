@@ -2,6 +2,7 @@ use std::io::Write;
 use std::os::raw::c_double;
 use anyhow::{anyhow, Result};
 use dirs::data_local_dir;
+use fast_inv_sqrt::InvSqrt64;
 use log::error;
 use prost::Message;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
@@ -218,14 +219,43 @@ fn find_index(data: u32, datas: &Vec<ChartInfo>) -> Option<usize> {
     Some(mid)
 }
 
+#[derive(Debug)]
+struct Point {
+    x: u32,
+    y: f64,
+}
+
+#[derive(Debug)]
 struct LineEquation {
     k: f64,
     b: f64
 }
 
+impl LineEquation {
+    fn new(p1: Point, p2: Point) -> Option<Self> {
+        if p2.x == p1.x {
+            return None;
+        }
+        let k = (p2.y - p1.y) / (p2.x - p1.x) as f64;
+        let b = p1.y - k*p1.x as f64;
+
+        Some(Self {
+            k, b
+        })
+    }
+
+    fn cal_distance(&self, p: Point) -> f64 {
+        let divisor  = (self.k * p.x as f64 - p.y + self.b).abs();
+        let dividend = (1.0 + self.k*self.k).inv_sqrt64();
+        
+        divisor * dividend
+    }
+}
+
 mod test {
+    use fast_inv_sqrt::{InvSqrt32, InvSqrt64};
     use crate::messages::system_info::ChartInfo;
-    use crate::service::system_info::find_index;
+    use crate::service::system_info::{find_index, LineEquation, Point};
 
     #[test]
     fn test_index() {
@@ -242,5 +272,31 @@ mod test {
         let r = find_index(400, &datas).unwrap();
         assert_eq!(r, 99);
 
+    }
+    #[test]
+    fn test_equation() {
+        let p1 = Point{
+            x: 10, y:5.0
+        };
+        let p2 = Point {
+            x: 100, y: 3.0
+        };
+
+        let r = LineEquation::new(p1, p2).unwrap();
+        eprintln!("{r:?}");
+        let r2 = r.cal_distance(Point{
+            x:100,
+            y: 10.0
+        });
+        assert!((r.k - -0.022).abs() < 0.001);
+        eprintln!("{r2}");
+        assert!((r2-6.998).abs() < 0.1);
+    }
+    
+    #[test]
+    fn sqrt() {
+        let x= 1600.01f32;
+        eprintln!("{}, {}", x.inv_sqrt32(), 1.0 / x.sqrt());
+        assert!((x.inv_sqrt32() - 1.0/x.sqrt()).abs() < 0.01);
     }
 }

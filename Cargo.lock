@@ -375,6 +375,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fast_inv_sqrt"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6e61a440b33ad57e53bb01b33438d019d7a7d50a05b9def525c578c0a7e974f"
+
+[[package]]
 name = "fastrand"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -599,6 +605,7 @@ dependencies = [
  "ddc-i2c",
  "ddc-winapi",
  "dirs",
+ "fast_inv_sqrt",
  "log",
  "prost",
  "reqwest_dav",
