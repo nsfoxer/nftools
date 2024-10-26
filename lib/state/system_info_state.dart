@@ -1,3 +1,5 @@
+import 'package:fluent_ui/fluent_ui.dart';
+
 class SystemInfoState {
   Map<String, (int, int)> timeSpanCombo = {
     "1min": (60, 1),

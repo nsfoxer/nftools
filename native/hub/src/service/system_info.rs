@@ -60,7 +60,7 @@ impl Service for SystemInfoService {
 impl SystemInfoService {
     /// 获取cpu实时数据
     fn get_cpu(&mut self) -> Result<ChartInfo> {
-        let value = (self.sys.global_cpu_usage() * 10000.0) as u32;
+        let value = (self.sys.global_cpu_usage() * 100.0) as u32;
         self.sys.refresh_cpu_usage();
         let info = ChartInfo {
             timestamp: second_timestamp(),

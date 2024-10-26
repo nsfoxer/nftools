@@ -19,9 +19,10 @@ class SystemInfoController extends GetxController {
   void _initTimer(int periodic) {
     _timer = Timer.periodic(periodic.seconds, (timer) async {
       final cpu = await $api.getCpu();
-      state.addCpuInfo(cpu.percent);
+      info(cpu.value.toString());
+      state.addCpuInfo(cpu.value.toDouble() / 100);
       final mem = await $api.getRam();
-      state.addMemInfo(mem.percent);
+      state.addMemInfo(mem.value.toDouble() / 100);
       update();
     });
   }
