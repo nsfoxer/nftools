@@ -178,8 +178,7 @@ impl SystemInfoService {
         if self.cpu_datas.len() > 2 {
             debug_print!("开始优化cpu数据");
             debug_print!("优化前大小:{}", self.cpu_datas.len());
-            let mut delete_marks = Vec::with_capacity(self.cpu_datas.len());
-            delete_marks.fill(false);
+            let mut delete_marks = vec![false; self.cpu_datas.len()];
             optimize_datas(&self.cpu_datas[..], &mut delete_marks[..], THRESHOLD)?;
             let mut index = 0;
             self.cpu_datas.retain(|item| {
@@ -344,8 +343,9 @@ impl LineEquation {
 
 mod test {
     use crate::messages::system_info::ChartInfo;
-    use crate::service::system_info::{find_index, LineEquation, Point};
+    use crate::service::system_info::{find_index, LineEquation, optimize_datas, Point, SystemInfoService, THRESHOLD};
     use fast_inv_sqrt::{InvSqrt32, InvSqrt64};
+    use rand::{Rng, thread_rng};
 
     #[test]
     fn test_index() {
@@ -386,5 +386,35 @@ mod test {
     fn dotdot() {
         let t = [0, 1, 2, 3, 4];
         assert_eq!(t[3..], [3, 4])
+    }
+
+    #[test]
+    fn optiminze() {
+        let mut rng = thread_rng();
+        let mut original_datas = Vec::new();
+        for i in 0..100 {
+            original_datas.push(ChartInfo{
+                timestamp: i,
+                value: rng.gen_range(0..100),
+            });
+        }
+        let mut delete_marks = vec![false; original_datas.len()];
+        optimize_datas(&original_datas[..], &mut delete_marks[..], THRESHOLD).unwrap();
+        let mut optimize_datas = Vec::new();
+        for (i, data) in original_datas.iter().enumerate() {
+            if !delete_marks[i] {
+                optimize_datas.push(data.clone());
+            }
+        }
+        
+        eprintln!("=============");
+        for d in original_datas {
+            eprintln!("{}", d.value);
+        }
+        eprintln!("=============");
+        for d in optimize_datas {
+            eprintln!("{}", d.value);
+        }
+        
     }
 }
