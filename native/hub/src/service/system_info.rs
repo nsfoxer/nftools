@@ -17,7 +17,10 @@ use crate::{func_end, func_notype, func_typetype};
 
 // 缓存文件
 const CACHE_FILE: &str = "system_info.cache";
+// 图形筛选阈值(rdp算法阈值)
 const THRESHOLD: f64 = 5.0;
+// 实时数据最大点数
+const MAX_SIZE: usize = 4096;
 
 /// 系统信息服务
 pub struct SystemInfoService {
@@ -63,29 +66,29 @@ impl SystemInfoService {
             timestamp: second_timestamp(),
             value,
         };
-        self.add_cpu_info(info.clone());
+        self.add_cpu_info(info.clone())?;
         Ok(info)
     }
 
     /// 获取ram实时数据
     fn get_ram(&mut self) -> Result<ChartInfo> {
         self.sys.refresh_memory();
-        let value = self.sys.used_memory() * 1000 / self.sys.total_memory();
+        let value = self.sys.used_memory() * 10000 / self.sys.total_memory();
         let info = ChartInfo {
             timestamp: second_timestamp(),
             value: value as u32,
         };
-        self.add_mem_info(info.clone());
+        self.add_mem_info(info.clone())?;
         Ok(info)
     }
 
     fn get_cpu_datas(&mut self, req: ChartInfoReq) -> Result<ChartInfoRsp> {
-        // todo 合并
+        self.optimize_cpu_datas()?;
         Self::get_data(req, &self.history_cpu_datas)
     }
 
-    fn get_mem_datas(&self, req: ChartInfoReq) -> Result<ChartInfoRsp> {
-        // todo 合并
+    fn get_mem_datas(&mut self, req: ChartInfoReq) -> Result<ChartInfoRsp> {
+        self.optimize_mem_datas()?;
         Self::get_data(req, &self.history_mem_datas)
     }
 }
@@ -122,7 +125,6 @@ impl SystemInfoService {
         };
         path.push(CACHE_FILE);
         if let Ok(mut file) = File::open(path).await {
-            // SystemInfoCache::decode();
             let mut buf = Vec::new();
             let _ = file.read_to_end(&mut buf).await;
             if let Ok(r) = SystemInfoCache::decode(&buf[..]) {
@@ -135,13 +137,21 @@ impl SystemInfoService {
     }
 
     /// 追加cpu历史数据
-    fn add_cpu_info(&mut self, info: ChartInfo) {
+    fn add_cpu_info(&mut self, info: ChartInfo) -> Result<()> {
         self.cpu_datas.push(info);
+        if self.cpu_datas.len() >= MAX_SIZE {
+            self.optimize_cpu_datas()?;
+        }
+        Ok(())
     }
 
     /// 追加memory历史数据
-    fn add_mem_info(&mut self, info: ChartInfo) {
+    fn add_mem_info(&mut self, info: ChartInfo) -> Result<()> {
         self.mem_datas.push(info);
+        if self.mem_datas.len() >= MAX_SIZE {
+            self.optimize_mem_datas()?;
+        }
+        Ok(())
     }
 
     /// 获取一定范围内的数据
@@ -192,6 +202,26 @@ impl SystemInfoService {
 
         Ok(())
     }
+    
+    /// 优化mem数据
+    fn optimize_mem_datas(&mut self) -> Result<()> {
+        if self.mem_datas.len() > 2 {
+            debug_print!("开始优化cpu数据");
+            debug_print!("优化前大小:{}", self.mem_datas.len());
+            let mut delete_marks = vec![false; self.mem_datas.len()];
+            optimize_datas(&self.mem_datas[..], &mut delete_marks[..], THRESHOLD)?;
+            let mut index = 0;
+            self.mem_datas.retain(|item| {
+                index += 1;
+                delete_marks[index - 1]
+            });
+            debug_print!("优化后大小:{}", self.mem_datas.len());
+        }
+
+        self.history_mem_datas.append(&mut self.mem_datas);
+
+        Ok(())
+    }
 }
 
 impl Drop for SystemInfoService {
@@ -205,12 +235,16 @@ impl Drop for SystemInfoService {
         };
         path.push(CACHE_FILE);
 
+        if self.optimize_mem_datas().is_err() || self.optimize_cpu_datas().is_err() {
+           error!("优化数据失败");
+            return;
+        }
         let cache = SystemInfoCache {
             mem_datas: Some(ChartInfoRsp {
-                infos: self.mem_datas.clone(),
+                infos: self.history_mem_datas.clone(),
             }),
             cpu_datas: Some(ChartInfoRsp {
-                infos: self.cpu_datas.clone(),
+                infos: self.history_cpu_datas.clone(),
             }),
         };
 
@@ -395,7 +429,7 @@ mod test {
         for i in 0..100 {
             original_datas.push(ChartInfo{
                 timestamp: i,
-                value: rng.gen_range(0..100),
+                value: rng.gen_range(1000..10000),
             });
         }
         let mut delete_marks = vec![false; original_datas.len()];
