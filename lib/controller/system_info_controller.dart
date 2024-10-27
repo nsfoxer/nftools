@@ -89,13 +89,13 @@ class SystemInfoController extends GetxController {
     info("${state.startTime} -- ${state.endTime}");
     // 获取历史数据
     var datas = await $api.getCpus(state.startTime!, state.endTime!);
-    state.liveCpuInfos = datas.infos.map((x) {
+    state.cpuInfos = datas.infos.map((x) {
       return ValueInfo(DateTime.fromMillisecondsSinceEpoch(x.timestamp * 1000),
           x.value / 100);
     }).toList();
     info(" ==>$datas");
     datas = await $api.getRams(state.startTime!, state.endTime!);
-    state.liveMemoryInfos = datas.infos.map((x) {
+    state.memoryInfos = datas.infos.map((x) {
       return ValueInfo(DateTime.fromMillisecondsSinceEpoch(x.timestamp * 1000),
           x.value / 100);
     }).toList();
