@@ -1,34 +1,43 @@
-import 'package:fluent_ui/fluent_ui.dart';
-
 class SystemInfoState {
-  Map<String, (int, int)> timeSpanCombo = {
-    "1min": (60, 1),
-    "5min": (300, 1),
-    "10min": (600, 1),
-    "30min": (900,2),
-    "1h": (1200, 3),
+  Map<String, int> timeSpanCombo = {
+    "1min": 60,
+    "5min": 300,
+    "10min": 600,
+    "30min": 1800,
+    "1h": 3600,
   };
-  List<ValueInfo> cpuInfos = [];
-  List<ValueInfo> memoryInfos = [];
 
-  int _size = 60;
+  // 历史数据 cpu
+  List<ValueInfo> cpuInfos = [];
+  // 实时数据 cpu
+  List<ValueInfo> liveCpuInfos = [];
+  // 历史数据 mem
+  List<ValueInfo> memoryInfos = [];
+  // 实时数据 mem
+  List<ValueInfo> liveMemoryInfos = [];
+
+  // 是否为实时更新
+  bool isLive = true;
+
+  // 历史图表展示
+  // 开始时间
+  DateTime? startTime;
+  // 开始时间
+  DateTime? endTime;
+
   String selected = "10min";
 
-  void setSize(int size) {
-    _size = size;
-  }
-
-  void addCpuInfo(double percent) {
-    cpuInfos.add(ValueInfo(DateTime.now(), percent));
-    if (cpuInfos.length > _size) {
-      cpuInfos.removeAt(0);
+  void addLiveCpuInfo(double percent) {
+    liveCpuInfos.add(ValueInfo(DateTime.now(), percent));
+    if (liveCpuInfos.length > timeSpanCombo[selected]!) {
+      liveCpuInfos.removeAt(0);
     }
   }
 
-  void addMemInfo(double percent) {
-    memoryInfos.add(ValueInfo(DateTime.now(), percent));
-    if (memoryInfos.length > _size) {
-      memoryInfos.removeAt(0);
+  void addLiveMemInfo(double percent) {
+    liveMemoryInfos.add(ValueInfo(DateTime.now(), percent));
+    if (liveMemoryInfos.length > timeSpanCombo[selected]!) {
+      liveMemoryInfos.removeAt(0);
     }
   }
 

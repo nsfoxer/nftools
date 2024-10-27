@@ -1,10 +1,13 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
 import 'package:graphic/graphic.dart';
 import 'package:intl/intl.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/system_info_controller.dart';
 import 'package:nftools/state/system_info_state.dart';
+
+import '../utils/log.dart';
 
 DateFormat _timeFormat = DateFormat.Hms();
 
@@ -15,44 +18,90 @@ class SystemInfoPage extends StatelessWidget {
     return GetBuilder<SystemInfoController>(builder: (logic) {
       return ScaffoldPage.scrollable(
           header: PageHeader(
-            title: const Text("系统信息"),
-            commandBar:
-              Row(
+              title: const Text("系统信息"),
+              commandBar: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text("时间跨度", style: typography.body,),
-              const SizedBox(width: 10,),
-              ComboBox<String>(
-              items: logic.state.timeSpanCombo.keys
-                  .map((x) => ComboBoxItem<String>(
-                        value: x,
-                        child: Text(x),
-                      ))
-                  .toList(growable: false),
-              value: logic.state.selected,
-              onChanged: (v) {
-                if (v != null) {
-                  logic.setTimeSpan(v);
-                }
-              },
-            ),
+                  Text(
+                    "时间跨度",
+                    style: typography.body,
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  ComboBox<String>(
+                    items: logic.state.timeSpanCombo.keys
+                        .map((x) => ComboBoxItem<String>(
+                              value: x,
+                              child: Text(x),
+                            ))
+                        .toList(growable: false),
+                    value: logic.state.selected,
+                    onChanged: (v) {
+                      if (v != null) {
+                        logic.setTimeSpan(v);
+                      }
+                    },
+                  ),
                 ],
-              )
-          ),
+              )),
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Tooltip(
+                  message: "之前历史数据",
+                  child: IconButton(
+                      icon: Icon($me.Icons.navigate_before,
+                          size: typography.title?.fontSize),
+                      onPressed: () {
+                        logic.displayBefore(context);
+                      }),
+                ),
+                Row(
+                  children: [
+                    Tooltip(
+                      message: "之后历史数据",
+                      child: IconButton(
+                          icon: Icon(
+                            $me.Icons.navigate_next,
+                            size: typography.title?.fontSize,
+                          ),
+                          onPressed: logic.state.isLive ? null : () {
+                            logic.displayAfter(context);
+                          }),
+                    ),
+                    const SizedBox(
+                      width: 10,
+                    ),
+                    Tooltip(
+                      message: "实时数据",
+                      child: IconButton(
+                          icon: Icon(
+                            $me.Icons.keyboard_double_arrow_right,
+                            size: typography.title?.fontSize,
+                          ),
+                          onPressed: logic.state.isLive ? null : () {
+                            logic.playLive();
+                          }),
+                    ),
+                  ],
+                ),
+              ],
+            ),
             Center(
                 child: Text(
               "CPU信息",
               style: typography.subtitle,
             )),
-            CpuInfoPage(datas: logic.state.cpuInfos),
+            CpuInfoPage(datas: logic.state.isLive ? logic.state.liveCpuInfos: logic.state.cpuInfos),
             NFLayout.vlineh1,
             Center(
                 child: Text(
               "内存信息",
               style: typography.subtitle,
             )),
-            CpuInfoPage(datas: logic.state.memoryInfos),
+            CpuInfoPage(datas: logic.state.isLive ? logic.state.liveMemoryInfos: logic.state.memoryInfos),
           ]);
     });
   }
@@ -64,6 +113,7 @@ class CpuInfoPage extends StatelessWidget {
   const CpuInfoPage({super.key, required this.datas});
   @override
   Widget build(BuildContext context) {
+    info("图表构建");
     Widget r = () {
       var data = datas;
       if (data.length < 2) {
