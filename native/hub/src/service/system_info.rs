@@ -5,7 +5,9 @@ use log::error;
 use prost::Message;
 use rinf::debug_print;
 use std::io::Write;
+use std::ops::Sub;
 use std::os::raw::c_double;
+use std::time::{Duration, SystemTime};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
@@ -21,6 +23,8 @@ const CACHE_FILE: &str = "system_info.cache";
 const THRESHOLD: f64 = 5.0;
 // 实时数据最大点数
 const MAX_SIZE: usize = 4096;
+// 2天的秒数
+const SECONDS_TOW_DAYS: u64 = 3600 * 24 * 2;
 
 /// 系统信息服务
 pub struct SystemInfoService {
@@ -83,12 +87,12 @@ impl SystemInfoService {
     }
 
     fn get_cpu_datas(&mut self, req: ChartInfoReq) -> Result<ChartInfoRsp> {
-        self.optimize_cpu_datas()?;
+        self.optimize_cpu_datas(false)?;
         Self::get_data(req, &self.history_cpu_datas)
     }
 
     fn get_mem_datas(&mut self, req: ChartInfoReq) -> Result<ChartInfoRsp> {
-        self.optimize_mem_datas()?;
+        self.optimize_mem_datas(false)?;
         Self::get_data(req, &self.history_mem_datas)
     }
 }
@@ -140,7 +144,7 @@ impl SystemInfoService {
     fn add_cpu_info(&mut self, info: ChartInfo) -> Result<()> {
         self.cpu_datas.push(info);
         if self.cpu_datas.len() >= MAX_SIZE {
-            self.optimize_cpu_datas()?;
+            self.optimize_cpu_datas(false)?;
         }
         Ok(())
     }
@@ -149,7 +153,7 @@ impl SystemInfoService {
     fn add_mem_info(&mut self, info: ChartInfo) -> Result<()> {
         self.mem_datas.push(info);
         if self.mem_datas.len() >= MAX_SIZE {
-            self.optimize_mem_datas()?;
+            self.optimize_mem_datas(false)?;
         }
         Ok(())
     }
@@ -184,8 +188,9 @@ impl SystemInfoService {
     }
 
     /// 优化cpu数据
-    fn optimize_cpu_datas(&mut self) -> Result<()> {
-        if self.cpu_datas.len() > 2 {
+    fn optimize_cpu_datas(&mut self, force: bool) -> Result<()> {
+        let len = if force { 2 } else { 60 };
+        if self.cpu_datas.len() > len {
             debug_print!("开始优化cpu数据");
             debug_print!("优化前大小:{}", self.cpu_datas.len());
             let mut delete_marks = vec![false; self.cpu_datas.len()];
@@ -196,16 +201,26 @@ impl SystemInfoService {
                 delete_marks[index - 1]
             });
             debug_print!("优化后大小:{}", self.cpu_datas.len());
+            // 删除2天之前的数据
+            let oldest = SystemTime::now()
+                .sub(Duration::from_secs(SECONDS_TOW_DAYS))
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap_or(Duration::from_secs(0))
+                .as_secs() as u32;
+            if let Some(id) = find_index(oldest, &self.history_cpu_datas) {
+                self.history_cpu_datas = self.history_cpu_datas.drain(0..id).collect();
+            }
         }
 
         self.history_cpu_datas.append(&mut self.cpu_datas);
 
         Ok(())
     }
-    
+
     /// 优化mem数据
-    fn optimize_mem_datas(&mut self) -> Result<()> {
-        if self.mem_datas.len() > 2 {
+    fn optimize_mem_datas(&mut self, force: bool) -> Result<()> {
+        let len = if force { 2 } else { 60 };
+        if self.mem_datas.len() > len {
             debug_print!("开始优化cpu数据");
             debug_print!("优化前大小:{}", self.mem_datas.len());
             let mut delete_marks = vec![false; self.mem_datas.len()];
@@ -216,6 +231,15 @@ impl SystemInfoService {
                 delete_marks[index - 1]
             });
             debug_print!("优化后大小:{}", self.mem_datas.len());
+            // 删除2天之前的数据
+            let oldest = SystemTime::now()
+                .sub(Duration::from_secs(SECONDS_TOW_DAYS))
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap_or(Duration::from_secs(0))
+                .as_secs() as u32;
+            if let Some(id) = find_index(oldest, &self.history_mem_datas) {
+                self.history_mem_datas = self.history_mem_datas.drain(0..id).collect();
+            }
         }
 
         self.history_mem_datas.append(&mut self.mem_datas);
@@ -235,8 +259,8 @@ impl Drop for SystemInfoService {
         };
         path.push(CACHE_FILE);
 
-        if self.optimize_mem_datas().is_err() || self.optimize_cpu_datas().is_err() {
-           error!("优化数据失败");
+        if self.optimize_mem_datas(true).is_err() || self.optimize_cpu_datas(true).is_err() {
+            error!("优化数据失败");
             return;
         }
         let cache = SystemInfoCache {
@@ -377,9 +401,11 @@ impl LineEquation {
 
 mod test {
     use crate::messages::system_info::ChartInfo;
-    use crate::service::system_info::{find_index, LineEquation, optimize_datas, Point, SystemInfoService, THRESHOLD};
+    use crate::service::system_info::{
+        find_index, optimize_datas, LineEquation, Point, SystemInfoService, THRESHOLD,
+    };
     use fast_inv_sqrt::{InvSqrt32, InvSqrt64};
-    use rand::{Rng, thread_rng};
+    use rand::{thread_rng, Rng};
 
     #[test]
     fn test_index() {
@@ -427,7 +453,7 @@ mod test {
         let mut rng = thread_rng();
         let mut original_datas = Vec::new();
         for i in 0..100 {
-            original_datas.push(ChartInfo{
+            original_datas.push(ChartInfo {
                 timestamp: i,
                 value: rng.gen_range(1000..10000),
             });
@@ -440,7 +466,7 @@ mod test {
                 optimize_datas.push(data.clone());
             }
         }
-        
+
         eprintln!("=============");
         for d in original_datas {
             eprintln!("{}", d.value);
@@ -449,6 +475,17 @@ mod test {
         for d in optimize_datas {
             eprintln!("{}", d.value);
         }
-        
+    }
+    
+    // 输出缓存数据大概情况
+    #[tokio::test]
+    async fn print_datas() {
+        let  system_info = SystemInfoService::new().await;
+        eprintln!("cpu history datas ========= ");
+        eprintln!("len = {}, start = {:?}, end = {:?}", system_info.history_cpu_datas.len()
+                  , system_info.history_cpu_datas.first().unwrap(), system_info.history_cpu_datas.last().unwrap());
+        eprintln!("mem history datas ========= ");
+        eprintln!("len = {}, start = {:?}, end = {:?}", system_info.history_mem_datas.len()
+                  , system_info.history_mem_datas.first().unwrap(), system_info.history_mem_datas.last().unwrap());
     }
 }
