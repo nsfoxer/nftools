@@ -7,8 +7,6 @@ import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/system_info_controller.dart';
 import 'package:nftools/state/system_info_state.dart';
 
-import '../utils/log.dart';
-
 DateFormat _timeFormat = DateFormat.Hms();
 
 class SystemInfoPage extends StatelessWidget {
@@ -67,9 +65,11 @@ class SystemInfoPage extends StatelessWidget {
                             $me.Icons.navigate_next,
                             size: typography.title?.fontSize,
                           ),
-                          onPressed: logic.state.isLive ? null : () {
-                            logic.displayAfter(context);
-                          }),
+                          onPressed: logic.state.isLive
+                              ? null
+                              : () {
+                                  logic.displayAfter(context);
+                                }),
                     ),
                     const SizedBox(
                       width: 10,
@@ -81,9 +81,11 @@ class SystemInfoPage extends StatelessWidget {
                             $me.Icons.keyboard_double_arrow_right,
                             size: typography.title?.fontSize,
                           ),
-                          onPressed: logic.state.isLive ? null : () {
-                            logic.playLive();
-                          }),
+                          onPressed: logic.state.isLive
+                              ? null
+                              : () {
+                                  logic.playLive();
+                                }),
                     ),
                   ],
                 ),
@@ -94,14 +96,20 @@ class SystemInfoPage extends StatelessWidget {
               "CPU信息",
               style: typography.subtitle,
             )),
-            CpuInfoPage(datas: logic.state.isLive ? logic.state.liveCpuInfos: logic.state.cpuInfos),
+            CpuInfoPage(
+                datas: logic.state.isLive
+                    ? logic.state.liveCpuInfos
+                    : logic.state.cpuInfos),
             NFLayout.vlineh1,
             Center(
                 child: Text(
               "内存信息",
               style: typography.subtitle,
             )),
-            CpuInfoPage(datas: logic.state.isLive ? logic.state.liveMemoryInfos: logic.state.memoryInfos),
+            CpuInfoPage(
+                datas: logic.state.isLive
+                    ? logic.state.liveMemoryInfos
+                    : logic.state.memoryInfos),
           ]);
     });
   }
@@ -113,7 +121,7 @@ class CpuInfoPage extends StatelessWidget {
   const CpuInfoPage({super.key, required this.datas});
   @override
   Widget build(BuildContext context) {
-    info("图表构建");
+    bool hasDatas = datas.length > 2;
     Widget r = () {
       var data = datas;
       if (data.length < 2) {
@@ -151,15 +159,15 @@ class CpuInfoPage extends StatelessWidget {
           Defaults.horizontalAxis..grid = Defaults.strokeStyle,
           Defaults.verticalAxis..line = Defaults.strokeStyle,
         ],
-        selections: {
+        selections: hasDatas ? {
           'touchMove': PointSelection(
             on: {GestureType.hover},
           ),
-        },
-        tooltip: TooltipGuide(
+        } : null,
+        tooltip: hasDatas ? TooltipGuide(
           align: Alignment.topLeft,
           offset: const Offset(-20, -20),
-        ),
+        ): null,
       );
     }();
 

@@ -66,13 +66,13 @@ class SystemInfoController extends GetxController {
     }
 
     final duration = Duration(seconds: state.timeSpanCombo[state.selected]!);
-    final tmpEndTime = state.endTime!.subtract(duration);
+    final tmpEndTime = state.endTime!.add(duration);
     if (tmpEndTime.isAfter(state.liveCpuInfos.last.time)) {
       // 执行实时页面操作
       playLive();
       return;
     }
-    state.startTime = state.startTime!.subtract(duration);
+    state.startTime = state.startTime!.add(duration);
     state.endTime = tmpEndTime;
 
     _updateHistoryDatas();
@@ -85,20 +85,35 @@ class SystemInfoController extends GetxController {
   }
 
   // 更新历史数据
-  void _updateHistoryDatas() async{
+  void _updateHistoryDatas() async {
     info("${state.startTime} -- ${state.endTime}");
     // 获取历史数据
     var datas = await $api.getCpus(state.startTime!, state.endTime!);
-    state.cpuInfos = datas.infos.map((x) {
-      return ValueInfo(DateTime.fromMillisecondsSinceEpoch(x.timestamp * 1000),
-          x.value / 100);
-    }).toList();
-    info(" ==>$datas");
+    if (datas.infos.isEmpty) {
+      state.cpuInfos = [
+        ValueInfo(state.startTime!, double.nan),
+        ValueInfo(state.endTime!, double.nan),
+      ];
+    } else {
+      state.cpuInfos = datas.infos.map((x) {
+        return ValueInfo(
+            DateTime.fromMillisecondsSinceEpoch(x.timestamp * 1000),
+            x.value / 100);
+      }).toList();
+    }
     datas = await $api.getRams(state.startTime!, state.endTime!);
-    state.memoryInfos = datas.infos.map((x) {
-      return ValueInfo(DateTime.fromMillisecondsSinceEpoch(x.timestamp * 1000),
-          x.value / 100);
-    }).toList();
+    if (datas.infos.isEmpty) {
+      state.memoryInfos = [
+        ValueInfo(state.startTime!, double.nan),
+        ValueInfo(state.endTime!, double.nan),
+      ];
+    } else {
+      state.memoryInfos = datas.infos.map((x) {
+        return ValueInfo(
+            DateTime.fromMillisecondsSinceEpoch(x.timestamp * 1000),
+            x.value / 100);
+      }).toList();
+    }
     update();
   }
 
