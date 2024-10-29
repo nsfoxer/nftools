@@ -1,5 +1,7 @@
 // display service
 
+import 'dart:ui';
+
 import 'package:nftools/api/api.dart';
 import 'package:nftools/messages/common.pb.dart';
 import 'package:nftools/messages/display.pb.dart';
@@ -22,6 +24,7 @@ const String _service2 = "DisplayMode";
 const String _getCurrentMode = "get_current_mode";
 const String _setMode = "set_mode";
 const String _getWallpaper = "get_wallpaper";
+const String _getSystemColor = "get_system_color";
 
 Future<DisplayMode> getCurrentMode() async {
   var data = await sendRequest<EmptyMessage>(_service2, _getCurrentMode, null);
@@ -31,6 +34,12 @@ Future<DisplayMode> getCurrentMode() async {
 
 Future<void> setMode(DisplayMode mode) async {
   await sendRequest(_service2, _setMode, mode);
+}
+
+Future<Color> getSystemColor() async {
+  var data = await sendRequest<EmptyMessage>(_service2, _getSystemColor, null);
+  var result = Uint32Message.fromBuffer(data);
+  return Color(result.value);
 }
 
 Future<GetWallpaperRsp> getWallpaper() async {
