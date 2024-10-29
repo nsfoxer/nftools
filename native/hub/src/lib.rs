@@ -23,10 +23,8 @@ use crate::service::system_info::SystemInfoService;
 rinf::write_interface!();
 
 async fn main() {
-    debug_print!("lib start");
     let global_data = GlobalData::new().expect("Global data initialized");
     tokio::spawn(base_request(global_data));
-    debug_print!("lib end");
 }
 
 async fn init_service(gd: Arc<GlobalData>) -> ApiService {
@@ -62,7 +60,6 @@ async fn base_request(gd: GlobalData) -> Result<()> {
     let api = init_service(gd.clone()).await;
     let mut receiver = BaseRequest::get_dart_signal_receiver()?;
     while let Some(signal) = receiver.recv().await {
-        debug_print!("Received message {:?}", &signal.message);
         api.handle(signal);
     }
 

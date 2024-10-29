@@ -201,6 +201,7 @@ impl SystemInfoService {
                 delete_marks[index - 1]
             });
             debug_print!("优化后大小:{}", self.cpu_datas.len());
+
             // 删除2天之前的数据
             let oldest = SystemTime::now()
                 .sub(Duration::from_secs(SECONDS_TOW_DAYS))
@@ -208,7 +209,7 @@ impl SystemInfoService {
                 .unwrap_or(Duration::from_secs(0))
                 .as_secs() as u32;
             if let Some(id) = find_index(oldest, &self.history_cpu_datas) {
-                self.history_cpu_datas = self.history_cpu_datas.drain(0..id).collect();
+               self.history_cpu_datas.drain(0..id);
             }
         }
 
@@ -290,12 +291,18 @@ fn find_index(data: u32, datas: &Vec<ChartInfo>) -> Option<usize> {
     while start <= end {
         mid = (end - start) / 2 + start;
         if data < datas[mid].timestamp {
+            if mid == 0 {
+                break;
+            }
             end = mid - 1;
             if mid - 1 > 0 && data > datas[mid - 1].timestamp {
                 break;
             }
         } else if data > datas[mid].timestamp {
             start = mid + 1;
+            if start > datas.len() {
+                break;
+            }
             if mid + 1 < datas.len() && data < datas[mid + 1].timestamp {
                 break;
             }
@@ -480,8 +487,16 @@ mod test {
     // 输出缓存数据大概情况
     #[tokio::test]
     async fn print_datas() {
-        let  system_info = SystemInfoService::new().await;
+        let mut system_info = SystemInfoService::new().await;
         eprintln!("cpu history datas ========= ");
+        // system_info.history_cpu_datas.insert(0, ChartInfo{
+        //     timestamp: 0,
+        //     value: 0
+        // });
+        // system_info.history_cpu_datas.insert(1, ChartInfo{
+        //     timestamp: 1730174936,
+        //     value: 10000
+        // });
         eprintln!("len = {}, start = {:?}, end = {:?}", system_info.history_cpu_datas.len()
                   , system_info.history_cpu_datas.first().unwrap(), system_info.history_cpu_datas.last().unwrap());
         eprintln!("mem history datas ========= ");

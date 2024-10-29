@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:fixnum/fixnum.dart';
-import 'package:flutter/widgets.dart';
 import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:nftools/messages/base.pb.dart';
 
@@ -17,15 +16,11 @@ void initMsg() {
     final rsp = data.message;
     var complete = _reqMap.remove(rsp.id);
     if (complete == null) {
-      // $message.errorNotice(
-      //     title: const Text(
-      //       "请求处理出错",
-      //     ),
-      //     subtitle: Text("无法找到标识为${rsp.id}的请求"));
+      // 错误，没有请求id
       return;
     }
     if (rsp.msg.isNotEmpty) {
-      // $message.errorNotice(title: const Text("处理出错"), subtitle: Text(rsp.msg));
+      // 错误：处理错误
       complete.completeError(rsp.msg);
     } else {
       complete.complete(data.binary);
@@ -47,9 +42,7 @@ Future<List<int>> sendRequest<T extends $pb.GeneratedMessage>(
     id: id,
     service: service,
     func: func,
-  )
-      // request: request?.writeToBuffer())
-      .sendSignalToRust(request?.writeToBuffer() ?? Uint8List(0));
+  ).sendSignalToRust(request?.writeToBuffer() ?? Uint8List(0));
   // 返回
   return completer.future;
 }

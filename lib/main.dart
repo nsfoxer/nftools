@@ -71,7 +71,7 @@ class _MyAppState extends State<MyApp> {
     return AnimatedFluentTheme(
         data: m,
         child: GetMaterialApp(
-          title: 'Flutter Demo',
+          title: 'nftools',
           initialBinding: GlobalControllerBindings(),
           home: FluentApp.router(
             theme: m,
