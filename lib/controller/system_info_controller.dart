@@ -113,8 +113,6 @@ class SystemInfoController extends GetxController {
             DateTime.fromMillisecondsSinceEpoch(x.timestamp * 1000),
             x.value / 100);
       }).toList();
-      state.startTime = DateTime.fromMillisecondsSinceEpoch(datas.infos.first.timestamp * 1000);
-      state.endTime = DateTime.fromMillisecondsSinceEpoch(datas.infos.last.timestamp * 1000);
     }
     update();
   }
