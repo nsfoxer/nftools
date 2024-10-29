@@ -30,6 +30,7 @@ log = "0.4.22"
 sysinfo = { version = "0.32.0", features = ["system"],  default-features = false }
 fast_inv_sqrt = "1.0.1"
 rand = "0.8.5"
+rust-lzma = "0.6.0"
 
 # Uncomment below to target the web.
 # tokio_with_wasm = { version = "0.6.0", features = ["sync", "rt"] }
