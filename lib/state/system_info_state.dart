@@ -9,10 +9,13 @@ class SystemInfoState {
 
   // 历史数据 cpu
   List<ValueInfo> cpuInfos = [];
+
   // 实时数据 cpu
   List<ValueInfo> liveCpuInfos = [];
+
   // 历史数据 mem
   List<ValueInfo> memoryInfos = [];
+
   // 实时数据 mem
   List<ValueInfo> liveMemoryInfos = [];
 
@@ -22,6 +25,7 @@ class SystemInfoState {
   // 历史图表展示
   // 开始时间
   DateTime? startTime;
+
   // 开始时间
   DateTime? endTime;
 
@@ -29,18 +33,19 @@ class SystemInfoState {
 
   void addLiveCpuInfo(double percent) {
     liveCpuInfos.add(ValueInfo(DateTime.now(), percent));
-    if (liveCpuInfos.length > timeSpanCombo[selected]!) {
-      liveCpuInfos.removeAt(0);
+    final len = liveCpuInfos.length - timeSpanCombo[selected]!;
+    if (len > 0) {
+      liveCpuInfos.removeRange(0, len);
     }
   }
 
   void addLiveMemInfo(double percent) {
     liveMemoryInfos.add(ValueInfo(DateTime.now(), percent));
-    if (liveMemoryInfos.length > timeSpanCombo[selected]!) {
-      liveMemoryInfos.removeAt(0);
+    final len = liveMemoryInfos.length - timeSpanCombo[selected]!;
+    if (len > 0) {
+      liveMemoryInfos.removeRange(0, len);
     }
   }
-
 }
 
 class ValueInfo {
