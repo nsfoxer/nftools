@@ -54,15 +54,8 @@ class _MyAppState extends State<MyApp> {
     final systemAccentColor = SystemTheme.accentColor;
     final Map<String, Color> watch = {};
     watch["normal"] = systemAccentColor.accent;
-    watch["darkest"] = systemAccentColor.darkest;
-    watch["darker"] = systemAccentColor.darker;
-    watch["dark"] = systemAccentColor.dark;
-    watch["light"] = systemAccentColor.light;
-    watch["lighter"] = systemAccentColor.lighter;
-    watch["lightest"] = systemAccentColor.lightest;
-
-
     var fonts = Platform.isWindows ? "微软雅黑" : "Source Han Sans SC";
+
     var m = FluentThemeData(brightness: Brightness.light, fontFamily: fonts, accentColor: AccentColor.swatch(watch));
     if (View.of(context).platformDispatcher.platformBrightness.isDark) {
       m = FluentThemeData(brightness: Brightness.dark, fontFamily: fonts, accentColor: AccentColor.swatch(watch));

@@ -2,10 +2,14 @@ import 'dart:async';
 
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
+import 'package:nftools/messages/system_info.pb.dart';
 import 'package:nftools/state/system_info_state.dart';
 import 'package:nftools/api/system_info.dart' as $api;
 
 import '../utils/log.dart';
+
+
+const _magicNumber = 54321;
 
 class SystemInfoController extends GetxController {
   final SystemInfoState state = SystemInfoState();
@@ -95,12 +99,9 @@ class SystemInfoController extends GetxController {
         ValueInfo(state.endTime!, double.nan),
       ];
     } else {
-      state.cpuInfos = datas.infos.map((x) {
-        return ValueInfo(
-            DateTime.fromMillisecondsSinceEpoch(x.timestamp * 1000),
-            x.value / 100);
-      }).toList();
+      state.cpuInfos = _convertDatas(datas);
     }
+
     datas = await $api.getRams(state.startTime!, state.endTime!);
     if (datas.infos.isEmpty) {
       state.memoryInfos = [
@@ -108,13 +109,36 @@ class SystemInfoController extends GetxController {
         ValueInfo(state.endTime!, double.nan),
       ];
     } else {
-      state.memoryInfos = datas.infos.map((x) {
-        return ValueInfo(
-            DateTime.fromMillisecondsSinceEpoch(x.timestamp * 1000),
-            x.value / 100);
-      }).toList();
+      state.memoryInfos = _convertDatas(datas);
     }
     update();
+  }
+
+  List<ValueInfo> _convertDatas(ChartInfoRsp rsp) {
+    if (rsp.infos.isEmpty) {
+      return [];
+    }
+
+    List<ValueInfo> result = [];
+    result.add(_convertChart(rsp.infos.first));
+
+    List<ChartInfo> tmpInfos = [];
+    tmpInfos.add(rsp.infos.first);
+    for (var data in rsp.infos) {
+      if (data.timestamp > tmpInfos.last.timestamp + 1) {
+        tmpInfos
+            .add(ChartInfo(timestamp: tmpInfos.last.timestamp + 1, value: _magicNumber));
+      }
+      tmpInfos.add(data);
+    }
+    return tmpInfos.map<ValueInfo>((x) {
+      return _convertChart(x);
+    }).toList();
+  }
+
+  ValueInfo _convertChart(ChartInfo data) {
+    return ValueInfo(DateTime.fromMillisecondsSinceEpoch(data.timestamp * 1000),
+        data.value == _magicNumber ? double.nan : data.value / 100);
   }
 
   @override
