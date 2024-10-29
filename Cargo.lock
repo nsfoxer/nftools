@@ -611,6 +611,7 @@ dependencies = [
  "rand",
  "reqwest_dav",
  "rinf",
+ "rust-lzma",
  "serde",
  "serde_json",
  "sysinfo",
@@ -1265,6 +1266,16 @@ dependencies = [
  "spin",
  "untrusted",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "rust-lzma"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d62915608f6cee1d7f2fc00f28b4f058ff79d6e4ec3c2fe0006b09b52437c84"
+dependencies = [
+ "pkg-config",
+ "vcpkg",
 ]
 
 [[package]]

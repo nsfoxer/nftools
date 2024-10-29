@@ -185,7 +185,9 @@ impl Drop for SystemInfoService {
             }),
         };
 
+        lzma::
         let buf = cache.encode_to_vec();
+
         if let Ok(mut file) = std::fs::File::create(path) {
             let _ = file.write_all(&buf);
         }
