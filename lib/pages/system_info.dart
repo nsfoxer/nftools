@@ -152,6 +152,8 @@ class CpuInfoPage extends StatelessWidget {
           ),
           LineMark(
             shape: ShapeEncode(value: BasicLineShape(smooth: true)),
+            color: ColorEncode(
+                value: FluentTheme.of(context).activeColor),
             size: SizeEncode(value: 0.3),
           ),
         ],
