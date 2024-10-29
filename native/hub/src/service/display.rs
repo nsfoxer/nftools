@@ -15,6 +15,7 @@ pub mod display {
     use tokio_stream::StreamExt;
     use winreg::enums::{KEY_READ, KEY_WRITE};
     use winreg::RegKey;
+    use crate::messages::common::Uint32Message;
 
     /// 显示器亮度调节
     pub struct DisplayLight {}
@@ -89,7 +90,7 @@ pub mod display {
         }
 
         async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
-            func_notype!(self, func, get_current_mode);
+            func_notype!(self, func, get_current_mode, get_system_color);
             async_func_notype!(self, func, get_wallpaper);
             func_typeno!(
                 self,
@@ -118,6 +119,19 @@ pub mod display {
         pub fn new() -> Self {
             let hklm = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
             Self { theme_reg: hklm }
+        }
+
+        /// 获取系统颜色信息 返回 ARGB
+        fn get_system_color(&self) -> Result<Uint32Message> {
+            let hklm = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
+            let color = hklm.open_subkey_with_flags(
+                "Software\\Microsoft\\Windows\\DWM",
+                KEY_READ
+            )?;
+            let v: u32 = color.get_value("ColorizationColor")?;
+            Ok(Uint32Message{
+                value: v
+            })
         }
 
         fn get_current_mode(&self) -> Result<GetDisplayModeRsp> {

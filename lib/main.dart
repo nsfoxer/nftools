@@ -2,27 +2,28 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
+import 'package:nftools/api/display_api.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
 import 'package:rinf/rinf.dart';
-import 'package:system_theme/system_theme.dart';
 
 void main() async {
   // 初始化
   await initializeRust(assignRustSignal);
   initMsg();
+  var color = await getSystemColor();
 
   // 启动GUI
-  runApp(const MyApp());
+  runApp(MyApp(primaryColor: color));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  Color primaryColor;
+  MyApp({super.key, required this.primaryColor});
 
   @override
   _MyAppState createState() => _MyAppState();
@@ -51,14 +52,14 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    final systemAccentColor = SystemTheme.accentColor;
-    final Map<String, Color> watch = {};
-    watch["normal"] = systemAccentColor.accent;
+    final Map<String, Color> swatch = {
+      "normal": widget.primaryColor,
+    };
     var fonts = Platform.isWindows ? "微软雅黑" : "Source Han Sans SC";
 
-    var m = FluentThemeData(brightness: Brightness.light, fontFamily: fonts, accentColor: AccentColor.swatch(watch));
+    var m = FluentThemeData(brightness: Brightness.light, fontFamily: fonts, accentColor: AccentColor.swatch(swatch));
     if (View.of(context).platformDispatcher.platformBrightness.isDark) {
-      m = FluentThemeData(brightness: Brightness.dark, fontFamily: fonts, accentColor: AccentColor.swatch(watch));
+      m = FluentThemeData(brightness: Brightness.dark, fontFamily: fonts, accentColor: AccentColor.swatch(swatch));
     }
 
     return AnimatedFluentTheme(

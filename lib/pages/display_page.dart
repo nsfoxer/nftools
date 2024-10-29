@@ -7,14 +7,12 @@ import 'package:nftools/controller/display_controller.dart';
 import 'package:nftools/controller/display_mode_controller.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf-widgets.dart';
-import 'package:system_theme/system_theme.dart';
 
 class DisplayPage extends StatelessWidget {
   const DisplayPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    var sc = SystemTheme.accentColor;
     Typography typography = FluentTheme.of(context).typography;
     return ScaffoldPage.withPadding(
         header: const PageHeader(
