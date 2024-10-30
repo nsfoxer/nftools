@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
@@ -12,7 +11,9 @@ import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:rinf/rinf.dart';
+import 'package:system_tray/system_tray.dart';
 import 'package:window_manager/window_manager.dart';
+
 
 void main() async {
   // 1，初始化 window manager
@@ -29,6 +30,9 @@ void main() async {
     await windowManager.show();
     await windowManager.focus();
   });
+
+  // 2. 初始化托盘
+  initSystemTray();
 
   // 2. 初始化后端
   await initializeRust(assignRustSignal);
@@ -246,7 +250,7 @@ class MainPage extends StatelessWidget {
                       size: typography.caption?.fontSize,
                     ),
                     onPressed: () {
-                      windowManager.minimize();
+                      windowManager.hide();
                     }),
                 IconButton(
                     icon: Icon(
@@ -283,4 +287,27 @@ class MainPage extends StatelessWidget {
       },
     );
   }
+}
+
+// 初始化系统托盘
+Future<void> initSystemTray() async {
+  String path =
+  Platform.isWindows ? 'assets/seafox.ico' : 'assets/seafox.png';
+
+  final SystemTray systemTray = SystemTray();
+
+  // We first init the systray menu
+  await systemTray.initSystemTray(
+    title: "nftools",
+    iconPath: path,
+  );
+
+  // handle system tray event
+  systemTray.registerSystemTrayEventHandler((eventName) async {
+      if (!await windowManager.isVisible()) {
+        windowManager.show();
+      } else {
+        windowManager.hide();
+      }
+  });
 }
