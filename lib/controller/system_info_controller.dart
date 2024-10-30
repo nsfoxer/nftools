@@ -93,7 +93,7 @@ class SystemInfoController extends GetxController {
     info("${state.startTime} -- ${state.endTime}");
     // 获取历史数据
     var datas = await $api.getCpus(state.startTime!, state.endTime!);
-    if (datas.infos.isEmpty) {
+    if (datas.infos.length < 2) {
       state.cpuInfos = [
         ValueInfo(state.startTime!, double.nan),
         ValueInfo(state.endTime!, double.nan),
@@ -103,7 +103,7 @@ class SystemInfoController extends GetxController {
     }
 
     datas = await $api.getRams(state.startTime!, state.endTime!);
-    if (datas.infos.isEmpty) {
+    if (datas.infos.length < 2) {
       state.memoryInfos = [
         ValueInfo(state.startTime!, double.nan),
         ValueInfo(state.endTime!, double.nan),

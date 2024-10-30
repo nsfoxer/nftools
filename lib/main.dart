@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
@@ -9,34 +10,53 @@ import 'package:nftools/api/display_api.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:rinf/rinf.dart';
+import 'package:window_manager/window_manager.dart';
 
 void main() async {
-  // 初始化
+  // 1，初始化 window manager
+  WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
+  WindowOptions windowOptions = const WindowOptions(
+    size: Size(800, 600),
+    center: true,
+    backgroundColor: Colors.transparent,
+    skipTaskbar: false,
+    titleBarStyle: TitleBarStyle.hidden,
+  );
+  windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
+
+  // 2. 初始化后端
   await initializeRust(assignRustSignal);
   initMsg();
-  var color = await getSystemColor();
 
   // 启动GUI
-  runApp(MyApp(primaryColor: color));
+  runApp(MainApp(primaryColor: await getSystemColor()));
 }
 
-class MyApp extends StatefulWidget {
+class MainApp extends StatefulWidget {
   Color primaryColor;
 
-  MyApp({super.key, required this.primaryColor});
+  MainApp({super.key, required this.primaryColor});
 
   @override
-  _MyAppState createState() => _MyAppState();
+  _MainAppState createState() => _MainAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MainAppState extends State<MainApp> with WindowListener {
   ThemeMode mode = ThemeMode.system;
   late final AppLifecycleListener _listener;
 
   @override
   void initState() {
     super.initState();
+    // 添加window——manager监听器
+    windowManager.addListener(this);
+    // 等待后端服务退出
     _listener = AppLifecycleListener(
       onExitRequested: () async {
         finalizeRust(); // Shut down the `tokio` Rust runtime.
@@ -47,8 +67,14 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    windowManager.removeListener(this);
     _listener.dispose();
     super.dispose();
+  }
+
+  @override
+  void onWindowEvent(String eventName) {
+    info('[WindowManager] onWindowEvent: $eventName');
   }
 
   @override
@@ -73,8 +99,10 @@ class _MyAppState extends State<MyApp> {
         data: m,
         child: GetMaterialApp(
           title: 'nftools',
+          debugShowCheckedModeBanner: false,
           initialBinding: GlobalControllerBindings(),
           home: FluentApp.router(
+            debugShowCheckedModeBanner: false,
             theme: m,
             darkTheme: m,
             title: "App Title",
@@ -169,6 +197,8 @@ class MainPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = FluentTheme.of(context).typography;
+    final bg = FluentTheme.of(context).navigationPaneTheme.backgroundColor;
     return NavigationView(
       appBar: NavigationAppBar(
         automaticallyImplyLeading: false,
@@ -182,18 +212,68 @@ class MainPage extends StatelessWidget {
                 }
               : null;
           return PaneItem(
-                  icon: Icon(FluentIcons.back),
+                  icon: const Icon(FluentIcons.back),
                   enabled: enabled,
-                  body: SizedBox.shrink())
+                  body: const SizedBox.shrink())
               .build(context, false, onPressed,
                   displayMode: PaneDisplayMode.compact);
         }(),
-        title: Text("titles"),
-        actions: Text("actions"),
+        title: GestureDetector(
+            onTapDown: (_) {
+              info("message");
+              windowManager.startDragging();
+            },
+            child: Container(
+                height: double.infinity,
+                width: double.infinity,
+                color: bg,
+                child: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text("nftools"),
+                ))),
+        // const Text("nftools"),
+
+        actions: Container(
+            margin: const EdgeInsets.all(5),
+            child: Center(
+                child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                    icon:
+                    Icon(
+                      FluentIcons.chrome_minimize,
+                      size: typography.caption?.fontSize,
+                    ),
+                    onPressed: () {
+                      windowManager.minimize();
+                    }),
+                IconButton(
+                    icon: Icon(
+                      FluentIcons.chrome_restore,
+                      size: typography.caption?.fontSize,
+                    ),
+                    onPressed: () async {
+                      if (await windowManager.isMaximized()) {
+                        windowManager.unmaximize();
+                      } else {
+                        windowManager.maximize();
+                      }
+                    }),
+                IconButton(
+                    icon: Icon(
+                      FluentIcons.chrome_close,
+                      size: typography.caption?.fontSize,
+                    ),
+                    onPressed: () {
+                      windowManager.close();
+                    }),
+              ],
+            ))),
       ),
       pane: NavigationPane(
         selected: _calculateIndex(context),
-        header: Text("pane Header"),
+        header: const Text("pane Header"),
         displayMode: PaneDisplayMode.compact,
         items: _buildPaneItem(MyRouterConfig.menuDatas, context),
         footerItems: _buildPaneItem(MyRouterConfig.footerDatas, context),
@@ -204,69 +284,3 @@ class MainPage extends StatelessWidget {
     );
   }
 }
-
-// class MenuBar extends StatelessWidget {
-//   const MenuBar({super.key, required this.changeTheme});
-//   final ValueChanged<bool> changeTheme;
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return GetBuilder<MainPageController>(builder: (logic) {
-//       var pageState = logic.pageState;
-//       var menus = MyRouterConfig.menuDatas
-//           .map((x) => MenuMeta(label: x.label, icon: x.icon, router: x.router))
-//           .toList();
-//       return NavigationBar(
-//         activeId: pageState.selected,
-//         leading: (type) => Container(
-//             margin: const EdgeInsets.all(6),
-//             child: const CircleAvatar(
-//               radius: 24,
-//               child: Text("张"),
-//             )),
-//         tail: (type) => Column(
-//           children: [
-//             Padding(
-//               padding: const EdgeInsets.only(bottom: 15),
-//               child: TolyAction(
-//                   child:
-//                       Icon(Get.isDarkMode ? Icons.dark_mode : Icons.light_mode),
-//                   onTap: () {
-//                     changeTheme(!Get.isDarkMode);
-//                   }),
-//             ),
-//             Padding(
-//               padding: const EdgeInsets.only(bottom: 15),
-//               child: GetBuilder<MainPageController>(
-//                   builder: (logic) => TolyAction(
-//                       child: const Icon(Icons.settings),
-//                       onTap: () {
-//                         logic.openSetting();
-//                       })),
-//             )
-//           ],
-//         ),
-//       );
-//     });
-//   }
-// }
-//
-// class PageBody extends StatelessWidget {
-//   const PageBody({super.key});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return GetBuilder<MainPageController>(builder: (logic) {
-//       var pageState = logic.pageState;
-//       var pages = MyRouterConfig.pages;
-//       pages.add(MyRouterConfig.settingData.page);
-//       return PageView(
-//         pageSnapping: false,
-//         scrollDirection: Axis.vertical,
-//         controller: pageState.pageController,
-//         physics: const NeverScrollableScrollPhysics(),
-//         children: pages,
-//       );
-//     });
-//   }
-// }
