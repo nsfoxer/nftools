@@ -1,14 +1,11 @@
 import 'dart:io';
 
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/display_controller.dart';
 import 'package:nftools/controller/display_mode_controller.dart';
-import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf-widgets.dart';
-import 'package:window_manager/window_manager.dart';
 
 class DisplayPage extends StatelessWidget {
   const DisplayPage({super.key});
@@ -32,10 +29,6 @@ class DisplayPage extends StatelessWidget {
             Text("主题", style: typography.subtitle),
             NFLayout.vlineh2,
             const NFCard(child: _DisplayMode()),
-            Button(child: Text("Drag"), onTapDown: () {
-              info("message");
-              windowManager.startDragging();
-            }, onPressed: () {  },)
           ],
         ));
   }

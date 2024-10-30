@@ -77,11 +77,6 @@ class _MainAppState extends State<MainApp> with WindowListener {
   }
 
   @override
-  void onWindowEvent(String eventName) {
-    info('[WindowManager] onWindowEvent: $eventName');
-  }
-
-  @override
   Widget build(BuildContext context) {
     final Map<String, Color> swatch = {
       "normal": widget.primaryColor,
@@ -156,6 +151,7 @@ final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
   ShellRoute(
     navigatorKey: _shellNavigatorKey,
     builder: (context, state, child) {
+      MyRouterConfig.currentUrl = state.fullPath ?? '/';
       return MainPage(
         buildContext: _shellNavigatorKey.currentContext,
         child: child,
@@ -179,6 +175,9 @@ class MainPage extends StatelessWidget {
       List<MenuData> datas, BuildContext context) {
     List<NavigationPaneItem> children = [];
     for (var value in datas) {
+      if (!value.isVisible) {
+        continue;
+      }
       children.add(PaneItem(
           icon: Icon(value.icon),
           title: Text(value.label),
@@ -193,7 +192,7 @@ class MainPage extends StatelessWidget {
   int _calculateIndex(BuildContext context) {
     final local = GoRouterState.of(context).uri.toString();
     List<MenuData> tmp = [];
-    tmp.addAll(MyRouterConfig.menuDatas);
+    tmp.addAll(MyRouterConfig.menuDatas.where((x) => x.isVisible).toList());
     tmp.addAll(MyRouterConfig.footerDatas);
 
     return tmp.indexWhere((x) => x.url == local);
@@ -235,8 +234,6 @@ class MainPage extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text("nftools"),
                 ))),
-        // const Text("nftools"),
-
         actions: Container(
             margin: const EdgeInsets.all(5),
             child: Center(
@@ -251,6 +248,7 @@ class MainPage extends StatelessWidget {
                     ),
                     onPressed: () {
                       windowManager.hide();
+                      context.go("/");
                     }),
                 IconButton(
                     icon: Icon(

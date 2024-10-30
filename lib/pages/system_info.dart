@@ -1,19 +1,28 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
 import 'package:graphic/graphic.dart';
 import 'package:intl/intl.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/system_info_controller.dart';
+import 'package:nftools/router/router.dart';
 import 'package:nftools/state/system_info_state.dart';
+import 'package:nftools/utils/log.dart';
 
 DateFormat _timeFormat = DateFormat.Hms();
 
 class SystemInfoPage extends StatelessWidget {
+  const SystemInfoPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     Typography typography = FluentTheme.of(context).typography;
     return GetBuilder<SystemInfoController>(builder: (logic) {
+      // 处理后台页面
+      if (MyRouterConfig.currentUrl != "/systemInfo") {
+        return const SizedBox.shrink();
+      }
       return ScaffoldPage.scrollable(
           header: PageHeader(
               title: const Text("系统信息"),
