@@ -23,6 +23,7 @@ void main() async {
 
 class MyApp extends StatefulWidget {
   Color primaryColor;
+
   MyApp({super.key, required this.primaryColor});
 
   @override
@@ -57,9 +58,15 @@ class _MyAppState extends State<MyApp> {
     };
     var fonts = Platform.isWindows ? "微软雅黑" : "Source Han Sans SC";
 
-    var m = FluentThemeData(brightness: Brightness.light, fontFamily: fonts, accentColor: AccentColor.swatch(swatch));
+    var m = FluentThemeData(
+        brightness: Brightness.light,
+        fontFamily: fonts,
+        accentColor: AccentColor.swatch(swatch));
     if (View.of(context).platformDispatcher.platformBrightness.isDark) {
-      m = FluentThemeData(brightness: Brightness.dark, fontFamily: fonts, accentColor: AccentColor.swatch(swatch));
+      m = FluentThemeData(
+          brightness: Brightness.dark,
+          fontFamily: fonts,
+          accentColor: AccentColor.swatch(swatch));
     }
 
     return AnimatedFluentTheme(
@@ -140,36 +147,13 @@ class MainPage extends StatelessWidget {
       List<MenuData> datas, BuildContext context) {
     List<NavigationPaneItem> children = [];
     for (var value in datas) {
-      if (value.isParent) {
-        List<NavigationPaneItem> items = [];
-        for (var value2 in datas) {
-          if (value2.parentUrl == value.url) {
-            items.add(PaneItem(
-                icon: Icon(value2.icon),
-                title: Text(value2.label),
-                body: value2.body,
-                onTap: () {
-                  context.go(value2.url);
-                }));
-          }
-        }
-        children.add(PaneItemExpander(
-            icon: Icon(value.icon),
-            title: Text(value.label),
-            items: items,
-            body: value.body,
-            onTap: () {
-              context.go(value.url);
-            }));
-      } else if (value.parentUrl == null) {
-        children.add(PaneItem(
-            icon: Icon(value.icon),
-            title: Text(value.label),
-            body: value.body,
-            onTap: () {
-              context.go(value.url);
-            }));
-      }
+      children.add(PaneItem(
+          icon: Icon(value.icon),
+          title: Text(value.label),
+          body: value.body,
+          onTap: () {
+            context.go(value.url);
+          }));
     }
     return children;
   }
