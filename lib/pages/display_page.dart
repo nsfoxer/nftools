@@ -1,11 +1,11 @@
 import 'dart:io';
 
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/display_controller.dart';
 import 'package:nftools/controller/display_mode_controller.dart';
-import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf-widgets.dart';
 
 class DisplayPage extends StatelessWidget {
@@ -30,13 +30,6 @@ class DisplayPage extends StatelessWidget {
             Text("主题", style: typography.subtitle),
             NFLayout.vlineh2,
             const NFCard(child: _DisplayMode()),
-            Tooltip(
-              message: "test",
-              child: Text("asda"),
-            ),
-            Button(child: const Text("info"), onPressed: () async {
-              info(",sss", context: context);
-            })
           ],
         ));
   }
@@ -147,10 +140,11 @@ class _Mode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     List<BoxShadow>? boxShadow;
+    var color = FluentTheme.of(context).accentColor.normal;
     if (isSelect) {
       boxShadow = [
         BoxShadow(
-            color: Colors.blue.withOpacity(0.5),
+            color: color.withOpacity(0.5),
             spreadRadius: 5,
             blurRadius: 20)
       ];

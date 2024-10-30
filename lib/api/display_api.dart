@@ -2,6 +2,7 @@
 
 import 'dart:ui';
 
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/messages/common.pb.dart';
 import 'package:nftools/messages/display.pb.dart';
@@ -39,7 +40,7 @@ Future<void> setMode(DisplayMode mode) async {
 Future<Color> getSystemColor() async {
   var data = await sendRequest<EmptyMessage>(_service2, _getSystemColor, null);
   var result = Uint32Message.fromBuffer(data);
-  return Color(result.value);
+  return Color(result.value).lighten(20);
 }
 
 Future<GetWallpaperRsp> getWallpaper() async {

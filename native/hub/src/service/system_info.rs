@@ -123,9 +123,11 @@ impl SystemInfoService {
         if let Ok(mut file) = File::open(path).await {
             let mut buf = Vec::new();
             let _ = file.read_to_end(&mut buf).await;
-            if let Ok(r) = SystemInfoCache::decode(&buf[..]) {
-                cpu_datas = r.cpu_datas.unwrap_or_default().infos;
-                mem_datas = r.mem_datas.unwrap_or_default().infos;
+            if let Ok(buf) = lzma::decompress(&buf) {
+                if let Ok(r) = SystemInfoCache::decode(&buf[..]) {
+                    cpu_datas = r.cpu_datas.unwrap_or_default().infos;
+                    mem_datas = r.mem_datas.unwrap_or_default().infos;
+                }
             }
         }
 
@@ -159,7 +161,6 @@ impl SystemInfoService {
                 .collect(),
         })
     }
-
 }
 
 impl Drop for SystemInfoService {
@@ -185,11 +186,11 @@ impl Drop for SystemInfoService {
             }),
         };
 
-        lzma::
         let buf = cache.encode_to_vec();
-
-        if let Ok(mut file) = std::fs::File::create(path) {
-            let _ = file.write_all(&buf);
+        if let Ok(buf) = lzma::compress(&buf, 9) {
+            if let Ok(mut file) = std::fs::File::create(path) {
+                let _ = file.write_all(&buf);
+            }
         }
     }
 }
@@ -199,7 +200,7 @@ fn optimize_data(datas: &mut Vec<ChartInfo>, force: bool) {
     if force {
         // 强制删除
         let timestamp = SystemTime::now()
-            .sub(Duration::from_secs(3600*48))
+            .sub(Duration::from_secs(3600 * 48))
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs() as u32;
@@ -211,7 +212,7 @@ fn optimize_data(datas: &mut Vec<ChartInfo>, force: bool) {
 
     // 非强制删除
     if datas.len() > CLEAR_MAX_SIZE {
-        datas.drain(0..CLEAR_MAX_SIZE-MAX_SIZE);
+        datas.drain(0..CLEAR_MAX_SIZE - MAX_SIZE);
     }
 }
 
@@ -420,20 +421,12 @@ mod test {
             eprintln!("{}", d.value);
         }
     }
-    
+
     // 输出缓存数据大概情况
     #[tokio::test]
     async fn print_datas() {
         let mut system_info = SystemInfoService::new().await;
         eprintln!("cpu history datas ========= ");
-        // system_info.history_cpu_datas.insert(0, ChartInfo{
-        //     timestamp: 0,
-        //     value: 0
-        // });
-        // system_info.history_cpu_datas.insert(1, ChartInfo{
-        //     timestamp: 1730174936,
-        //     value: 10000
-        // });
         eprintln!("len = {}, start = {:?}, end = {:?}", system_info.cpu_datas.len()
                   , system_info.cpu_datas.first().unwrap(), system_info.cpu_datas.last().unwrap());
         eprintln!("mem history datas ========= ");
