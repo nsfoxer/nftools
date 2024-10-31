@@ -6,14 +6,14 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/api/display_api.dart';
+import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:rinf/rinf.dart';
-import 'package:system_tray/system_tray.dart';
+import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
-
 
 void main() async {
   // 1，初始化 window manager
@@ -51,7 +51,7 @@ class MainApp extends StatefulWidget {
   _MainAppState createState() => _MainAppState();
 }
 
-class _MainAppState extends State<MainApp> with WindowListener {
+class _MainAppState extends State<MainApp> with WindowListener, TrayListener {
   ThemeMode mode = ThemeMode.system;
   late final AppLifecycleListener _listener;
 
@@ -60,6 +60,7 @@ class _MainAppState extends State<MainApp> with WindowListener {
     super.initState();
     // 添加window——manager监听器
     windowManager.addListener(this);
+    trayManager.addListener(this);
     // 等待后端服务退出
     _listener = AppLifecycleListener(
       onExitRequested: () async {
@@ -69,9 +70,28 @@ class _MainAppState extends State<MainApp> with WindowListener {
     );
   }
 
+  void _displayApp() async {
+    if (!await windowManager.isVisible()) {
+      windowManager.show();
+    } else {
+      windowManager.hide();
+    }
+  }
+
+  @override
+  void onTrayIconMouseDown() {
+    _displayApp();
+  }
+
+  @override
+  void onTrayIconRightMouseDown() {
+    _displayApp();
+  }
+
   @override
   void dispose() {
     windowManager.removeListener(this);
+    trayManager.removeListener(this);
     _listener.dispose();
     super.dispose();
   }
@@ -100,12 +120,12 @@ class _MainAppState extends State<MainApp> with WindowListener {
           title: 'nftools',
           debugShowCheckedModeBanner: false,
           initialBinding: GlobalControllerBindings(),
+          localizationsDelegates: FluentLocalizations.localizationsDelegates,
           home: FluentApp.router(
             debugShowCheckedModeBanner: false,
             theme: m,
             darkTheme: m,
             title: "App Title",
-            localizationsDelegates: FluentLocalizations.localizationsDelegates,
             builder: (context, child) {
               return child!;
             },
@@ -145,9 +165,16 @@ List<GoRoute> _generateRoute(List<MenuData> datas) {
   return result;
 }
 
+/// 构造一个全局路由观察者
+class GDNavigatorObserver extends NavigatorObserver {
+  static GDNavigatorObserver instance = GDNavigatorObserver();
+}
+
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
-final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
+final router = GoRouter(
+  observers: [GDNavigatorObserver.instance],
+    navigatorKey: rootNavigatorKey, routes: [
   ShellRoute(
     navigatorKey: _shellNavigatorKey,
     builder: (context, state, child) {
@@ -241,8 +268,7 @@ class MainPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 IconButton(
-                    icon:
-                    Icon(
+                    icon: Icon(
                       FluentIcons.chrome_minimize,
                       size: typography.caption?.fontSize,
                     ),
@@ -289,23 +315,10 @@ class MainPage extends StatelessWidget {
 
 // 初始化系统托盘
 Future<void> initSystemTray() async {
-  String path =
-  Platform.isWindows ? 'assets/seafox.ico' : 'assets/seafox.png';
-
-  final SystemTray systemTray = SystemTray();
+  String path = Platform.isWindows ? 'assets/seafox.ico' : 'assets/seafox.png';
 
   // We first init the systray menu
-  await systemTray.initSystemTray(
-    title: "nftools",
-    iconPath: path,
-  );
-
-  // handle system tray event
-  systemTray.registerSystemTrayEventHandler((eventName) async {
-      if (!await windowManager.isVisible()) {
-        windowManager.show();
-      } else {
-        windowManager.hide();
-      }
-  });
+  await trayManager.setIcon(path);
+  await trayManager.setTitle(Constants.appName);
+  await trayManager.setToolTip(Constants.appName);
 }

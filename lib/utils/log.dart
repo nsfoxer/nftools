@@ -1,30 +1,35 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:nftools/main.dart';
+
+BuildContext? getCurrentContext() {
+  return rootNavigatorKey.currentState?.context;
+}
 
 /// info log
-void info(String message, {BuildContext? context}) {
-  _print(message, InfoBarSeverity.info, context);
+void info(String message) {
+  _print(message, InfoBarSeverity.info);
 }
 
 /// warn log
-void warn(String message, {BuildContext? context}) {
-  _print(message, InfoBarSeverity.warning, context);
+void warn(String message) {
+  _print(message, InfoBarSeverity.warning);
 }
 
 /// error log
-void error(String message, {BuildContext? context}) {
-  _print(message, InfoBarSeverity.error, context);
+void error(String message) {
+  _print(message, InfoBarSeverity.error);
 }
 
-void _print(
-    String message, InfoBarSeverity serverity, BuildContext? context) async {
-  debugPrint("${serverity.name}: $message");
+void _print(String message, InfoBarSeverity serverity) async {
+  debugPrint("${serverity.name}");
+  final context = getCurrentContext();
   if (context == null) {
     return;
   }
   await displayInfoBar(context, builder: (context, close) {
     return InfoBar(
-      title: Text(message),
-      severity: serverity,
+      content: Text(message),
+      severity: serverity, title: Text(serverity.name.toUpperCase()),
     );
   });
 }

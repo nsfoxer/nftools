@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:fixnum/fixnum.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:nftools/messages/base.pb.dart';
 
@@ -17,10 +18,12 @@ void initMsg() {
     var complete = _reqMap.remove(rsp.id);
     if (complete == null) {
       // 错误，没有请求id
+      error("无法处理响应:无法找到对应id：${rsp.id}");
       return;
     }
     if (rsp.msg.isNotEmpty) {
       // 错误：处理错误
+      error("处理错误:${rsp.msg}");
       complete.completeError(rsp.msg);
     } else {
       complete.complete(data.binary);
