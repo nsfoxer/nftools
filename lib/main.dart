@@ -117,7 +117,7 @@ class _MainAppState extends State<MainApp> with WindowListener, TrayListener {
     return AnimatedFluentTheme(
         data: m,
         child: GetMaterialApp(
-          title: 'nftools',
+          title: Constants.appName,
           debugShowCheckedModeBanner: false,
           initialBinding: GlobalControllerBindings(),
           localizationsDelegates: FluentLocalizations.localizationsDelegates,
@@ -125,7 +125,6 @@ class _MainAppState extends State<MainApp> with WindowListener, TrayListener {
             debugShowCheckedModeBanner: false,
             theme: m,
             darkTheme: m,
-            title: "App Title",
             builder: (context, child) {
               return child!;
             },
@@ -258,7 +257,7 @@ class MainPage extends StatelessWidget {
                 color: bg,
                 child: const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text("nftools"),
+                  child: Text(Constants.appName),
                 ))),
         actions: Container(
             margin: const EdgeInsets.all(5),
@@ -292,6 +291,13 @@ class MainPage extends StatelessWidget {
                       FluentIcons.chrome_close,
                       size: typography.caption?.fontSize,
                     ),
+
+                    style: ButtonStyle(backgroundColor: WidgetStateColor.resolveWith((state) {
+                      if (state.contains(WidgetState.hovered)) {
+                        return Color.fromARGB(255, 192, 43, 28);
+                      }
+                      return bg ?? Colors.transparent;
+                    })),
                     onPressed: () {
                       windowManager.close();
                     }),
@@ -318,6 +324,5 @@ Future<void> initSystemTray() async {
 
   // We first init the systray menu
   await trayManager.setIcon(path);
-  await trayManager.setTitle(Constants.appName);
   await trayManager.setToolTip(Constants.appName);
 }
