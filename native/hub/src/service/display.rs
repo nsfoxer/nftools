@@ -1,8 +1,6 @@
 #[cfg(target_os = "windows")]
 pub mod display {
-    use crate::messages::display::{
-        DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp,
-    };
+    use crate::messages::display::{DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp, SystemModeMsg};
     use crate::service::service::{ImmService, LazyService, Service};
     use crate::{async_func_notype, func_end, func_notype, func_typeno};
     use anyhow::{anyhow, Error, Result};
@@ -11,10 +9,15 @@ pub mod display {
     use ddc_winapi::Monitor;
     use prost::Message;
     use std::path::PathBuf;
+    use std::sync::Arc;
+    use std::time::Duration;
+    use serde::{Deserialize, Serialize};
+    use tokio::task::JoinHandle;
     use tokio_stream::wrappers::ReadDirStream;
     use tokio_stream::StreamExt;
     use winreg::enums::{KEY_READ, KEY_WRITE};
     use winreg::RegKey;
+    use crate::common::global_data::GlobalData;
     use crate::messages::common::Uint32Message;
 
     /// 显示器亮度调节
@@ -78,9 +81,19 @@ pub mod display {
         }
     }
 
+    const MARK: &str = "displayMode_systemMode";
+    #[derive(Debug, Serialize, Deserialize, Default)]
+    struct SystemModeData {
+        enabled: bool,
+        keep_screen: bool,
+    }
+
     /// 显示壁纸
     pub struct DisplayMode {
         theme_reg: RegKey,
+        global_data: Arc<GlobalData>,
+        system_mode: SystemModeData,
+        block_handle: Option<JoinHandle<()>>,
     }
 
     #[async_trait]
@@ -116,9 +129,71 @@ pub mod display {
     }
 
     impl DisplayMode {
-        pub fn new() -> Self {
+        // 执行阻止系统睡眠任务
+        async fn block_system(&mut self) {
+            if let Some(task) = &self.block_handle {
+                task.abort();
+            }
+
+            if !self.system_mode.enabled {
+                return;
+            }
+
+            let block_task = tokio::spawn(async || {
+                loop {
+                    if self.system_mode.keep_screen {
+                        Self::keep_screen_light();
+                    } else {
+                        Self::keep_system();
+                    }
+                    tokio::time::sleep(Duration::from_secs(60)).await;
+                }
+            });
+            self.block_handle = Some(block_task);
+        }
+        // 参考文档：https://learn.microsoft.com/zh-cn/windows/win32/api/winbase/nf-winbase-setthreadexecutionstate
+        // 设置系统不休眠
+        fn keep_system() {
+            unsafe {
+                winapi::um::winbase::SetThreadExecutionState(0x00000001);
+            }
+        }
+
+        // 设置屏幕不关闭
+        fn keep_screen_light() {
+            unsafe {
+                winapi::um::winbase::SetThreadExecutionState(0x00000002);
+            }
+        }
+    }
+
+    impl DisplayMode {
+        pub async fn new(global_data: Arc<GlobalData>) -> Self {
             let hklm = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
-            Self { theme_reg: hklm }
+            let system_mode = global_data.get_data(MARK)
+                .unwrap_or(SystemModeData::default());
+
+            let mut this = Self { theme_reg: hklm, global_data, system_mode, block_handle };
+            this.block_system().await;
+            this
+        }
+
+        fn get_system_mode(&self) -> Result<SystemModeMsg> {
+            Ok(SystemModeMsg {
+                enabled: self.system_mode.enabled,
+                keep_screen: self.system_mode.keep_screen,
+            })
+        }
+
+        async fn set_system_mode(&mut self, mode: SystemModeMsg) -> Result<()> {
+            let mode = SystemModeData {
+                enabled: mode.enabled,
+                keep_screen: mode.keep_screen,
+            };
+            self.global_data.set_data(MARK.to_string(), &mode)?;
+            self.system_mode = mode;
+            self.block_system().await;
+            Ok(())
         }
 
         /// 获取系统颜色信息 返回 ARGB
@@ -126,10 +201,10 @@ pub mod display {
             let hklm = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
             let color = hklm.open_subkey_with_flags(
                 "Software\\Microsoft\\Windows\\DWM",
-                KEY_READ
+                KEY_READ,
             )?;
             let v: u32 = color.get_value("ColorizationColor")?;
-            Ok(Uint32Message{
+            Ok(Uint32Message {
                 value: v
             })
         }
@@ -432,9 +507,11 @@ pub mod display {
                 }
             };
 
-            Ok(GetDisplayModeRsp {mode: Some(crate::messages::display::DisplayMode{
-                is_light: r
-            })  })
+            Ok(GetDisplayModeRsp {
+                mode: Some(crate::messages::display::DisplayMode {
+                    is_light: r
+                })
+            })
         }
 
         /// 获取壁纸
