@@ -47,3 +47,11 @@ message GetWallpaperRsp {
     string light_wallpaper = 1;
     string dark_wallpaper = 2;
 }
+
+// 设置系统是否常亮不睡眠 请求和回应
+message SystemModeMsg {
+    // 是否开启此功能
+    bool enabled = 1;
+    // 屏幕是否常亮 为否时，系统工作但不休眠；为真时，屏幕常亮
+    bool keep_screen = 2;
+}
