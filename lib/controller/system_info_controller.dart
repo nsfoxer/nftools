@@ -90,7 +90,6 @@ class SystemInfoController extends GetxController {
 
   // 更新历史数据
   void _updateHistoryDatas() async {
-    info("${state.startTime} -- ${state.endTime}");
     // 获取历史数据
     var datas = await $api.getCpus(state.startTime!, state.endTime!);
     if (datas.infos.length < 2) {
