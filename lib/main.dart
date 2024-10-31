@@ -250,7 +250,6 @@ class MainPage extends StatelessWidget {
         }(),
         title: GestureDetector(
             onTapDown: (_) {
-              info("message");
               windowManager.startDragging();
             },
             child: Container(
