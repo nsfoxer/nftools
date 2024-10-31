@@ -52,7 +52,7 @@ class SystemInfoController extends GetxController {
       final tmpStartTime = state.startTime!.subtract(duration);
       if (tmpStartTime
           .isBefore(DateTime.now().subtract(const Duration(days: 2)))) {
-        info("已超过2天，无数据记录", context: context);
+        info("已超过2天，无数据记录");
         return;
       } else {
         state.startTime = tmpStartTime;
