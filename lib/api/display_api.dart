@@ -26,6 +26,8 @@ const String _getCurrentMode = "get_current_mode";
 const String _setMode = "set_mode";
 const String _getWallpaper = "get_wallpaper";
 const String _getSystemColor = "get_system_color";
+const String _getSystemMode = "get_system_mode";
+const String _setSystemMode = "set_system_mode";
 
 Future<DisplayMode> getCurrentMode() async {
   var data = await sendRequest<EmptyMessage>(_service2, _getCurrentMode, null);
@@ -48,3 +50,15 @@ Future<GetWallpaperRsp> getWallpaper() async {
   var result = GetWallpaperRsp.fromBuffer(data);
   return result;
 }
+
+Future<SystemModeMsg> getSystemMode() async {
+  var data = await sendRequest<EmptyMessage>(_service2, _getSystemMode, null);
+  var result = SystemModeMsg.fromBuffer(data);
+  return result;
+}
+
+Future<void> setSystemMode(bool enabled, bool keepScreen) async {
+  final mode =  SystemModeMsg(enabled: enabled, keepScreen: keepScreen);
+  await sendRequest(_service2, _setSystemMode, mode);
+}
+

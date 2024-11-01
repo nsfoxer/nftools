@@ -12,28 +12,18 @@ class DisplayPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Typography typography = FluentTheme.of(context).typography;
-    return ScaffoldPage.withPadding(
-        header: const PageHeader(
-          title: Text("显示工具"),
-        ),
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "显示器亮度",
-              style: typography.subtitle,
-            ),
-            const NFCard(child: _DisplayLight()),
-            NFLayout.vlineh1,
-            Text("主题", style: typography.subtitle),
-            NFLayout.vlineh2,
-            const NFCard(child: _DisplayMode()),
-          ],
-        ));
+    return ScaffoldPage.scrollable(
+      header: const PageHeader(
+        title: Text("显示工具"),
+      ),
+      children: [
+        NFCard(title: "显示器亮度", child: _DisplayLight()),
+        NFCard(title: "主题", child: _DisplayMode()),
+        NFCard(title: "系统休眠", child: _SystemMode()),
+      ],
+    );
   }
 }
-
 
 class _DisplayLight extends StatelessWidget {
   const _DisplayLight({Key? key}) : super(key: key);
@@ -143,9 +133,7 @@ class _Mode extends StatelessWidget {
     if (isSelect) {
       boxShadow = [
         BoxShadow(
-            color: color.withOpacity(0.5),
-            spreadRadius: 5,
-            blurRadius: 20)
+            color: color.withOpacity(0.5), spreadRadius: 5, blurRadius: 20)
       ];
     }
     return Column(children: [
@@ -164,5 +152,20 @@ class _Mode extends StatelessWidget {
         height: 10,
       ),
     ]);
+  }
+}
+
+class _SystemMode extends StatelessWidget {
+  const _SystemMode();
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<DisplayModeController>(builder: (logic) {
+      return Row(
+        children: [
+          Button(child: child, onPressed: onPressed)
+        ],
+      );
+    });
   }
 }
