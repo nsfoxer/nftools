@@ -2,7 +2,7 @@
 pub mod display {
     use crate::messages::display::{DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp, SystemModeMsg};
     use crate::service::service::{ImmService, LazyService, Service};
-    use crate::{async_func_notype, func_end, func_notype, func_typeno};
+    use crate::{async_func_notype, async_func_typeno, func_end, func_notype, func_typeno};
     use anyhow::{anyhow, Error, Result};
     use async_trait::async_trait;
     use ddc::{Ddc, VcpValue};
@@ -103,8 +103,9 @@ pub mod display {
         }
 
         async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
-            func_notype!(self, func, get_current_mode, get_system_color);
+            func_notype!(self, func, get_current_mode, get_system_color, get_system_mode);
             async_func_notype!(self, func, get_wallpaper);
+            async_func_typeno!(self, func, req_data, set_system_mode, SystemModeMsg);
             func_typeno!(
                 self,
                 func,
