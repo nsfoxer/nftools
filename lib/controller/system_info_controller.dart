@@ -10,6 +10,7 @@ import '../utils/log.dart';
 
 
 const _magicNumber = 54321;
+const _errorNum = 100;
 
 class SystemInfoController extends GetxController {
   final SystemInfoState state = SystemInfoState();
@@ -124,9 +125,9 @@ class SystemInfoController extends GetxController {
     List<ChartInfo> tmpInfos = [];
     tmpInfos.add(rsp.infos.first);
     for (var data in rsp.infos) {
-      if (data.timestamp > tmpInfos.last.timestamp + 1) {
+      if (data.timestamp > tmpInfos.last.timestamp + _errorNum) {
         tmpInfos
-            .add(ChartInfo(timestamp: tmpInfos.last.timestamp + 1, value: _magicNumber));
+            .add(ChartInfo(timestamp: tmpInfos.last.timestamp + _errorNum, value: _magicNumber));
       }
       tmpInfos.add(data);
     }
