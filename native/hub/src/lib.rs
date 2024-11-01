@@ -33,7 +33,7 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
     #[cfg(target_os = "windows")]
     {
         api.add_imm_service(Box::new(DisplayLight::new()));
-        api.add_lazy_service(Box::new(DisplayMode::new()));
+        api.add_lazy_service(Box::new(DisplayMode::new(gd.clone()).await));
     }
 
     #[cfg(target_os = "linux")]

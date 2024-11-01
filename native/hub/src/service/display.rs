@@ -139,9 +139,10 @@ pub mod display {
                 return;
             }
 
-            let block_task = tokio::spawn(async || {
+            let keep_screen = self.system_mode.keep_screen;
+            let block_task = tokio::spawn(async move {
                 loop {
-                    if self.system_mode.keep_screen {
+                    if keep_screen {
                         Self::keep_screen_light();
                     } else {
                         Self::keep_system();
@@ -173,7 +174,7 @@ pub mod display {
             let system_mode = global_data.get_data(MARK)
                 .unwrap_or(SystemModeData::default());
 
-            let mut this = Self { theme_reg: hklm, global_data, system_mode, block_handle };
+            let mut this = Self { theme_reg: hklm, global_data, system_mode, block_handle: None};
             this.block_system().await;
             this
         }
