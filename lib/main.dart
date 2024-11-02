@@ -39,7 +39,6 @@ void main() async {
   initMsg();
 
   // 启动GUI
-  info("start");
   runApp(MainApp(primaryColor: await getSystemColor()));
 }
 
@@ -165,15 +164,10 @@ List<GoRoute> _generateRoute(List<MenuData> datas) {
   return result;
 }
 
-/// 构造一个全局路由观察者
-class GDNavigatorObserver extends NavigatorObserver {
-  static GDNavigatorObserver instance = GDNavigatorObserver();
-}
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 final router = GoRouter(
-    observers: [GDNavigatorObserver.instance],
     navigatorKey: rootNavigatorKey,
     routes: [
       ShellRoute(
