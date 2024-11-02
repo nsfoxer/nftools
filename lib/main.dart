@@ -10,6 +10,7 @@ import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:rinf/rinf.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
@@ -38,6 +39,7 @@ void main() async {
   initMsg();
 
   // 启动GUI
+  info("start");
   runApp(MainApp(primaryColor: await getSystemColor()));
 }
 
@@ -77,14 +79,14 @@ class _MainAppState extends State<MainApp> with WindowListener, TrayListener {
     }
   }
 
-  @override
-  void onTrayIconMouseDown() {
-    _displayApp();
-  }
 
   @override
-  void onTrayIconRightMouseDown() {
-    _displayApp();
+  void onTrayMenuItemClick(MenuItem menuItem) {
+    if (menuItem.key == 'display') {
+      _displayApp();
+    } else if (menuItem.key == 'exit') {
+      windowManager.close();
+    }
   }
 
   @override
@@ -171,24 +173,25 @@ class GDNavigatorObserver extends NavigatorObserver {
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 final router = GoRouter(
-  observers: [GDNavigatorObserver.instance],
-    navigatorKey: rootNavigatorKey, routes: [
-  ShellRoute(
-    navigatorKey: _shellNavigatorKey,
-    builder: (context, state, child) {
-      MyRouterConfig.currentUrl = state.fullPath ?? '/';
-      return MainPage(
-        buildContext: _shellNavigatorKey.currentContext,
-        child: child,
-      );
-    },
-    routes: () {
-      var routers = _generateRoute(MyRouterConfig.menuDatas);
-      routers.addAll(_generateRoute(MyRouterConfig.footerDatas));
-      return routers;
-    }(),
-  )
-]);
+    observers: [GDNavigatorObserver.instance],
+    navigatorKey: rootNavigatorKey,
+    routes: [
+      ShellRoute(
+        navigatorKey: _shellNavigatorKey,
+        builder: (context, state, child) {
+          MyRouterConfig.currentUrl = state.fullPath ?? '/';
+          return MainPage(
+            buildContext: _shellNavigatorKey.currentContext,
+            child: child,
+          );
+        },
+        routes: () {
+          var routers = _generateRoute(MyRouterConfig.menuDatas);
+          routers.addAll(_generateRoute(MyRouterConfig.footerDatas));
+          return routers;
+        }(),
+      )
+    ]);
 
 class MainPage extends StatelessWidget {
   final BuildContext? buildContext;
@@ -290,8 +293,8 @@ class MainPage extends StatelessWidget {
                       FluentIcons.chrome_close,
                       size: typography.caption?.fontSize,
                     ),
-
-                    style: ButtonStyle(backgroundColor: WidgetStateColor.resolveWith((state) {
+                    style: ButtonStyle(
+                        backgroundColor: WidgetStateColor.resolveWith((state) {
                       if (state.contains(WidgetState.hovered)) {
                         return Color.fromARGB(255, 192, 43, 28);
                       }
@@ -323,5 +326,21 @@ Future<void> initSystemTray() async {
 
   // We first init the systray menu
   await trayManager.setIcon(path);
-  await trayManager.setToolTip(Constants.appName);
+  if (Platform.isWindows) {
+    await trayManager.setToolTip(Constants.appName);
+  }
+  Menu menu = Menu(
+    items: [
+      MenuItem(
+        key: 'display',
+        label: '显示/隐藏',
+      ),
+      MenuItem.separator(),
+      MenuItem(
+        key: 'close',
+        label: '退出',
+      ),
+    ],
+  );
+  await trayManager.setContextMenu(menu);
 }

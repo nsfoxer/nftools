@@ -502,7 +502,7 @@ pub mod display_os {
 
             let power_manage_proxy = Proxy::new(
                 "org.freedesktop.PowerManagement.Inhibit",
-                " /org/freedesktop/PowerManagement/Inhibit",
+                "/org/freedesktop/PowerManagement/Inhibit",
                 Duration::from_secs(2),
                 conn,
             );
@@ -657,5 +657,32 @@ pub mod display_os {
             }
             Ok(())
         }
+    }
+}
+
+
+mod tests {
+    use std::time::Duration;
+    use dbus::nonblock::Proxy;
+    use dbus_tokio::connection;
+    use log::error;
+    use tokio::time::sleep;
+
+    #[tokio::test]
+    async fn test() {
+
+        let (resource, conn) = connection::new_session_sync().unwrap();
+        tokio::spawn(async {
+            let err = resource.await;
+            error!("Lost connection to D-Bus: {}", err);
+        });
+        let power_manage_proxy = Proxy::new(
+            "org.freedesktop.PowerManagement.Inhibit",
+            "/org/freedesktop/PowerManagement/Inhibit",
+            Duration::from_secs(2),
+            conn,
+        );
+        
+        sleep(Duration::from_secs(3)).await;
     }
 }
