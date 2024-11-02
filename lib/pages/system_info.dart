@@ -1,14 +1,12 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
-import 'package:go_router/go_router.dart';
 import 'package:graphic/graphic.dart';
 import 'package:intl/intl.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/system_info_controller.dart';
 import 'package:nftools/router/router.dart';
 import 'package:nftools/state/system_info_state.dart';
-import 'package:nftools/utils/log.dart';
 
 DateFormat _timeFormat = DateFormat.Hms();
 

@@ -8,3 +8,6 @@ pub mod utils;
 /// This approach eliminates the need
 /// to depend on external crates for error handling.
 pub type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
+
+/// app名称
+pub const APP_NAME:&str = "nftools";
