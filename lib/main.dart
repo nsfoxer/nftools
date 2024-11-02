@@ -10,7 +10,6 @@ import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
-import 'package:nftools/utils/log.dart';
 import 'package:rinf/rinf.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';

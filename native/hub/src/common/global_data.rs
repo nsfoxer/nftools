@@ -1,9 +1,7 @@
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs::create_dir_all;
 use std::path::PathBuf;
-use dirs::config_local_dir;
 use anyhow::Result;
 use serde::de::DeserializeOwned;
 use crate::common::utils::get_config_dir;

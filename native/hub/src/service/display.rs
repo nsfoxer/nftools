@@ -293,8 +293,11 @@ pub mod display {
     use tokio_stream::wrappers::ReadDirStream;
     use xdg::BaseDirectories;
     use crate::{async_func_notype, async_func_typeno, func_end, func_notype, func_typeno};
+    use crate::common::APP_NAME;
+    use crate::dbus::power_manager::OrgFreedesktopPowerManagementInhibit;
     use crate::dbus::wallpaper::OrgKdePlasmaShell;
-    use crate::messages::display::{DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp, SetDisplayModeReq};
+    use crate::messages::common::Uint32Message;
+    use crate::messages::display::{DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp, SetDisplayModeReq, SystemModeMsg};
     use crate::service::service::{ImmService, Service};
 
     // DRM位置
@@ -431,6 +434,9 @@ pub mod display {
     pub struct DisplayMode {
         theme_mode_path: String,
         proxy: Proxy<'static, Arc<SyncConnection>>,
+        // 电源管理
+        power_manage_proxy: Proxy<'static, Arc<SyncConnection>>,
+        power_id: Option<u32>,
     }
 
     #[async_trait]
@@ -440,7 +446,7 @@ pub mod display {
         }
 
         async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
-            async_func_notype!(self, func, get_wallpaper, get_current_mode);
+            async_func_notype!(self, func, get_wallpaper, get_current_mode, get_system_color);
             async_func_typeno!(
                 self,
                 func,
@@ -471,12 +477,29 @@ pub mod display {
                 "org.kde.plasmashell",
                 "/PlasmaShell",
                 Duration::from_secs(2),
+                conn.clone(),
+            );
+
+            let power_manage_proxy = Proxy::new(
+                "org.freedesktop.PowerManagement.Inhibit",
+                " /org/freedesktop/PowerManagement/Inhibit",
+                Duration::from_secs(2),
                 conn,
             );
 
             Ok(Self {
                 theme_mode_path: xdg.to_str().unwrap().to_string(),
                 proxy,
+                power_manage_proxy,
+                power_id: None
+            })
+        }
+
+        /// 获取系统颜色信息 返回 ARGB
+        async fn get_system_color(&self) -> Result<Uint32Message> {
+            let color = self.proxy.color().await?;
+            Ok(Uint32Message {
+                value: color
             })
         }
 
@@ -562,5 +585,49 @@ pub mod display {
 
             Err(Error::msg("无法找到图片"))
         }
+
+        /// 获取休眠模式
+        fn get_system_mode(&self) -> Result<SystemModeMsg> {
+            let enabled = self.power_id.is_some();
+            Ok(SystemModeMsg {
+                enabled,
+                // linux下不实现屏幕保持
+                keep_screen: false
+            })
+        }
+
+        /// 设置系统休眠模式
+        async fn set_system_mode(&mut self, mode: SystemModeMsg) -> Result<()> {
+            if mode.enabled {
+                self.inhabit().await?;
+            } else {
+                self.un_inhabit().await?;
+            }
+
+            Ok(())
+        }
     }
+
+    impl DisplayMode {
+        // 禁止系统休眠
+        async fn inhabit(&mut self) -> Result<()> {
+            if self.power_id.is_some() {
+                // 已经启用了，不需要执行操作
+                return Ok(());
+            }
+
+            let v = self.power_manage_proxy.inhibit(APP_NAME, "程序设置为保持休眠").await?;
+            self.power_id = Some(v);
+            Ok(())
+        }
+        // 取消禁止系统休眠
+        async fn un_inhabit(&mut self) -> Result<()> {
+            if let Some(id) = self.power_id {
+                self.power_manage_proxy.un_inhibit(id).await?;
+                self.power_id = None;
+            }
+            Ok(())
+        }
+    }
+
 }
