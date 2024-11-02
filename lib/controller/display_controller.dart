@@ -16,7 +16,6 @@ class DisplayController extends GetxController {
 
   // 初始化数据
   _init() async {
-    debugPrint("init");
     for (var item in await $api.displaySupport()) {
       state.displayLight[item.screen] = item.value;
     }

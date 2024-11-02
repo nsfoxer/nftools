@@ -6,7 +6,6 @@ import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/display_controller.dart';
 import 'package:nftools/controller/display_mode_controller.dart';
 import 'package:nftools/controller/system_mode_controller.dart';
-import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf-widgets.dart';
 
 class DisplayPage extends StatelessWidget {
