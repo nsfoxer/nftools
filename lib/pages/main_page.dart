@@ -41,6 +41,7 @@ class _MainPageState extends State<MainPage> {
                 NFLayout.vlineh2,
                 _SyncFileHead(),
                 NFCard(
+                  title: "todo",
                   child: SyncFile(),
                 )
               ],

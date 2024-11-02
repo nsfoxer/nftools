@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/display_controller.dart';
 import 'package:nftools/controller/display_mode_controller.dart';
+import 'package:nftools/controller/system_mode_controller.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf-widgets.dart';
 
 class DisplayPage extends StatelessWidget {
@@ -16,7 +18,7 @@ class DisplayPage extends StatelessWidget {
       header: const PageHeader(
         title: Text("显示工具"),
       ),
-      children: [
+      children: const [
         NFCard(title: "显示器亮度", child: _DisplayLight()),
         NFCard(title: "主题", child: _DisplayMode()),
         NFCard(title: "系统休眠", child: _SystemMode()),
@@ -160,10 +162,32 @@ class _SystemMode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<DisplayModeController>(builder: (logic) {
+    return GetBuilder<SystemModeController>(builder: (logic) {
+      var typography = FluentTheme.of(context).typography;
+      final enabled = logic.state.enabled;
       return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Button(child: child, onPressed: onPressed)
+          ToggleSwitch(
+              content: Text(
+                "阻止系统休眠",
+                style: typography.caption,
+              ),
+              checked: enabled,
+              onChanged: (v) {
+                logic.setSystemMode(v, logic.state.keepScreen);
+              }),
+          Checkbox(
+              content: Text(
+                "保持亮屏",
+                style: typography.caption,
+              ),
+              checked: logic.state.keepScreen,
+              onChanged: enabled
+                  ? (v) {
+                      logic.setSystemMode(enabled, v ?? false);
+                    }
+                  : null),
         ],
       );
     });
