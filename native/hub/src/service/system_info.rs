@@ -1,12 +1,9 @@
 use anyhow::{anyhow, Result};
-use dirs::data_local_dir;
 use fast_inv_sqrt::InvSqrt64;
 use log::error;
 use prost::Message;
-use rinf::debug_print;
 use std::io::Write;
 use std::ops::Sub;
-use std::os::raw::c_double;
 use std::time::{Duration, SystemTime};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tokio::fs::File;
@@ -20,6 +17,7 @@ use crate::{func_end, func_notype, func_typetype};
 // 缓存文件
 const CACHE_FILE: &str = "system_info.cache";
 // 图形筛选阈值(rdp算法阈值)
+#[allow(unused)]
 const THRESHOLD: f64 = 5.0;
 // 需要清理的数据最大上限
 const CLEAR_MAX_SIZE: usize = 3600 * 24 * 3;
@@ -254,6 +252,7 @@ fn find_index(data: u32, datas: &Vec<ChartInfo>) -> Option<usize> {
 /// rdp算法 不再使用
 /// 去除不必要的数据点，将需要去除的点的mark标记为true
 /// datas长度与delete_marks长度必须一致
+#[allow(unused)]
 fn optimize_datas(datas: &[ChartInfo], delete_marks: &mut [bool], threshold: f64) -> Result<()> {
     if datas.len() != delete_marks.len() {
         return Err(anyhow!("参数长度不一致"));
@@ -325,6 +324,7 @@ struct LineEquation {
     b: f64,
 }
 
+#[allow(unused)]
 impl LineEquation {
     fn new(p1: Point, p2: Point) -> Option<Self> {
         if p2.x == p1.x {
@@ -349,7 +349,7 @@ mod test {
     use crate::service::system_info::{
         find_index, optimize_datas, LineEquation, Point, SystemInfoService, THRESHOLD,
     };
-    use fast_inv_sqrt::{InvSqrt32, InvSqrt64};
+    use fast_inv_sqrt::InvSqrt32;
     use rand::{thread_rng, Rng};
 
     #[test]
@@ -425,7 +425,7 @@ mod test {
     // 输出缓存数据大概情况
     #[tokio::test]
     async fn print_datas() {
-        let mut system_info = SystemInfoService::new().await;
+        let system_info = SystemInfoService::new().await;
         eprintln!("cpu history datas ========= ");
         eprintln!("len = {}, start = {:?}, end = {:?}", system_info.cpu_datas.len()
                   , system_info.cpu_datas.first().unwrap(), system_info.cpu_datas.last().unwrap());

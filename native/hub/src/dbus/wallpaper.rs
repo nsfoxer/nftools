@@ -4,6 +4,7 @@ use dbus as dbus;
 use dbus::arg;
 use dbus::nonblock;
 
+#[allow(unused)]
 pub trait OrgKdePlasmaShell {
     fn toggle_dashboard(&self) -> nonblock::MethodReply<()>;
     fn toggle_activity_manager(&self) -> nonblock::MethodReply<()>;
@@ -132,6 +133,7 @@ impl<'a, T: nonblock::NonblockReply, C: ::std::ops::Deref<Target=T>> OrgKdePlasm
     }
 }
 
+#[allow(unused)]
 pub trait OrgFreedesktopDBusProperties {
     fn get(&self, interface_name: &str, property_name: &str) -> nonblock::MethodReply<arg::Variant<Box<dyn arg::RefArg + 'static>>>;
     fn set(&self, interface_name: &str, property_name: &str, value: arg::Variant<Box<dyn arg::RefArg>>) -> nonblock::MethodReply<()>;
@@ -185,6 +187,7 @@ impl<'a, T: nonblock::NonblockReply, C: ::std::ops::Deref<Target=T>> OrgFreedesk
     }
 }
 
+#[allow(unused)]
 pub trait OrgFreedesktopDBusIntrospectable {
     fn introspect(&self) -> nonblock::MethodReply<String>;
 }
@@ -197,6 +200,7 @@ impl<'a, T: nonblock::NonblockReply, C: ::std::ops::Deref<Target=T>> OrgFreedesk
     }
 }
 
+#[allow(unused)]
 pub trait OrgFreedesktopDBusPeer {
     fn ping(&self) -> nonblock::MethodReply<()>;
     fn get_machine_id(&self) -> nonblock::MethodReply<String>;

@@ -13,8 +13,7 @@ use log::error;
 use crate::api::api::ApiService;
 use crate::common::*;
 use crate::messages::base::BaseRequest;
-use crate::service::display::display::{DisplayLight, DisplayMode};
-use rinf::debug_print;
+use crate::service::display::display_os::{DisplayLight, DisplayMode};
 use tokio;
 use common::global_data::GlobalData;
 use crate::service::syncfile::SyncFile;
@@ -44,7 +43,7 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
             error!("display light 服务创建失败");
         }
         
-        match DisplayMode::default() {
+        match DisplayMode::new(gd.clone()).await {
             Ok(mode) => api.add_service(Box::new(mode)),
             Err(e) => error!("display mode服务创建失败。原因:{e}"),
         }
