@@ -1,6 +1,10 @@
 #[cfg(target_os = "windows")]
-pub mod display {
-    use crate::messages::display::{DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp, SystemModeMsg};
+pub mod display_os {
+    use crate::common::global_data::GlobalData;
+    use crate::messages::common::Uint32Message;
+    use crate::messages::display::{
+        DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp, SystemModeMsg,
+    };
     use crate::service::service::{ImmService, LazyService, Service};
     use crate::{async_func_notype, async_func_typeno, func_end, func_notype, func_typeno};
     use anyhow::{anyhow, Error, Result};
@@ -8,17 +12,15 @@ pub mod display {
     use ddc::{Ddc, VcpValue};
     use ddc_winapi::Monitor;
     use prost::Message;
+    use serde::{Deserialize, Serialize};
     use std::path::PathBuf;
     use std::sync::Arc;
     use std::time::Duration;
-    use serde::{Deserialize, Serialize};
     use tokio::task::JoinHandle;
     use tokio_stream::wrappers::ReadDirStream;
     use tokio_stream::StreamExt;
     use winreg::enums::{KEY_READ, KEY_WRITE};
     use winreg::RegKey;
-    use crate::common::global_data::GlobalData;
-    use crate::messages::common::Uint32Message;
 
     /// 显示器亮度调节
     pub struct DisplayLight {}
@@ -103,7 +105,13 @@ pub mod display {
         }
 
         async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
-            func_notype!(self, func, get_current_mode, get_system_color, get_system_mode);
+            func_notype!(
+                self,
+                func,
+                get_current_mode,
+                get_system_color,
+                get_system_mode
+            );
             async_func_notype!(self, func, get_wallpaper);
             async_func_typeno!(self, func, req_data, set_system_mode, SystemModeMsg);
             func_typeno!(
@@ -172,10 +180,16 @@ pub mod display {
     impl DisplayMode {
         pub async fn new(global_data: Arc<GlobalData>) -> Self {
             let hklm = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
-            let system_mode = global_data.get_data(MARK)
+            let system_mode = global_data
+                .get_data(MARK)
                 .unwrap_or(SystemModeData::default());
 
-            let mut this = Self { theme_reg: hklm, global_data, system_mode, block_handle: None};
+            let mut this = Self {
+                theme_reg: hklm,
+                global_data,
+                system_mode,
+                block_handle: None,
+            };
             this.block_system().await;
             this
         }
@@ -201,14 +215,10 @@ pub mod display {
         /// 获取系统颜色信息 返回 ARGB
         fn get_system_color(&self) -> Result<Uint32Message> {
             let hklm = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
-            let color = hklm.open_subkey_with_flags(
-                "Software\\Microsoft\\Windows\\DWM",
-                KEY_READ,
-            )?;
+            let color =
+                hklm.open_subkey_with_flags("Software\\Microsoft\\Windows\\DWM", KEY_READ)?;
             let v: u32 = color.get_value("ColorizationColor")?;
-            Ok(Uint32Message {
-                value: v
-            })
+            Ok(Uint32Message { value: v })
         }
 
         fn get_current_mode(&self) -> Result<GetDisplayModeRsp> {
@@ -273,13 +283,21 @@ pub mod display {
 }
 
 #[cfg(target_os = "linux")]
-pub mod display {
-    use std::path::PathBuf;
-    use std::sync::Arc;
-    use std::time::Duration;
+pub mod display_os {
+    use crate::common::global_data::GlobalData;
+    use crate::common::APP_NAME;
+    use crate::dbus::power_manager::OrgFreedesktopPowerManagementInhibit;
+    use crate::dbus::wallpaper::OrgKdePlasmaShell;
+    use crate::messages::common::Uint32Message;
+    use crate::messages::display::{
+        DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp,
+        SystemModeMsg,
+    };
+    use crate::service::service::Service;
+    use crate::{async_func_notype, async_func_typeno, func_end, func_notype, func_typeno};
     use ahash::{HashMap, HashMapExt};
-    use async_trait::async_trait;
     use anyhow::{Error, Result};
+    use async_trait::async_trait;
     use dbus::arg::RefArg;
     use dbus::nonblock::{Proxy, SyncConnection};
     use dbus_tokio::connection;
@@ -287,18 +305,14 @@ pub mod display {
     use ddc_i2c::I2cDeviceDdc;
     use log::error;
     use prost::Message;
-    use tokio::fs::{File, read_dir};
+    use std::path::PathBuf;
+    use std::sync::Arc;
+    use std::time::Duration;
+    use tokio::fs::{read_dir, File};
     use tokio::io::AsyncReadExt;
-    use tokio_stream::StreamExt;
     use tokio_stream::wrappers::ReadDirStream;
+    use tokio_stream::StreamExt;
     use xdg::BaseDirectories;
-    use crate::{async_func_notype, async_func_typeno, func_end, func_notype, func_typeno};
-    use crate::common::APP_NAME;
-    use crate::dbus::power_manager::OrgFreedesktopPowerManagementInhibit;
-    use crate::dbus::wallpaper::OrgKdePlasmaShell;
-    use crate::messages::common::Uint32Message;
-    use crate::messages::display::{DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp, SetDisplayModeReq, SystemModeMsg};
-    use crate::service::service::{ImmService, Service};
 
     // DRM位置
     const DRM_PATH: &str = "/sys/class/drm/";
@@ -340,9 +354,7 @@ pub mod display {
                     value: self.get_now_light(x.as_str()).unwrap_or(0) as u32,
                 })
                 .collect();
-            let resp = DisplayInfoResponse {
-                infos: displays,
-            };
+            let resp = DisplayInfoResponse { infos: displays };
             Ok(resp)
         }
 
@@ -397,10 +409,8 @@ pub mod display {
                     path.push("enabled");
                     if let Ok(mut file) = File::open(path).await {
                         tmp_content.clear();
-                        if let Ok(_) = file.read_to_string(&mut tmp_content).await {
-                            if tmp_content.trim() == "enabled" {
-                                cards.push(entry);
-                            }
+                        if file.read_to_string(&mut tmp_content).await.is_ok() && tmp_content.trim() == "enabled" {
+                            cards.push(entry);
                         }
                     }
                 }
@@ -429,9 +439,11 @@ pub mod display {
         }
     }
 
-
+    const MARK: &str = "displayMode:powerManage:linux";
     /// 显示壁纸
     pub struct DisplayMode {
+        // 持久化存储
+        global_data: Arc<GlobalData>,
         theme_mode_path: String,
         proxy: Proxy<'static, Arc<SyncConnection>>,
         // 电源管理
@@ -446,21 +458,29 @@ pub mod display {
         }
 
         async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
-            async_func_notype!(self, func, get_wallpaper, get_current_mode, get_system_color);
+            func_notype!(self, func, get_system_mode);
+            async_func_notype!(
+                self,
+                func,
+                get_wallpaper,
+                get_current_mode,
+                get_system_color
+            );
             async_func_typeno!(
                 self,
                 func,
                 req_data,
                 set_mode,
-                crate::messages::display::DisplayMode
+                crate::messages::display::DisplayMode,
+                set_system_mode,
+                SystemModeMsg
             );
             func_end!(func)
         }
     }
 
-
     impl DisplayMode {
-        pub fn default() -> Result<Self> {
+        pub async fn new(global_data: Arc<GlobalData>) -> Result<Self> {
             // 1. 获取主题颜色
             let mut xdg = BaseDirectories::new()?.get_config_home();
             xdg.push("kdedefaults");
@@ -487,20 +507,27 @@ pub mod display {
                 conn,
             );
 
-            Ok(Self {
+            // 加载是否休眠设置
+            let enabled: bool = global_data.get_data(MARK).unwrap_or_default();
+            let mut this = Self {
                 theme_mode_path: xdg.to_str().unwrap().to_string(),
+                global_data,
                 proxy,
                 power_manage_proxy,
-                power_id: None
-            })
+                power_id: None,
+            };
+            if enabled {
+                // 忽略执行错误
+                let _ = this.inhabit().await;
+            }
+
+            Ok(this)
         }
 
         /// 获取系统颜色信息 返回 ARGB
         async fn get_system_color(&self) -> Result<Uint32Message> {
             let color = self.proxy.color().await?;
-            Ok(Uint32Message {
-                value: color
-            })
+            Ok(Uint32Message { value: color })
         }
 
         /// 设置显示模式
@@ -528,14 +555,12 @@ pub mod display {
             let r = match tokio::fs::read_to_string(file).await {
                 Ok(data) => !data.contains("dark"),
                 Err(e) => {
-                    return Err(Error::msg(format!("读取数据失败:{}", e.to_string())));
+                    return Err(Error::msg(format!("读取数据失败:{}", e)));
                 }
             };
 
             Ok(GetDisplayModeRsp {
-                mode: Some(crate::messages::display::DisplayMode {
-                    is_light: r
-                })
+                mode: Some(crate::messages::display::DisplayMode { is_light: r }),
             })
         }
 
@@ -592,12 +617,13 @@ pub mod display {
             Ok(SystemModeMsg {
                 enabled,
                 // linux下不实现屏幕保持
-                keep_screen: false
+                keep_screen: false,
             })
         }
 
         /// 设置系统休眠模式
         async fn set_system_mode(&mut self, mode: SystemModeMsg) -> Result<()> {
+            self.global_data.set_data(MARK.to_string(), &mode.enabled)?;
             if mode.enabled {
                 self.inhabit().await?;
             } else {
@@ -616,7 +642,10 @@ pub mod display {
                 return Ok(());
             }
 
-            let v = self.power_manage_proxy.inhibit(APP_NAME, "程序设置为保持休眠").await?;
+            let v = self
+                .power_manage_proxy
+                .inhibit(APP_NAME, "程序设置为保持休眠")
+                .await?;
             self.power_id = Some(v);
             Ok(())
         }
@@ -629,5 +658,4 @@ pub mod display {
             Ok(())
         }
     }
-
 }
