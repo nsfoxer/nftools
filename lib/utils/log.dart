@@ -21,7 +21,7 @@ void error(String message) {
 }
 
 void _print(String message, InfoBarSeverity serverity) async {
-  debugPrint("${serverity.name}");
+  debugPrint("${serverity.name}: $message");
   final context = getCurrentContext();
   if (context == null) {
     return;
