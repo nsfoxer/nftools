@@ -10,7 +10,6 @@ import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
-import 'package:nftools/utils/log.dart';
 import 'package:rinf/rinf.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
@@ -39,21 +38,20 @@ void main() async {
   initMsg();
 
   // 启动GUI
-  runApp(MainApp(primaryColor: await getSystemColor()));
+  runApp(const MainApp());
 }
 
 class MainApp extends StatefulWidget {
-  Color primaryColor;
-
-  MainApp({super.key, required this.primaryColor});
+  const MainApp({super.key});
 
   @override
   _MainAppState createState() => _MainAppState();
 }
 
-class _MainAppState extends State<MainApp> with WindowListener, TrayListener {
-  ThemeMode mode = ThemeMode.system;
+class _MainAppState extends State<MainApp>
+    with WindowListener, TrayListener, WidgetsBindingObserver {
   late final AppLifecycleListener _listener;
+  Color primaryColor = Colors.blue;
 
   @override
   void initState() {
@@ -68,6 +66,20 @@ class _MainAppState extends State<MainApp> with WindowListener, TrayListener {
         return AppExitResponse.exit;
       },
     );
+    WidgetsBinding.instance.addObserver(this);
+    _initColor(false);
+  }
+
+  void _initColor(bool wait) async {
+    primaryColor = await getSystemColor();
+    setState(() {});
+    if (!wait) {
+      return;
+    }
+    // linux后端需要等待才能得到正确的值，否则会是上次的值
+    await Future.delayed(const Duration(seconds: 2));
+    primaryColor = await getSystemColor();
+    setState(() {});
   }
 
   void _displayApp() async {
@@ -77,7 +89,6 @@ class _MainAppState extends State<MainApp> with WindowListener, TrayListener {
       windowManager.hide();
     }
   }
-
 
   @override
   void onTrayMenuItemClick(MenuItem menuItem) {
@@ -93,13 +104,20 @@ class _MainAppState extends State<MainApp> with WindowListener, TrayListener {
     windowManager.removeListener(this);
     trayManager.removeListener(this);
     _listener.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    _initColor(true);
+    super.didChangePlatformBrightness();
   }
 
   @override
   Widget build(BuildContext context) {
     final Map<String, Color> swatch = {
-      "normal": widget.primaryColor,
+      "normal": primaryColor,
     };
     var fonts = Platform.isWindows ? "微软雅黑" : "Source Han Sans SC";
 
@@ -164,28 +182,25 @@ List<GoRoute> _generateRoute(List<MenuData> datas) {
   return result;
 }
 
-
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
-final router = GoRouter(
-    navigatorKey: rootNavigatorKey,
-    routes: [
-      ShellRoute(
-        navigatorKey: _shellNavigatorKey,
-        builder: (context, state, child) {
-          MyRouterConfig.currentUrl = state.fullPath ?? '/';
-          return MainPage(
-            buildContext: _shellNavigatorKey.currentContext,
-            child: child,
-          );
-        },
-        routes: () {
-          var routers = _generateRoute(MyRouterConfig.menuDatas);
-          routers.addAll(_generateRoute(MyRouterConfig.footerDatas));
-          return routers;
-        }(),
-      )
-    ]);
+final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
+  ShellRoute(
+    navigatorKey: _shellNavigatorKey,
+    builder: (context, state, child) {
+      MyRouterConfig.currentUrl = state.fullPath ?? '/';
+      return MainPage(
+        buildContext: _shellNavigatorKey.currentContext,
+        child: child,
+      );
+    },
+    routes: () {
+      var routers = _generateRoute(MyRouterConfig.menuDatas);
+      routers.addAll(_generateRoute(MyRouterConfig.footerDatas));
+      return routers;
+    }(),
+  )
+]);
 
 class MainPage extends StatelessWidget {
   final BuildContext? buildContext;
@@ -331,7 +346,7 @@ Future<void> initSystemTray() async {
       ),
       MenuItem.separator(),
       MenuItem(
-        key: 'close',
+        key: 'exit',
         label: '退出',
       ),
     ],
