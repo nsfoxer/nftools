@@ -91,6 +91,17 @@ class _MainAppState extends State<MainApp>
   }
 
   @override
+  void onTrayIconMouseDown() {
+    _displayApp();
+    super.onTrayIconMouseDown();
+  }
+  @override
+  void onTrayIconRightMouseDown() {
+    trayManager.popUpContextMenu();
+    super.onTrayIconRightMouseDown();
+  }
+
+  @override
   void onTrayMenuItemClick(MenuItem menuItem) {
     if (menuItem.key == 'display') {
       _displayApp();
