@@ -95,7 +95,6 @@ pub mod display_os {
         theme_reg: RegKey,
         global_data: Arc<GlobalData>,
         system_mode: SystemModeData,
-        block_handle: Option<JoinHandle<()>>,
     }
 
     #[async_trait]
@@ -136,43 +135,41 @@ pub mod display_os {
             Ok(())
         }
     }
-
+    const ES_CONTINUOUS: u32 = 0x80000000;
+    const ES_DISPLAY_REQUIRED: u32 = 0x00000002;
+    const ES_SYSTEM_REQUIRED: u32 = 0x00000001;
     impl DisplayMode {
         // 执行阻止系统睡眠任务
         async fn block_system(&mut self) {
-            if let Some(task) = &self.block_handle {
-                task.abort();
-            }
-
             if !self.system_mode.enabled {
                 return;
             }
 
-            let keep_screen = self.system_mode.keep_screen;
-            let block_task = tokio::spawn(async move {
-                loop {
-                    if keep_screen {
-                        Self::keep_screen_light();
-                    } else {
-                        Self::keep_system();
-                    }
-                    tokio::time::sleep(Duration::from_secs(60)).await;
-                }
-            });
-            self.block_handle = Some(block_task);
+            if self.system_mode.keep_screen {
+                Self::keep_screen_light();
+            } else {
+                Self::keep_system();
+            }
+
         }
         // 参考文档：https://learn.microsoft.com/zh-cn/windows/win32/api/winbase/nf-winbase-setthreadexecutionstate
         // 设置系统不休眠
         fn keep_system() {
             unsafe {
-                winapi::um::winbase::SetThreadExecutionState(0x00000001);
+                winapi::um::winbase::SetThreadExecutionState(ES_SYSTEM_REQUIRED | ES_CONTINUOUS);
             }
         }
 
         // 设置屏幕不关闭
         fn keep_screen_light() {
             unsafe {
-                winapi::um::winbase::SetThreadExecutionState(0x00000002);
+                winapi::um::winbase::SetThreadExecutionState(ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED | ES_CONTINUOUS);
+            }
+        }
+
+        fn clear_keep() {
+            unsafe {
+                winapi::um::winbase::SetThreadExecutionState(ES_CONTINUOUS);
             }
         }
     }
@@ -188,7 +185,6 @@ pub mod display_os {
                 theme_reg: hklm,
                 global_data,
                 system_mode,
-                block_handle: None,
             };
             this.block_system().await;
             this
@@ -278,6 +274,12 @@ pub mod display_os {
             }
 
             Err(Error::msg("无法找到对应的图片"))
+        }
+    }
+
+    impl Drop for DisplayMode {
+        fn drop(&mut self) {
+            Self::clear_keep();
         }
     }
 }
