@@ -9,7 +9,6 @@ mod r#do;
 mod dbus;
 
 use std::sync::Arc;
-use log::error;
 use crate::api::api::ApiService;
 use crate::common::*;
 use crate::messages::base::BaseRequest;
