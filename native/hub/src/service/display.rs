@@ -661,6 +661,7 @@ pub mod display_os {
 }
 
 
+#[cfg(target_os = "linux")]
 mod tests {
     use std::time::Duration;
     use dbus::nonblock::Proxy;
