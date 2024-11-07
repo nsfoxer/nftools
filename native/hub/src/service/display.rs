@@ -142,10 +142,8 @@ pub mod display_os {
         // 执行阻止系统睡眠任务
         async fn block_system(&mut self) {
             if !self.system_mode.enabled {
-                return;
-            }
-
-            if self.system_mode.keep_screen {
+                Self::clear_keep();
+            } else if self.system_mode.keep_screen {
                 Self::keep_screen_light();
             } else {
                 Self::keep_system();
