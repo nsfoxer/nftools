@@ -3,8 +3,38 @@ package syncfile;
 
 
 // 配置webdav
-message WebDavConfig {
+message WebDavConfigMsg {
 	string url = 1;
 	string account = 2;
 	string passwd = 3;
+}
+
+// 文件列表响应
+message ListFileMsg {
+	repeated FileMsg files = 1;
+}
+
+message FileMsg {
+	// 本地地址
+	string local_dir = 1;
+	// 远端地址
+	string remote_dir = 2;
+	// 同步id
+	string id = 3;
+	// 同步状态
+	FileStatusEnum status = 4;
+	// 需要新增的文件数量
+	uint32 new = 5;
+	// 需要删除的文件数量
+	uint32 del = 6;
+	// 需要修改的文件数量
+	uint32 old = 7;
+}
+enum FileStatusEnum {
+	// 需要上传
+	UPLOAD = 0;
+	// 需要下载
+	DOWNLOAD = 1;
+	// 已同步成功
+	SYNCED = 2;
 }

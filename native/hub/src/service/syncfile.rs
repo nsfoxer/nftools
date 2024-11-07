@@ -2,22 +2,32 @@ use prost::Message;
 use std::sync::Arc;
 use ahash::HashSet;
 use async_trait::async_trait;
-use crate::{func_end, func_notype, func_typeno};
-use crate::common::global_data::{DataPersist, GlobalData};
+use crate::{async_func_notype, func_end, func_notype, func_typeno};
+use crate::common::global_data::GlobalData;
 use crate::service::service::Service;
 use anyhow::{anyhow, Result};
-use reqwest_dav::{Auth, Client, ClientBuilder};
+use reqwest_dav::{Auth, Client, ClientBuilder, Depth};
 use rinf::debug_print;
-use crate::messages::common::{StringMessage, VecStringMessage};
-use crate::r#do::webdav_account_do::WebDavAccountDO;
+use serde::{Deserialize, Serialize};
+use crate::common::WEBDAV_SYNC_DIR;
+use crate::messages::common::{BoolMessage, StringMessage, VecStringMessage};
+use crate::messages::syncfile::ListFileMsg;
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AccountInfo {
+    user: String,
+    passwd: String,
+    url: String,
+}
 
 pub struct SyncFile {
     global_data: Arc<GlobalData>,
     files: HashSet<String>,
-    client: Option<Client>,
+    account_info: Option<AccountInfo>,
 }
 
-const NAME: &str = "SyncFile";
+const NAME: &str = "SyncFileService";
+const ACCOUNT_CACHE: &str = "accountCache";
 
 #[async_trait]
 impl Service for SyncFile {
@@ -29,6 +39,8 @@ impl Service for SyncFile {
         func_typeno!(self, func, req_data, add_file, StringMessage, del_file, StringMessage);
         func_notype!(self, func, get_files);
         
+        async_func_notype!(self, func, has_account);
+        
         func_end!(func)
     }
 }
@@ -36,15 +48,37 @@ impl Service for SyncFile {
 impl SyncFile {
     pub fn new(global_data: Arc<GlobalData>) -> Self {
         let files = global_data.get_data(NAME).unwrap_or_default();
+        let account = global_data.get_data(ACCOUNT_CACHE);
         Self {
             global_data,
             files,
-            client: None,
+            account_info: account,
         }
     }
 }
 
 impl SyncFile {
+    /// 测试帐号是否可用
+    async fn has_account(&self) -> Result<BoolMessage> {
+        match &self.account_info {
+            None => {
+                Ok(BoolMessage{value: false})
+            },
+            Some(account) => {
+                Ok(BoolMessage{
+                    value: Self::connect(account).await.is_ok()
+                })
+            }
+        }
+    }
+    
+    
+    /// 同步文件列表
+    async fn list_files(&mut self) -> Result<ListFileMsg> {
+        
+        Ok(())
+    }
+    
     fn add_file(&mut self, file: StringMessage) -> Result<()> {
         self.files.insert(file.value);
         Ok(())
@@ -74,13 +108,21 @@ impl SyncFile {
 
 impl SyncFile {
     async fn init_dav(&mut self) -> Result<()> {
-        let dav = WebDavAccountDO::get_data(&self.global_data).ok_or_else(|| anyhow!("账户未配置，请先在设置中配置账户"))?;
-        let client = ClientBuilder::new()
-            .set_host(dav.url)
-            .set_auth(Auth::Basic(dav.account, dav.passwd))
-            .build()?;
-        self.client = Some(client);
+
         Ok(())
+    }
+
+    async fn connect(account: &AccountInfo) -> Result<Client> {
+        let client = ClientBuilder::new()
+            .set_host(account.url.to_string())
+            .set_auth(Auth::Basic(account.user.to_owned(), account.passwd.to_owned()))
+            .build()?;
+        let _ = client.list("/", Depth::Number(0)).await?;
+
+        if client.list(WEBDAV_SYNC_DIR, Depth::Number(0)).await.is_err() {
+            client.mkcol(WEBDAV_SYNC_DIR).await?;
+        }
+        Ok(client)
     }
 }
 
@@ -89,5 +131,23 @@ impl Drop for SyncFile {
         if let Err(e) = self.global_data.set_data(NAME.to_string(), &self.files) {
             debug_print!("{}", e);
         }
+    }
+}
+
+mod test {
+    use std::sync::Arc;
+    use crate::common::global_data::GlobalData;
+    use crate::service::syncfile::{AccountInfo, SyncFile};
+
+    #[tokio::test]
+    async fn webdav() {
+        // let gd = Arc::new(GlobalData::new().unwrap());
+        // let sync_file = SyncFile::new(gd);
+        let account = AccountInfo {
+          url: "https://dav.jianguoyun.com/dav/".to_string(),
+            user: "1261805497@qq.com".to_string(),
+            passwd: "a22xnw294yj5h9d3".to_string(),
+        };
+        SyncFile::connect(&account).await.unwrap();
     }
 }

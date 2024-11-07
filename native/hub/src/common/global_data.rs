@@ -108,19 +108,6 @@ fn config_dir() -> Result<PathBuf> {
 }
 
 
-/// 数据存储服务
-pub trait DataPersist: Serialize + DeserializeOwned {
-    fn id() -> &'static str;
-
-    fn set_data(&self, global_data: &GlobalData) -> Result<()> {
-        global_data.set_data(Self::id().to_string(), self)
-    }
-
-    fn get_data(global_data: &GlobalData) -> Option<Self> {
-        global_data.get_data(Self::id())
-    }
-}
-
 mod tests {
     use crate::common::global_data::GlobalData;
 

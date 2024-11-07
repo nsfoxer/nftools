@@ -28,3 +28,7 @@ message FloatMessage {
 message DoubleMessage {
   double value = 1;
 }
+
+message BoolMessage {
+  bool value = 1;
+}
