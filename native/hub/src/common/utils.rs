@@ -2,7 +2,7 @@ use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use dirs::{config_local_dir, data_local_dir};
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 /// 工具类
 
@@ -33,4 +33,9 @@ pub fn get_config_dir() -> Result<PathBuf>  {
     }
 
     Ok(path)
+}
+
+/// 获取本机唯一id
+pub fn get_machine_id() -> Result<String>  {
+    Ok(machine_uid::machine_id::get_machine_id().or(Err(anyhow!("无法获取本机唯一id")))?)
 }
