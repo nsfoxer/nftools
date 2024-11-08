@@ -47,7 +47,12 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
             Err(e) => error!("display mode服务创建失败。原因:{e}"),
         }
     }
-    api.add_service(Box::new(SyncFile::new(gd.clone())));
+    match SyncFile::new(gd.clone()) {
+        Ok(s) => {api.add_service(Box::new(s));}
+        Err(e) => {
+            error!("sync file服务创建失败：原因:{e}");
+        }
+    }
     api.add_service(Box::new(SystemInfoService::new().await));
 
     api
