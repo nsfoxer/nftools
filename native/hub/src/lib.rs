@@ -15,7 +15,7 @@ use crate::messages::base::BaseRequest;
 use crate::service::display::display_os::{DisplayLight, DisplayMode};
 use tokio;
 use common::global_data::GlobalData;
-use crate::service::syncfile::SyncFile;
+use crate::service::syncfile::SyncFileService;
 use crate::service::system_info::SystemInfoService;
 
 rinf::write_interface!();
@@ -47,7 +47,7 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
             Err(e) => error!("display mode服务创建失败。原因:{e}"),
         }
     }
-    match SyncFile::new(gd.clone()) {
+    match SyncFileService::new(gd.clone()) {
         Ok(s) => {api.add_service(Box::new(s));}
         Err(e) => {
             error!("sync file服务创建失败：原因:{e}");
