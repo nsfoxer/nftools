@@ -14,10 +14,11 @@ use reqwest_dav::list_cmd::ListEntity;
 use reqwest_dav::{Auth, Client, ClientBuilder, Depth};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-use std::path::PathBuf;
+use std::path::{Component, PathBuf};
 use std::sync::Arc;
 use std::time::UNIX_EPOCH;
-use tokio::fs::metadata;
+use tokio::fs::{File, metadata};
+use tokio::io::AsyncReadExt;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct AccountInfo {
@@ -36,7 +37,7 @@ struct LocalRemoteFileMappingDO {
 /// 远端文件属性
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct RemoteFileMedata {
-    // 最初文件地址
+    // 最初文件地址(方便使用)
     tag: String,
     // 远端最新一次修改时间 ms
     last_time: u128,
@@ -171,11 +172,14 @@ impl SyncFileService {
                 .ok_or(anyhow!("无帐号信息，请先登录或注册"))?,
         )
         .await?;
-        let remote_metadata = Self::get_remote_dir_metadatas(&client, &remote_dir.value).await?;
+        let mut remote_metadata = Self::get_remote_dir_metadatas(&client, &remote_dir.value).await?;
         // 对比
-        let diff = Self::diff_local_remote_file(&l_metadata, &remote_metadata);
-        match diff.0 {
-            FileStatusEnum::Upload => {}
+        let (status, add_files, del_files, modify_files) =
+            Self::diff_local_remote_file(&l_metadata, &remote_metadata);
+        match status {
+            FileStatusEnum::Upload => {
+                Self::upload_files(&mut remote_metadata, &add_files, local_dir, &client).await?;
+            }
             FileStatusEnum::Download => {}
             FileStatusEnum::Synced => {}
         }
@@ -244,22 +248,23 @@ impl SyncFileService {
                 continue;
             }
             let entry = entry.unwrap();
-            if entry.path().is_dir() || entry.path().is_symlink() {
+            if entry.path().is_symlink() {
                 continue;
             }
 
+            let mut path = entry
+                .path()
+                .to_str()
+                .unwrap()
+                .strip_prefix(dir)
+                .unwrap()
+                .to_string();
+            if entry.path().is_dir() {
+                path += "/";
+            }
             let metadata = metadata(entry.path()).await?;
             let max = metadata.modified()?.duration_since(UNIX_EPOCH)?.as_millis();
-            files.insert(
-                entry
-                    .path()
-                    .to_str()
-                    .unwrap()
-                    .strip_prefix(dir)
-                    .unwrap()
-                    .to_string(),
-                max,
-            );
+            files.insert(path, max);
             max_time = max.max(max_time);
         }
 
@@ -338,6 +343,41 @@ impl SyncFileService {
 
         (status, add_files, del_files, modify_files)
     }
+
+    /// 上传文件
+    async fn upload_files(
+        remote_metadata: &mut RemoteFileMedata,
+        local_files: &[String],
+        local_dir: &str,
+        client: &Client,
+    ) -> Result<()> {
+        let mut exists_paths: AHashSet<String> = remote_metadata.files.keys().cloned().collect();
+        
+        for file in local_files {
+            let mut pathbuf = PathBuf::from(file);
+            let mut path = String::new();
+            let components: Vec<Component> = pathbuf.components().collect();
+            for (i, comp) in components.iter().enumerate() {
+                if i == components.len() {
+                    continue;
+                }
+                path += comp.as_os_str().to_str().unwrap();
+                path.push('/');
+                if !exists_paths.contains(&path) {
+                    client.mkcol(&format!("{WEBDAV_SYNC_DIR}{}", path)).await?;
+                    exists_paths.insert(path.clone());
+                }
+            }
+            let mut file1 = File::open(format!("{}/{}", local_dir, file)).await?;
+            let metadata = file1.metadata().await?;
+            let mut data = Vec::new();
+            file1.read_to_end(&mut data).await?;
+            client.put(&format!("{WEBDAV_SYNC_DIR}{file}"), data).await?;
+            
+            remote_metadata.files.insert(file.clone(), metadata.modified()?.duration_since(UNIX_EPOCH).unwrap().as_millis());
+        }
+        Ok(())
+    }
 }
 
 impl Drop for SyncFileService {
@@ -369,6 +409,7 @@ mod test {
     use ahash::AHashMap;
     use std::fs::File;
     use std::os::fd::AsRawFd;
+    use std::path::PathBuf;
     use std::sync::Arc;
 
     #[tokio::test]
@@ -381,14 +422,14 @@ mod test {
             passwd: "a22xnw294yj5h9d3".to_string(),
         };
         let client = SyncFileService::connect(&account).await.unwrap();
-        // client.mkcol("/nftools/aaa/a/b/c").await.unwrap();
-        client
-            .put(
-                "/nftools/aaaa/c.txt",
-                "/home/nsfoxer/桌面/test/目录2/文本文件.txt",
-            )
-            .await
-            .unwrap();
+        // client.mkcol("/nftools/aaaa").await.unwrap();
+        // client
+        //     .put(
+        //         "/nftools/aaaa/c.txt",
+        //         "/home/nsfoxer/桌面/test/目录2/文本文件.txt",
+        //     )
+        //     .await
+        //     .unwrap();
         // let map = SyncFileService::get_remote_dirs(&account).await.unwrap();
         // eprintln!("{:?}", map);
         let l_metadata = SyncFileService::get_newest_file(r#"/home/nsfoxer/桌面/test/"#)
@@ -439,5 +480,13 @@ mod test {
         let r = SyncFileService::diff_local_remote_file(&l_metadata, &r_metadata);
         eprintln!("{:?}", r);
         assert_eq!(FileStatusEnum::Synced, r.0);
+    }
+
+    #[test]
+    fn path() {
+        let path = PathBuf::from("/home/nsfoxer/src/nftools/native/hub/src/service/syncfile.rs");
+        for c in path.components() {
+            eprintln!("{}", c.as_os_str().to_str().unwrap());
+        }
     }
 }
