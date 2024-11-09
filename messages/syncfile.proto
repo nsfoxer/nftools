@@ -19,17 +19,29 @@ message FileMsg {
 	string local_dir = 1;
 	// 远端地址
 	string remote_dir = 2;
-	// 同步id
-	string id = 3;
 	// 同步状态
-	FileStatusEnum status = 4;
+	FileStatusEnum status = 3;
 	// 需要新增的文件数量
-	uint32 new = 5;
+	uint32 new = 4;
 	// 需要删除的文件数量
-	uint32 del = 6;
+	uint32 del = 5;
 	// 需要修改的文件数量
-	uint32 old = 7;
+	uint32 modify = 6;
 }
+
+
+// 同步文件详情
+message SyncFileDetailMsg {
+	// 同步状态
+	FileStatusEnum status = 1;
+	// 新增的文件
+	repeated string add_files = 2;
+	// 删除的文件
+	repeated string del_files = 3;
+	// 同步的文件
+	repeated string modify_files = 4;
+}
+
 enum FileStatusEnum {
 	// 需要上传
 	UPLOAD = 0;
