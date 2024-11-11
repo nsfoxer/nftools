@@ -33,6 +33,7 @@ rand = "0.8.5"
 rust-lzma = "0.6.0"
 machine-uid = "0.5.3"
 walkdir = "2.5.0"
+filetime = "0.2.25"
 
 # Uncomment below to target the web.
 # tokio_with_wasm = { version = "0.6.0", features = ["sync", "rt"] }
