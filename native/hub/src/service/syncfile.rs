@@ -14,11 +14,13 @@ use reqwest_dav::list_cmd::ListEntity;
 use reqwest_dav::{Auth, Client, ClientBuilder, Depth};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use std::ops::Add;
 use std::path::{Component, PathBuf};
 use std::sync::Arc;
-use std::time::UNIX_EPOCH;
-use tokio::fs::{File, metadata};
-use tokio::io::AsyncReadExt;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use filetime::FileTime;
+use tokio::fs::{File, metadata, create_dir};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct AccountInfo {
@@ -109,7 +111,7 @@ impl SyncFileService {
                 .as_ref()
                 .ok_or(anyhow!("无账号信息，请先登录注册"))?,
         )
-        .await?;
+            .await?;
         let real_remote: AHashSet<&String> = remote_files.keys().collect();
         let local_remote: AHashSet<&String> = self.file_sync.files.keys().collect();
         let mut result: Vec<FileMsg> = Vec::new();
@@ -171,20 +173,51 @@ impl SyncFileService {
                 .as_ref()
                 .ok_or(anyhow!("无帐号信息，请先登录或注册"))?,
         )
-        .await?;
+            .await?;
         let mut remote_metadata = Self::get_remote_dir_metadatas(&client, &remote_dir.value).await?;
-        // 对比
+
+        // 对比文件差异
         let (status, add_files, del_files, modify_files) =
             Self::diff_local_remote_file(&l_metadata, &remote_metadata);
+
+        // 执行相关操作
         match status {
             FileStatusEnum::Upload => {
                 Self::upload_files(&mut remote_metadata, &add_files, local_dir, &client).await?;
+                Self::delete_remote_files(&mut remote_metadata, &del_files, &remote_dir.value, &client).await?;
             }
-            FileStatusEnum::Download => {}
+            FileStatusEnum::Download => {
+                Self::download_files(&mut remote_metadata, &add_files, local_dir, &client).await?;
+                Self::delete_local_files(&del_files, local_dir, &client).await?;
+            }
             FileStatusEnum::Synced => {}
         }
 
-        todo!()
+        let mut upload_files = Vec::new();
+        let mut download_files = Vec::new();
+        for (file, status) in modify_files {
+            match status {
+                FileStatusEnum::Upload => {
+                    upload_files.push(file);
+                }
+                FileStatusEnum::Download => {
+                    download_files.push(file);
+                }
+                FileStatusEnum::Synced => {}
+            }
+        }
+        Self::upload_files(&mut remote_metadata, &upload_files, local_dir, &client).await?;
+        Self::download_files(&mut remote_metadata, &download_files, local_dir, &client).await?;
+
+        // 更新远端文件属性
+        todo!();
+        upload_files.append(&mut download_files);
+        Ok(SyncFileDetailMsg {
+            status: status.into(),
+            add_files,
+            del_files,
+            modify_files: upload_files,
+        })
     }
 }
 
@@ -352,7 +385,7 @@ impl SyncFileService {
         client: &Client,
     ) -> Result<()> {
         let mut exists_paths: AHashSet<String> = remote_metadata.files.keys().cloned().collect();
-        
+
         for file in local_files {
             let mut pathbuf = PathBuf::from(file);
             let mut path = String::new();
@@ -373,8 +406,59 @@ impl SyncFileService {
             let mut data = Vec::new();
             file1.read_to_end(&mut data).await?;
             client.put(&format!("{WEBDAV_SYNC_DIR}{file}"), data).await?;
-            
+
             remote_metadata.files.insert(file.clone(), metadata.modified()?.duration_since(UNIX_EPOCH).unwrap().as_millis());
+        }
+        Ok(())
+    }
+
+    /// 删除远程文件
+    async fn delete_remote_files(remote_metadata: &mut RemoteFileMedata, del_files: &[String], remote_dir: &str, client: &Client) -> Result<()> {
+        for file in del_files {
+            client.delete(&format!("{WEBDAV_SYNC_DIR}{remote_dir}{file}")).await?;
+            remote_metadata.files.remove(file);
+        }
+        Ok(())
+    }
+    /// 下载远端文件
+    async fn download_files(remote_metadata: &mut RemoteFileMedata, add_files: &[String], local_dir: &str, client: &Client) -> Result<()> {
+        // 1. 创建文件夹
+        for file in add_files {
+            if !file.ends_with('/') {
+                continue;
+            }
+            let path = PathBuf::from(format!("{}{}", local_dir, file));
+            if !path.exists() {
+                create_dir(path).await?;
+            }
+        }
+        // 2. 下载文件
+        for file in add_files {
+            if file.ends_with('/') {
+                continue;
+            }
+            let path = PathBuf::from(format!("{}{}", local_dir, file));
+            let rsp = client.get(&format!("{WEBDAV_SYNC_DIR}{file}")).await?;
+            let data = rsp.bytes().await?;
+            let mut file = File::create(path).await?;
+            file.write_all(&data).await?;
+        }
+        // 3. 修改时间戳
+        for file in add_files {
+            let time = *remote_metadata.files.get(file).unwrap();
+            let path = PathBuf::from(format!("{}{}", local_dir, file));
+            let system_time = SystemTime::UNIX_EPOCH.add(Duration::from_millis(time as u64));
+            filetime::set_file_mtime(path, FileTime::from(system_time))?
+        }
+
+        Ok(())
+    }
+
+    /// 删除本地文件
+    async fn delete_local_files(del_files: &[String], local_dir: &str, client: &Client) -> Result<()> {
+        for file in del_files {
+            let path = PathBuf::from(format!("{}{}", local_dir, file));
+            tokio::fs::remove_file(path).await?;
         }
         Ok(())
     }
