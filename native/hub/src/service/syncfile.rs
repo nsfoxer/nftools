@@ -1,5 +1,5 @@
 use crate::common::global_data::GlobalData;
-use crate::common::utils::get_machine_id;
+use crate::common::utils::{get_machine_id, sha256};
 use crate::common::WEBDAV_SYNC_DIR;
 use crate::messages::common::{BoolMessage, StringMessage, VecStringMessage};
 use crate::messages::syncfile::{FileMsg, FileStatusEnum, ListFileMsg, SyncFileDetailMsg};
@@ -8,18 +8,21 @@ use crate::{async_func_notype, func_end, func_notype, func_typeno};
 use ahash::{AHashMap, AHashSet, HashMap, HashSet};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
+use filetime::FileTime;
 use log::error;
 use prost::Message;
 use reqwest_dav::list_cmd::ListEntity;
+use reqwest_dav::re_exports::reqwest::Body;
 use reqwest_dav::{Auth, Client, ClientBuilder, Depth};
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
+use std::fmt::{Debug, format};
 use std::ops::Add;
-use std::path::{Component, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use filetime::FileTime;
-use tokio::fs::{File, metadata, create_dir};
+use hex_literal::hex;
+use sha2::{Digest, Sha256};
+use tokio::fs::{create_dir, metadata, File};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -63,6 +66,7 @@ pub struct SyncFileService {
 const NAME: &str = "SyncFileService";
 const ACCOUNT_CACHE: &str = "accountCache";
 const SYNC_FILE_PREFIX: &str = "syncFilePrefix";
+const METADATA_FILE: &str = ".sync_file.db";
 
 #[async_trait]
 impl Service for SyncFileService {
@@ -111,7 +115,7 @@ impl SyncFileService {
                 .as_ref()
                 .ok_or(anyhow!("无账号信息，请先登录注册"))?,
         )
-            .await?;
+        .await?;
         let real_remote: AHashSet<&String> = remote_files.keys().collect();
         let local_remote: AHashSet<&String> = self.file_sync.files.keys().collect();
         let mut result: Vec<FileMsg> = Vec::new();
@@ -173,8 +177,9 @@ impl SyncFileService {
                 .as_ref()
                 .ok_or(anyhow!("无帐号信息，请先登录或注册"))?,
         )
-            .await?;
-        let mut remote_metadata = Self::get_remote_dir_metadatas(&client, &remote_dir.value).await?;
+        .await?;
+        let mut remote_metadata =
+            Self::get_remote_dir_metadatas(&client, &remote_dir.value).await?;
 
         // 对比文件差异
         let (status, add_files, del_files, modify_files) =
@@ -184,11 +189,17 @@ impl SyncFileService {
         match status {
             FileStatusEnum::Upload => {
                 Self::upload_files(&mut remote_metadata, &add_files, local_dir, &client).await?;
-                Self::delete_remote_files(&mut remote_metadata, &del_files, &remote_dir.value, &client).await?;
+                Self::delete_remote_files(
+                    &mut remote_metadata,
+                    &del_files,
+                    &remote_dir.value,
+                    &client,
+                )
+                .await?;
             }
             FileStatusEnum::Download => {
                 Self::download_files(&mut remote_metadata, &add_files, local_dir, &client).await?;
-                Self::delete_local_files(&del_files, local_dir, &client).await?;
+                Self::delete_local_files(&del_files, local_dir).await?;
             }
             FileStatusEnum::Synced => {}
         }
@@ -210,7 +221,9 @@ impl SyncFileService {
         Self::download_files(&mut remote_metadata, &download_files, local_dir, &client).await?;
 
         // 更新远端文件属性
-        todo!();
+        Self::update_remote_metadata(&remote_metadata, &remote_dir.value, &client).await?;
+
+        // 返回数据
         upload_files.append(&mut download_files);
         Ok(SyncFileDetailMsg {
             status: status.into(),
@@ -218,6 +231,41 @@ impl SyncFileService {
             del_files,
             modify_files: upload_files,
         })
+    }
+
+    async fn add_local_file(&mut self, local_dir: StringMessage) -> Result<()> {
+        // 1. 基本校验
+        let add_path = Path::new(&local_dir.value);
+        if !add_path.exists() || !add_path.is_dir() {
+            return Err(anyhow!("{}路径不存在或非目录", local_dir.value));
+        }
+        
+        // 2. 不允许存在路径包含关系
+        for path in self.file_sync.files.values() {
+            if path.starts_with(&local_dir.value) || local_dir.value.starts_with(path) {
+                return Err(anyhow!("设定路径存在包含关系: 已存在路径 {}", path));
+            }
+        }
+        
+        // 3. 构造远端目录
+        let remote_dir = sha256(format!("{}_{}", get_machine_id()?, local_dir.value).as_bytes()) + "/";
+        let dir = format!("{}{remote_dir}", WEBDAV_SYNC_DIR);
+        let client = Self::connect(
+            self.account_info
+                .as_ref()
+                .ok_or(anyhow!("无帐号信息，请先登录或注册"))?,
+        ).await?; 
+        client.mkcol(&dir).await?;
+
+        // 4. 构造空的文件属性
+        let metadata = RemoteFileMedata{
+            tag: local_dir.value.clone(),
+            last_time: 0,
+            files: Default::default(),
+        };
+        Self::update_remote_metadata(&metadata, &remote_dir, &client).await?;
+        self.file_sync.files.insert(remote_dir, local_dir.value);
+        Ok(())
     }
 }
 
@@ -256,7 +304,8 @@ impl SyncFileService {
                     let metadata = Self::get_remote_dir_metadatas(&client, dir)
                         .await
                         .map_err(|x| anyhow!("无法获取远端文件夹属性文件{}修改时间 {}", dir, x))?;
-                    remote_files.insert(dir.to_string(), metadata);
+                    let dir = dir.to_string() + "/";
+                    remote_files.insert(dir, metadata);
                 }
             }
         }
@@ -266,7 +315,7 @@ impl SyncFileService {
 
     /// 获取远端目录文件属性
     async fn get_remote_dir_metadatas(client: &Client, dir: &str) -> Result<RemoteFileMedata> {
-        let dir = format!("{}{}/.sync_file.db", WEBDAV_SYNC_DIR, dir);
+        let dir = format!("{}{}{}", WEBDAV_SYNC_DIR, dir, METADATA_FILE);
         let rsp = client.get(&dir).await?;
         let rsp = rsp.text().await?;
         Ok(serde_json::from_str(&rsp)?)
@@ -405,23 +454,44 @@ impl SyncFileService {
             let metadata = file1.metadata().await?;
             let mut data = Vec::new();
             file1.read_to_end(&mut data).await?;
-            client.put(&format!("{WEBDAV_SYNC_DIR}{file}"), data).await?;
+            client
+                .put(&format!("{WEBDAV_SYNC_DIR}{file}"), data)
+                .await?;
 
-            remote_metadata.files.insert(file.clone(), metadata.modified()?.duration_since(UNIX_EPOCH).unwrap().as_millis());
+            remote_metadata.files.insert(
+                file.clone(),
+                metadata
+                    .modified()?
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis(),
+            );
         }
         Ok(())
     }
 
     /// 删除远程文件
-    async fn delete_remote_files(remote_metadata: &mut RemoteFileMedata, del_files: &[String], remote_dir: &str, client: &Client) -> Result<()> {
+    async fn delete_remote_files(
+        remote_metadata: &mut RemoteFileMedata,
+        del_files: &[String],
+        remote_dir: &str,
+        client: &Client,
+    ) -> Result<()> {
         for file in del_files {
-            client.delete(&format!("{WEBDAV_SYNC_DIR}{remote_dir}{file}")).await?;
+            client
+                .delete(&format!("{WEBDAV_SYNC_DIR}{remote_dir}{file}"))
+                .await?;
             remote_metadata.files.remove(file);
         }
         Ok(())
     }
     /// 下载远端文件
-    async fn download_files(remote_metadata: &mut RemoteFileMedata, add_files: &[String], local_dir: &str, client: &Client) -> Result<()> {
+    async fn download_files(
+        remote_metadata: &mut RemoteFileMedata,
+        add_files: &[String],
+        local_dir: &str,
+        client: &Client,
+    ) -> Result<()> {
         // 1. 创建文件夹
         for file in add_files {
             if !file.ends_with('/') {
@@ -455,11 +525,27 @@ impl SyncFileService {
     }
 
     /// 删除本地文件
-    async fn delete_local_files(del_files: &[String], local_dir: &str, client: &Client) -> Result<()> {
+    async fn delete_local_files(
+        del_files: &[String],
+        local_dir: &str,
+    ) -> Result<()> {
         for file in del_files {
             let path = PathBuf::from(format!("{}{}", local_dir, file));
             tokio::fs::remove_file(path).await?;
         }
+        Ok(())
+    }
+
+    /// 更新远端属性文件
+    async fn update_remote_metadata(
+        remote_file_medata: &RemoteFileMedata,
+        remote_dir: &str,
+        client: &Client,
+    ) -> Result<()> {
+        let dir = format!("{}{}{}", WEBDAV_SYNC_DIR, remote_dir, METADATA_FILE);
+        client
+            .put(&dir, Body::wrap(serde_json::to_string(remote_file_medata)?))
+            .await?;
         Ok(())
     }
 }
@@ -495,6 +581,7 @@ mod test {
     use std::os::fd::AsRawFd;
     use std::path::PathBuf;
     use std::sync::Arc;
+    use crate::messages::common::StringMessage;
 
     #[tokio::test]
     async fn webdav() {
@@ -572,5 +659,28 @@ mod test {
         for c in path.components() {
             eprintln!("{}", c.as_os_str().to_str().unwrap());
         }
+    }
+
+    #[tokio::test]
+    async fn add_file() {
+        let gd = Arc::new(GlobalData::new().unwrap());
+        let mut sync_file = SyncFileService::new(gd).unwrap();
+
+        // 新增本地目录测试
+        // let message = StringMessage { value: "/home/nsfoxer/桌面/test/".to_string(), };
+        // sync_file.add_local_file(message).await.unwrap();
+
+        // 获取远端所有metadata测试
+        // let r = SyncFileService::get_remote_dirs(sync_file.account_info.as_ref().unwrap()).await;
+        // eprintln!("{:?}", r);
+
+        // 列出远端与本地区别测试
+        // let r = sync_file.list_files().await.unwrap();
+        // eprintln!("{:?}", r);
+
+        // 文件同步测试
+        let message = StringMessage { value: "fc4910493945108d6c1015b5d69d5fceeddada052281437c28a73000c13bf518/".to_string(), };
+        let r = sync_file.sync_file(message).await.unwrap();
+        eprintln!("{r:?}");
     }
 }
