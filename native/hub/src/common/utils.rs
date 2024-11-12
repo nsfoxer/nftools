@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use dirs::{config_local_dir, data_local_dir};
 use anyhow::{anyhow, Result};
+use sha2::{Digest, Sha256};
 
 /// 工具类
 
@@ -38,4 +39,11 @@ pub fn get_config_dir() -> Result<PathBuf>  {
 /// 获取本机唯一id
 pub fn get_machine_id() -> Result<String>  {
     Ok(machine_uid::machine_id::get_machine_id().or(Err(anyhow!("无法获取本机唯一id")))?)
+}
+
+/// 将数据转换为sha256小写hex
+pub fn sha256(data: &[u8]) -> String {
+    let mut sha256 = Sha256::new();
+    sha256.update(data);
+    format!("{:x}", sha256.finalize())
 }
