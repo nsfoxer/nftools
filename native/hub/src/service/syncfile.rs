@@ -188,7 +188,7 @@ impl SyncFileService {
         // 执行相关操作
         match status {
             FileStatusEnum::Upload => {
-                Self::upload_files(&mut remote_metadata, &add_files, local_dir, &client).await?;
+                Self::upload_files(&mut remote_metadata, &add_files, local_dir, &remote_dir.value, &client).await?;
                 Self::delete_remote_files(
                     &mut remote_metadata,
                     &del_files,
@@ -217,7 +217,7 @@ impl SyncFileService {
                 FileStatusEnum::Synced => {}
             }
         }
-        Self::upload_files(&mut remote_metadata, &upload_files, local_dir, &client).await?;
+        Self::upload_files(&mut remote_metadata, &upload_files, local_dir, &remote_dir.value, &client).await?;
         Self::download_files(&mut remote_metadata, &download_files, local_dir, &client).await?;
 
         // 更新远端文件属性
@@ -431,6 +431,7 @@ impl SyncFileService {
         remote_metadata: &mut RemoteFileMedata,
         local_files: &[String],
         local_dir: &str,
+        remote_dir: &str,
         client: &Client,
     ) -> Result<()> {
         let mut exists_paths: AHashSet<String> = remote_metadata.files.keys().cloned().collect();
@@ -440,13 +441,13 @@ impl SyncFileService {
             let mut path = String::new();
             let components: Vec<Component> = pathbuf.components().collect();
             for (i, comp) in components.iter().enumerate() {
-                if i == components.len() {
+                if i+1 >= components.len() {
                     continue;
                 }
                 path += comp.as_os_str().to_str().unwrap();
                 path.push('/');
                 if !exists_paths.contains(&path) {
-                    client.mkcol(&format!("{WEBDAV_SYNC_DIR}{}", path)).await?;
+                    client.mkcol(&format!("{WEBDAV_SYNC_DIR}{remote_dir}{}", path)).await?;
                     exists_paths.insert(path.clone());
                 }
             }
@@ -455,7 +456,7 @@ impl SyncFileService {
             let mut data = Vec::new();
             file1.read_to_end(&mut data).await?;
             client
-                .put(&format!("{WEBDAV_SYNC_DIR}{file}"), data)
+                .put(&format!("{WEBDAV_SYNC_DIR}{remote_dir}{file}"), data)
                 .await?;
 
             remote_metadata.files.insert(
@@ -577,8 +578,6 @@ mod test {
         AccountInfo, LocalFileMetadata, RemoteFileMedata, SyncFileService,
     };
     use ahash::AHashMap;
-    use std::fs::File;
-    use std::os::fd::AsRawFd;
     use std::path::PathBuf;
     use std::sync::Arc;
     use crate::messages::common::StringMessage;
@@ -665,22 +664,28 @@ mod test {
     async fn add_file() {
         let gd = Arc::new(GlobalData::new().unwrap());
         let mut sync_file = SyncFileService::new(gd).unwrap();
+        let account = AccountInfo {
+            url: "https://dav.jianguoyun.com/dav/".to_string(),
+            user: "1261805497@qq.com".to_string(),
+            passwd: "a22xnw294yj5h9d3".to_string(),
+        };
+        sync_file.account_info = Some(account);
 
         // 新增本地目录测试
-        // let message = StringMessage { value: "/home/nsfoxer/桌面/test/".to_string(), };
+        // let message = StringMessage { value: r"C:\Users\12618\Desktop\tmp\test".to_string(), };
         // sync_file.add_local_file(message).await.unwrap();
 
         // 获取远端所有metadata测试
-        // let r = SyncFileService::get_remote_dirs(sync_file.account_info.as_ref().unwrap()).await;
-        // eprintln!("{:?}", r);
+        let r = SyncFileService::get_remote_dirs(sync_file.account_info.as_ref().unwrap()).await;
+        eprintln!("{:?}", r);
 
         // 列出远端与本地区别测试
-        // let r = sync_file.list_files().await.unwrap();
-        // eprintln!("{:?}", r);
+        let r = sync_file.list_files().await.unwrap();
+        eprintln!("{:?}", r);
 
         // 文件同步测试
-        let message = StringMessage { value: "fc4910493945108d6c1015b5d69d5fceeddada052281437c28a73000c13bf518/".to_string(), };
-        let r = sync_file.sync_file(message).await.unwrap();
-        eprintln!("{r:?}");
+        // let message = StringMessage { value: "fc4910493945108d6c1015b5d69d5fceeddada052281437c28a73000c13bf518/".to_string(), };
+        // let r = sync_file.sync_file(message).await.unwrap();
+        // eprintln!("{r:?}");
     }
 }
