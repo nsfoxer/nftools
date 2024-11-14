@@ -198,7 +198,7 @@ impl SyncFileService {
                 .await?;
             }
             FileStatusEnum::Download => {
-                Self::download_files(&mut remote_metadata, &mut add_files, local_dir, &client).await?;
+                Self::download_files(&mut remote_metadata, &mut add_files, local_dir, &remote_dir.value,  &client).await?;
                 Self::delete_local_files(&del_files, local_dir).await?;
             }
             FileStatusEnum::Synced => {}
@@ -218,7 +218,7 @@ impl SyncFileService {
             }
         }
         Self::upload_files(&mut remote_metadata, &mut upload_files, local_dir, &remote_dir.value, &client).await?;
-        Self::download_files(&mut remote_metadata, &download_files, local_dir, &client).await?;
+        Self::download_files(&mut remote_metadata, &download_files, local_dir, &remote_dir.value, &client).await?;
 
         // 更新远端文件属性
         Self::update_remote_metadata(&remote_metadata, &remote_dir.value, &client).await?;
@@ -477,6 +477,7 @@ impl SyncFileService {
         remote_metadata: &mut RemoteFileMedata,
         add_files: &[String],
         local_dir: &str,
+        remote_dir: &str,
         client: &Client,
     ) -> Result<()> {
         // 1. 创建文件夹
@@ -495,7 +496,7 @@ impl SyncFileService {
                 continue;
             }
             let path = PathBuf::from(format!("{}{}", local_dir, file));
-            let rsp = client.get(&format!("{WEBDAV_SYNC_DIR}{file}")).await?;
+            let rsp = client.get(&format!("{WEBDAV_SYNC_DIR}{remote_dir}{file}")).await?;
             let data = rsp.bytes().await?;
             let mut file = File::create(path).await?;
             file.write_all(&data).await?;
