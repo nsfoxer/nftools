@@ -182,13 +182,13 @@ impl SyncFileService {
             Self::get_remote_dir_metadatas(&client, &remote_dir.value).await?;
 
         // 对比文件差异
-        let (status, add_files, del_files, modify_files) =
+        let (status, mut add_files, del_files, modify_files) =
             Self::diff_local_remote_file(&l_metadata, &remote_metadata);
 
         // 执行相关操作
         match status {
             FileStatusEnum::Upload => {
-                Self::upload_files(&mut remote_metadata, &add_files, local_dir, &remote_dir.value, &client).await?;
+                Self::upload_files(&mut remote_metadata, &mut add_files, local_dir, &remote_dir.value, &client).await?;
                 Self::delete_remote_files(
                     &mut remote_metadata,
                     &del_files,
@@ -198,7 +198,7 @@ impl SyncFileService {
                 .await?;
             }
             FileStatusEnum::Download => {
-                Self::download_files(&mut remote_metadata, &add_files, local_dir, &client).await?;
+                Self::download_files(&mut remote_metadata, &mut add_files, local_dir, &client).await?;
                 Self::delete_local_files(&del_files, local_dir).await?;
             }
             FileStatusEnum::Synced => {}
@@ -217,7 +217,7 @@ impl SyncFileService {
                 FileStatusEnum::Synced => {}
             }
         }
-        Self::upload_files(&mut remote_metadata, &upload_files, local_dir, &remote_dir.value, &client).await?;
+        Self::upload_files(&mut remote_metadata, &mut upload_files, local_dir, &remote_dir.value, &client).await?;
         Self::download_files(&mut remote_metadata, &download_files, local_dir, &client).await?;
 
         // 更新远端文件属性
@@ -233,6 +233,7 @@ impl SyncFileService {
         })
     }
 
+    /// 新增一个本地数据
     async fn add_local_file(&mut self, local_dir: StringMessage) -> Result<()> {
         // 1. 基本校验
         let add_path = Path::new(&local_dir.value);
@@ -301,10 +302,10 @@ impl SyncFileService {
         for file in files.iter().skip(1) {
             if let ListEntity::Folder(dir) = file {
                 if let Some(dir) = dir.href.split_once(WEBDAV_SYNC_DIR).map(|x| x.1) {
-                    let metadata = Self::get_remote_dir_metadatas(&client, dir)
+                    let dir = dir.to_string() + "/";
+                    let metadata = Self::get_remote_dir_metadatas(&client, dir.as_str())
                         .await
                         .map_err(|x| anyhow!("无法获取远端文件夹属性文件{}修改时间 {}", dir, x))?;
-                    let dir = dir.to_string() + "/";
                     remote_files.insert(dir, metadata);
                 }
             }
@@ -318,6 +319,7 @@ impl SyncFileService {
         let dir = format!("{}{}{}", WEBDAV_SYNC_DIR, dir, METADATA_FILE);
         let rsp = client.get(&dir).await?;
         let rsp = rsp.text().await?;
+        eprintln!("{rsp}");
         Ok(serde_json::from_str(&rsp)?)
     }
 
@@ -344,6 +346,9 @@ impl SyncFileService {
             if entry.path().is_dir() {
                 path += "/";
             }
+            if path == "/" {
+                continue
+            }
             let metadata = metadata(entry.path()).await?;
             let max = metadata.modified()?.duration_since(UNIX_EPOCH)?.as_millis();
             files.insert(path, max);
@@ -355,16 +360,6 @@ impl SyncFileService {
             last_time: max_time,
             files,
         })
-    }
-
-    // fn upload_file(dirs: &AHashSet<&String>) -> HashSet<&&String> {
-    //     let
-    // }
-
-    fn build_exits_path(dirs: &AHashSet<&String>) -> HashSet<String> {
-        // let mut result = Vec::new();
-        for dir in dirs {}
-        todo!()
     }
 
     /// 对比本地与远端文件差异
@@ -429,42 +424,33 @@ impl SyncFileService {
     /// 上传文件
     async fn upload_files(
         remote_metadata: &mut RemoteFileMedata,
-        local_files: &[String],
+        local_files: &mut [String],
         local_dir: &str,
         remote_dir: &str,
         client: &Client,
     ) -> Result<()> {
-        let mut exists_paths: AHashSet<String> = remote_metadata.files.keys().cloned().collect();
-
+        // 排序，这样文件依赖的文件夹路径一定存在于其之前
+        local_files.sort();
         for file in local_files {
-            let mut pathbuf = PathBuf::from(file);
-            let mut path = String::new();
-            let components: Vec<Component> = pathbuf.components().collect();
-            for (i, comp) in components.iter().enumerate() {
-                if i+1 >= components.len() {
-                    continue;
-                }
-                path += comp.as_os_str().to_str().unwrap();
-                path.push('/');
-                if !exists_paths.contains(&path) {
-                    client.mkcol(&format!("{WEBDAV_SYNC_DIR}{remote_dir}{}", path)).await?;
-                    exists_paths.insert(path.clone());
-                }
+            let mut local_file = File::open(format!("{}/{}", local_dir, file)).await?;
+            let remote_file = format!("{WEBDAV_SYNC_DIR}{remote_dir}{file}");
+            eprintln!("{}", remote_file);
+            if file.ends_with("/") {
+                // 目录则新建目录
+                client.mkcol(&remote_file).await?;
+            } else {
+                // 文件上传
+                let mut data = Vec::new();
+                local_file.read_to_end(&mut data).await?;
+                client.put(&remote_file, data).await?; 
             }
-            let mut file1 = File::open(format!("{}/{}", local_dir, file)).await?;
-            let metadata = file1.metadata().await?;
-            let mut data = Vec::new();
-            file1.read_to_end(&mut data).await?;
-            client
-                .put(&format!("{WEBDAV_SYNC_DIR}{remote_dir}{file}"), data)
-                .await?;
-
+            // 更新远端文件属性
+            let metadata = local_file.metadata().await?;
             remote_metadata.files.insert(
                 file.clone(),
                 metadata
                     .modified()?
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
+                    .duration_since(UNIX_EPOCH)?
                     .as_millis(),
             );
         }
@@ -578,7 +564,7 @@ mod test {
         AccountInfo, LocalFileMetadata, RemoteFileMedata, SyncFileService,
     };
     use ahash::AHashMap;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::sync::Arc;
     use crate::messages::common::StringMessage;
 
@@ -670,22 +656,40 @@ mod test {
             passwd: "a22xnw294yj5h9d3".to_string(),
         };
         sync_file.account_info = Some(account);
-
+        let local_dir = "/home/nsfoxer/桌面/test/".to_string();
+        let medata = SyncFileService::get_newest_file(&local_dir).await.unwrap();
+        eprintln!("{medata:?}");
         // 新增本地目录测试
-        // let message = StringMessage { value: r"C:\Users\12618\Desktop\tmp\test".to_string(), };
+        // let message = StringMessage { value: local_dir.clone(), };
         // sync_file.add_local_file(message).await.unwrap();
 
         // 获取远端所有metadata测试
-        let r = SyncFileService::get_remote_dirs(sync_file.account_info.as_ref().unwrap()).await;
-        eprintln!("{:?}", r);
+        // let r = SyncFileService::get_remote_dirs(sync_file.account_info.as_ref().unwrap()).await;
+        // eprintln!("{:?}", r);
 
         // 列出远端与本地区别测试
-        let r = sync_file.list_files().await.unwrap();
-        eprintln!("{:?}", r);
+        // let r = sync_file.list_files().await.unwrap();
+        // eprintln!("{:?}", r);
 
         // 文件同步测试
-        // let message = StringMessage { value: "fc4910493945108d6c1015b5d69d5fceeddada052281437c28a73000c13bf518/".to_string(), };
-        // let r = sync_file.sync_file(message).await.unwrap();
-        // eprintln!("{r:?}");
+        let message = StringMessage { value: "fc4910493945108d6c1015b5d69d5fceeddada052281437c28a73000c13bf518/".to_string(), };
+        let r = sync_file.sync_file(message).await.unwrap();
+        eprintln!("{r:?}");
+    }
+
+    #[test]
+    fn path2() {
+        let mut path = PathBuf::from("/");
+        path.pop();
+        for c in path.components() {
+            eprintln!("{}", c.as_os_str().to_str().unwrap());
+        }
+    }
+
+    #[test]
+    fn sort() {
+        let mut paths = ["目录2/文本文件.txt", "目录2/", "HTML 文件.html", "空文件夹/", "空文件夹/新建文件夹/", "a/", "a/b", "a/c.txt"];
+        paths.sort();
+        eprintln!("{:?}", paths);
     }
 }
