@@ -661,6 +661,7 @@ pub mod display_os {
 }
 
 
+#[allow(unused_imports)]
 #[cfg(target_os = "linux")]
 mod tests {
     use std::time::Duration;

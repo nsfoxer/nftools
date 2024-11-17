@@ -344,6 +344,7 @@ impl LineEquation {
     }
 }
 
+#[allow(unused_imports)]
 mod test {
     use crate::messages::system_info::ChartInfo;
     use crate::service::system_info::{

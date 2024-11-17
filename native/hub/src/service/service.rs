@@ -149,7 +149,7 @@ mod macros {
     match $function {
         $(
         stringify!($name) => {
-            let req = <$req>::decode(&data.unwrap()[..])?;
+            let req = <$req>::decode(&$data[..])?;
             let rsp = $self.$name(req).await?;
             let mut buf = Vec::new();
             rsp.encode(&mut buf)?;

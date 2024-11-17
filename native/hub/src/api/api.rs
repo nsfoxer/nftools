@@ -8,6 +8,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// 服务类型枚举
+#[allow(dead_code)]
 enum ServiceEnum {
     /// 惰性服务
     LazyService(Arc<Mutex<(Box<dyn LazyService>, bool)>>),
@@ -38,6 +39,7 @@ impl ApiService {
         );
     }
     /// 新增惰性服务
+    #[allow(dead_code)]
     pub fn add_lazy_service(&mut self, service: Box<dyn LazyService>) {
         self.services.insert(
             service.get_service_name(),
@@ -45,6 +47,7 @@ impl ApiService {
         );
     }
     /// 新增不可变服务
+    #[allow(dead_code)]
     pub fn add_imm_service(&mut self, service: Box<dyn ImmService>) {
         self.services.insert(
             service.get_service_name(),
