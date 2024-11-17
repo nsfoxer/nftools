@@ -109,16 +109,17 @@ fn config_dir() -> Result<PathBuf> {
 
 
 mod tests {
-    use crate::common::global_data::GlobalData;
 
     #[test]
     fn a() {
+        use crate::common::global_data::GlobalData;
         let data = GlobalData::new().unwrap();
         let s = vec!["1", "2", "3", "abcb"];
         data.set_data("SyncFile".to_string(), &s).unwrap();
     }
     #[test]
     fn b() {
+        use crate::common::global_data::GlobalData;
         let data = GlobalData::new().unwrap();
         eprintln!("{:?}", data.get_data::<Vec<String>>("SyncFile").unwrap());
     }
