@@ -50,3 +50,10 @@ enum FileStatusEnum {
 	// 已同步成功
 	SYNCED = 2;
 }
+
+
+// 对空缺的远端目录新增本地路径
+message AddLocal4RemoteMsg {
+	string local_dir = 1;
+	string remote_dir = 2;
+}
