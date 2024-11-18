@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 
+// 空白页面
 class EmptyPage extends StatelessWidget {
   const EmptyPage({super.key});
 
