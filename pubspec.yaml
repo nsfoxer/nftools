@@ -41,8 +41,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   easy_debounce: ^2.0.3
   flex_color_scheme: ^7.3.1
-  data_table_2: ^2.5.15
-  material_table_view: ^5.0.0
   fluentui_system_icons: ^1.1.260
   fluent_ui: ^4.9.2
   go_router: ^14.3.0
@@ -50,6 +48,7 @@ dependencies:
   intl: ^0.19.0
   window_manager: ^0.4.3
   tray_manager: ^0.2.4
+  data_table_2: ^2.5.15
 
 dev_dependencies:
   flutter_lints: ^3.0.0
