@@ -200,14 +200,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.8.0"
-  material_table_view:
-    dependency: "direct main"
-    description:
-      name: material_table_view
-      sha256: "0a9155c05ab0e16ae7bd56211695872e19b14e3a2dd9d15dfc36019d7b482d98"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.0.0"
   math_expressions:
     dependency: transitive
     description:
