@@ -48,6 +48,7 @@ dependencies:
   intl: ^0.19.0
   window_manager: ^0.4.3
   tray_manager: ^0.2.4
+  data_table_2: ^2.5.15
 
 dev_dependencies:
   flutter_lints: ^3.0.0

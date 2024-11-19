@@ -101,10 +101,10 @@ packages:
     dependency: "direct main"
     description:
       name: fluentui_system_icons
-      sha256: a9fd6c4dc23016d15a224151848f575f8466aba0665b41cce8a2d157e72c9f36
+      sha256: f5eef03b53e1d3167677e968928090ddf191b20e8b512d5b403eb5275dd0285d
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.263"
+    version: "1.1.264"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -140,10 +140,10 @@ packages:
     dependency: "direct main"
     description:
       name: go_router
-      sha256: "6f1b756f6e863259a99135ff3c95026c3cdca17d10ebef2bba2261a25ddc8bbc"
+      sha256: "8ae664a70174163b9f65ea68dd8673e29db8f9095de7b5cd00e167c621f4fef5"
       url: "https://pub.dev"
     source: hosted
-    version: "14.3.0"
+    version: "14.6.0"
   graphic:
     dependency: "direct main"
     description:
