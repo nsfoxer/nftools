@@ -10,6 +10,23 @@ import '../messages/syncfile.pb.dart';
 class SyncFilePage extends StatelessWidget {
   const SyncFilePage({super.key});
 
+  void _showAccountSetting(BuildContext context) async {
+    var typography = FluentTheme.of(context).typography;
+    final result = await showDialog <String>(
+      context: context,
+      builder: (context) => ContentDialog(
+        title: Text("账户管理", style: typography.subtitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InfoLabel(label: "服务器地址",
+            child: TextFormBox),
+          ],
+        ),
+      )
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     var typography = FluentTheme.of(context).typography;
@@ -29,8 +46,19 @@ class SyncFilePage extends StatelessWidget {
           ));
     });
     return ScaffoldPage(
-      header: const PageHeader(
-        title: Text("文件同步"),
+      header: PageHeader(
+        title: const Text("文件同步"),
+        commandBar: GetBuilder<SyncFileController>(builder: (logic) {
+          return CommandBar(
+            mainAxisAlignment: MainAxisAlignment.end,
+            overflowItemAlignment: MainAxisAlignment.end,
+            primaryItems: [
+              CommandBarButton(icon: Icon(FluentIcons.account_management), label: Text("账户管理"), onPressed: (){
+                _showAccountSetting(context);
+              }),
+            ],
+          );
+        }),
       ),
       content: table,
     );
