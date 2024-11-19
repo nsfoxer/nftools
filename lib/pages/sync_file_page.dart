@@ -10,21 +10,54 @@ import '../messages/syncfile.pb.dart';
 class SyncFilePage extends StatelessWidget {
   const SyncFilePage({super.key});
 
-  void _showAccountSetting(BuildContext context) async {
+  void _showAccountSetting(
+      BuildContext context, SyncFileController logic) async {
     var typography = FluentTheme.of(context).typography;
-    final result = await showDialog <String>(
-      context: context,
-      builder: (context) => ContentDialog(
-        title: Text("账户管理", style: typography.subtitle),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            InfoLabel(label: "服务器地址",
-            child: TextFormBox),
-          ],
-        ),
-      )
-    );
+    final result = await showDialog<String>(
+        context: context,
+        builder: (context) => ContentDialog(
+            title: Text("账户管理", style: typography.subtitle),
+            content: Container(child:  Form(
+              key: logic.state.formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  InfoLabel(
+                      label: "服务器地址",
+                      child: TextFormBox(
+                        // controller: logic.state.urlController,
+                        keyboardType: TextInputType.text,
+                        placeholder: "https://dav.xxxx.com/dav/",
+                        enableSuggestions: false,
+                        validator: (v) {
+                          if (v!.startsWith("http://") ||
+                              v.startsWith("https://")) {
+                            return null;
+                          }
+                          return "必须以http://或https://开头";
+                        },
+                      )),
+                  InfoLabel(
+                      label: "账户",
+                      child: TextFormBox(
+                        // controller: logic.state.userController,
+                        keyboardType: TextInputType.text,
+                        // placeholder: "username",
+                        // enableSuggestions: false,
+                      )),
+                  InfoLabel(
+                      label: "密码",
+                      child: TextFormBox(
+                        // controller: logic.state.passwdController,
+                        keyboardType: TextInputType.visiblePassword,
+                        obscureText: true,
+                        placeholder: "passwd",
+                        enableSuggestions: false,
+                      )),
+                ],
+              ),
+            ))));
   }
 
   @override
@@ -34,7 +67,7 @@ class SyncFilePage extends StatelessWidget {
       return LoadingWidgets(
           loading: logic.state.isLoading,
           child: PaginatedDataTable2(
-            rowsPerPage: 10,
+            rowsPerPage: 5,
             onPageChanged: (page) {},
             columns: [
               DataColumn2(label: Text("本地", style: typography.bodyStrong)),
@@ -53,14 +86,57 @@ class SyncFilePage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             overflowItemAlignment: MainAxisAlignment.end,
             primaryItems: [
-              CommandBarButton(icon: Icon(FluentIcons.account_management), label: Text("账户管理"), onPressed: (){
-                _showAccountSetting(context);
-              }),
+              CommandBarButton(
+                  icon: Icon(FluentIcons.account_management),
+                  label: Text("账户管理"),
+                  onPressed: () {
+                    _showAccountSetting(context, logic);
+                  }),
             ],
           );
         }),
       ),
-      content: table,
+        content: Form(
+          // key: logic.state.formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InfoLabel(
+                  label: "服务器地址",
+                  child: TextFormBox(
+                    // controller: logic.state.urlController,
+                    keyboardType: TextInputType.text,
+                    placeholder: "https://dav.xxxx.com/dav/",
+                    enableSuggestions: false,
+                    validator: (v) {
+                      if (v!.startsWith("http://") ||
+                          v.startsWith("https://")) {
+                        return null;
+                      }
+                      return "必须以http://或https://开头";
+                    },
+                  )),
+              InfoLabel(
+                  label: "账户",
+                  child: TextFormBox(
+                    // controller: logic.state.userController,
+                    keyboardType: TextInputType.text,
+                    // placeholder: "username",
+                    // enableSuggestions: false,
+                  )),
+              InfoLabel(
+                  label: "密码",
+                  child: TextFormBox(
+                    // controller: logic.state.passwdController,
+                    keyboardType: TextInputType.visiblePassword,
+                    obscureText: true,
+                    placeholder: "passwd",
+                    enableSuggestions: false,
+                  )),
+            ],
+          ),
+        )
     );
   }
 }
