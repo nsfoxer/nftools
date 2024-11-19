@@ -17,7 +17,10 @@ class SyncFilePage extends StatelessWidget {
         context: context,
         builder: (context) => ContentDialog(
             title: Text("账户管理", style: typography.subtitle),
-            content: Container(child:  Form(
+            content: SizedBox(
+                width: 260,
+                height: 260,
+                child:  Form(
               key: logic.state.formKey,
               autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
@@ -26,7 +29,7 @@ class SyncFilePage extends StatelessWidget {
                   InfoLabel(
                       label: "服务器地址",
                       child: TextFormBox(
-                        // controller: logic.state.urlController,
+                        controller: logic.state.urlController,
                         keyboardType: TextInputType.text,
                         placeholder: "https://dav.xxxx.com/dav/",
                         enableSuggestions: false,
@@ -41,15 +44,15 @@ class SyncFilePage extends StatelessWidget {
                   InfoLabel(
                       label: "账户",
                       child: TextFormBox(
-                        // controller: logic.state.userController,
+                        controller: logic.state.userController,
                         keyboardType: TextInputType.text,
-                        // placeholder: "username",
-                        // enableSuggestions: false,
+                        placeholder: "username",
+                        enableSuggestions: false,
                       )),
                   InfoLabel(
                       label: "密码",
                       child: TextFormBox(
-                        // controller: logic.state.passwdController,
+                        controller: logic.state.passwdController,
                         keyboardType: TextInputType.visiblePassword,
                         obscureText: true,
                         placeholder: "passwd",
@@ -96,47 +99,7 @@ class SyncFilePage extends StatelessWidget {
           );
         }),
       ),
-        content: Form(
-          // key: logic.state.formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              InfoLabel(
-                  label: "服务器地址",
-                  child: TextFormBox(
-                    // controller: logic.state.urlController,
-                    keyboardType: TextInputType.text,
-                    placeholder: "https://dav.xxxx.com/dav/",
-                    enableSuggestions: false,
-                    validator: (v) {
-                      if (v!.startsWith("http://") ||
-                          v.startsWith("https://")) {
-                        return null;
-                      }
-                      return "必须以http://或https://开头";
-                    },
-                  )),
-              InfoLabel(
-                  label: "账户",
-                  child: TextFormBox(
-                    // controller: logic.state.userController,
-                    keyboardType: TextInputType.text,
-                    // placeholder: "username",
-                    // enableSuggestions: false,
-                  )),
-              InfoLabel(
-                  label: "密码",
-                  child: TextFormBox(
-                    // controller: logic.state.passwdController,
-                    keyboardType: TextInputType.visiblePassword,
-                    obscureText: true,
-                    placeholder: "passwd",
-                    enableSuggestions: false,
-                  )),
-            ],
-          ),
-        )
+        content: table
     );
   }
 }
