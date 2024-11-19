@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
@@ -95,6 +96,7 @@ class _MainAppState extends State<MainApp>
     _displayApp();
     super.onTrayIconMouseDown();
   }
+
   @override
   void onTrayIconRightMouseDown() {
     trayManager.popUpContextMenu();
@@ -143,25 +145,25 @@ class _MainAppState extends State<MainApp>
           accentColor: AccentColor.swatch(swatch));
     }
 
-    return AnimatedFluentTheme(
-        data: m,
-        child: GetMaterialApp(
-          title: Constants.appName,
-          debugShowCheckedModeBanner: false,
-          initialBinding: GlobalControllerBindings(),
-          localizationsDelegates: FluentLocalizations.localizationsDelegates,
-          home: FluentApp.router(
-            debugShowCheckedModeBanner: false,
-            theme: m,
-            darkTheme: m,
-            builder: (context, child) {
-              return child!;
-            },
-            routeInformationParser: router.routeInformationParser,
-            routerDelegate: router.routerDelegate,
-            routeInformationProvider: router.routeInformationProvider,
-          ),
-        ));
+    var bgColor = m.resources.solidBackgroundFillColorTertiary;
+    return GetMaterialApp.router(
+        themeMode: ThemeMode.dark,
+        theme: FlexThemeData.light(primary: primaryColor, background: bgColor, surface: bgColor, fontFamily: fonts),
+        darkTheme: FlexThemeData.dark(primary: primaryColor, background: bgColor, surface: bgColor, fontFamily: fonts),
+        title: Constants.appName,
+        debugShowCheckedModeBanner: false,
+        initialBinding: GlobalControllerBindings(),
+        localizationsDelegates: FluentLocalizations.localizationsDelegates,
+        routeInformationParser: router.routeInformationParser,
+        routerDelegate: router.routerDelegate,
+        routeInformationProvider: router.routeInformationProvider,
+        builder: (context, child) {
+          return AnimatedFluentTheme(
+            data: m,
+            child: child!,
+          );
+        },
+       );
   }
 }
 

@@ -9,7 +9,7 @@ class MyRouterConfig {
   static List<MenuData> menuDatas = [
     const MenuData("/", Icons.home, "主页", EmptyPage()),
     const MenuData("/display", Icons.display_settings, "显示",  DisplayPage()),
-    const MenuData("/sync_file", FluentIcons.cloud_flow, "文件同步", SyncFilePage()),
+    MenuData("/sync_file", FluentIcons.cloud_flow, "文件同步", SyncFilePage()),
     const MenuData("/systemInfo", Icons.area_chart, "系统监控", SystemInfoPage()),
   ];
 
