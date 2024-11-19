@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/common/style.dart';
 
@@ -38,5 +40,41 @@ class NFCard extends StatelessWidget {
         NFLayout.vlineh1,
       ],
     );
+  }
+}
+
+// 加载组件
+class LoadingWidgets extends StatelessWidget {
+  final Widget child;
+  final bool loading;
+
+  const LoadingWidgets(
+      {super.key,
+        required this.child,
+        required this.loading,
+        });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!loading) {
+      return child;
+    }
+    return IgnorePointer(child:  Stack(
+      alignment: Alignment.center,
+      children: [
+        ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+          child: child,
+        ),
+         const Column(
+           mainAxisAlignment: MainAxisAlignment.center,
+           children: [
+             ProgressRing(),
+             NFLayout.vlineh1,
+             Text("加载中...")
+           ],
+         ),
+      ],
+    ));
   }
 }

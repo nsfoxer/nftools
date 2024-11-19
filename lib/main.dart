@@ -11,6 +11,7 @@ import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:rinf/rinf.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
@@ -202,6 +203,7 @@ final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
     navigatorKey: _shellNavigatorKey,
     builder: (context, state, child) {
       MyRouterConfig.currentUrl = state.fullPath ?? '/';
+      MyRouterConfig.themeContext = _shellNavigatorKey.currentContext;
       return MainPage(
         buildContext: _shellNavigatorKey.currentContext,
         child: child,

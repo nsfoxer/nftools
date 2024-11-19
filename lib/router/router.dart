@@ -19,6 +19,8 @@ class MyRouterConfig {
 
   // 当前路由
   static String currentUrl = "/";
+  // 可用主题上下文
+  static BuildContext? themeContext;
 }
 
 class MenuData {

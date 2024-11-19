@@ -1,9 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:nftools/main.dart';
-
-BuildContext? getCurrentContext() {
-  return rootNavigatorKey.currentState?.context;
-}
+import 'package:nftools/router/router.dart';
 
 /// info log
 void info(String message) {
@@ -22,7 +18,7 @@ void error(String message) {
 
 void _print(String message, InfoBarSeverity serverity) async {
   debugPrint("${serverity.name}: $message");
-  final context = getCurrentContext();
+  final context = MyRouterConfig.themeContext;
   if (context == null) {
     return;
   }

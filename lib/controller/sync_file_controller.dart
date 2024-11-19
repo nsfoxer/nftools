@@ -13,6 +13,10 @@ class SyncFileController extends GetxController {
 
   // 初始化数据
   _init() async {
+    var result = await $api.listDirs();
+    state.isLoading = false;
+    state.fileList = result.files;
+    update();
   }
 
 }
