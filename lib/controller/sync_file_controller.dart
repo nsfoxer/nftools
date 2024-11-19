@@ -15,8 +15,12 @@ class SyncFileController extends GetxController {
   // 初始化数据
   _init() async {
     try {
-      var result = await $api.listDirs();
-      state.fileList = result.files;
+      if (!await $api.hasAccount()) {
+        info("无登录信息，请先登录");
+      } else {
+        var result = await $api.listDirs();
+        state.fileList = result.files;
+      }
     } finally {
       state.isLoading = false;
       update();
