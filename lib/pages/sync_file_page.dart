@@ -12,88 +12,106 @@ import '../messages/syncfile.pb.dart';
 class SyncFilePage extends StatelessWidget {
   const SyncFilePage({super.key});
 
-  void _showAccountSetting(
-      BuildContext context, SyncFileController logic) async {
+  void _showAccountSetting(BuildContext context) async {
     var typography = FluentTheme.of(context).typography;
     final result = await showDialog<String>(
         context: context,
-        builder: (context) => ContentDialog(
-            title: Text("账户管理", style: typography.subtitle),
-            content: SizedBox(
-                // width: 300,
-                // height: 260,
-                child:  Form(
-              key: logic.state.formKey,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  InfoLabel(
-                      label: "服务器地址",
-                      child: TextFormBox(
-                        controller: logic.state.urlController,
-                        keyboardType: TextInputType.text,
-                        placeholder: "https://dav.xxxx.com/dav/",
-                        enableSuggestions: false,
-                        validator: (v) {
-                          if (v!.startsWith("http://") ||
-                              v.startsWith("https://")) {
-                            return null;
-                          }
-                          return "必须以http://或https://开头";
-                        },
-                      )),
-                  InfoLabel(
-                      label: "账户",
-                      child: TextFormBox(
-                        controller: logic.state.userController,
-                        keyboardType: TextInputType.text,
-                        placeholder: "username",
-                        enableSuggestions: false,
-                        validator: (v) {
-                          if (v == '') {
-                            return "数据不能为空";
-                          }
-                          return null;
-                        },
-                      )),
-                  InfoLabel(
-                      label: "密码",
-                      child: TextFormBox(
-                        controller: logic.state.passwdController,
-                        keyboardType: TextInputType.visiblePassword,
-                        obscureText: true,
-                        placeholder: "passwd",
-                        enableSuggestions: false,
-                        validator: (v) {
-                          if (v == '') {
-                            return "数据不能为空";
-                          }
-                          return null;
-                        },
-                      )),
+        builder: (context) => GetBuilder<SyncFileController>(builder: (logic) {
+              return ContentDialog(
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("账户管理", style: typography.subtitle),
+                    InfoLabel(
+                        label: logic.state.accountInfoLock ? "已锁定": "未编辑",
+                        isHeader: false,
+                        child: IconButton(
+                            icon: Icon(logic.state.accountInfoLock
+                                ? FluentIcons.lock
+                                : FluentIcons.unlock),
+                            onPressed: () {
+                              logic.changeAccountLogic();
+                            })),
+                  ],
+                ),
+                content: SizedBox(
+                    child: Form(
+                  key: logic.state.formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InfoLabel(
+                          label: "服务器地址",
+                          child: TextFormBox(
+                            controller: logic.state.urlController,
+                            readOnly: logic.state.accountInfoLock,
+                            keyboardType: TextInputType.text,
+                            placeholder: "https://dav.xxxx.com/dav/",
+                            enableSuggestions: false,
+                            validator: (v) {
+                              if (v!.startsWith("http://") ||
+                                  v.startsWith("https://")) {
+                                return null;
+                              }
+                              return "必须以http://或https://开头";
+                            },
+                          )),
+                      InfoLabel(
+                          label: "账户",
+                          child: TextFormBox(
+                            controller: logic.state.userController,
+                            readOnly: logic.state.accountInfoLock,
+                            keyboardType: TextInputType.text,
+                            placeholder: "username",
+                            enableSuggestions: false,
+                            validator: (v) {
+                              if (v == '') {
+                                return "数据不能为空";
+                              }
+                              return null;
+                            },
+                          )),
+                      InfoLabel(
+                          label: "密码",
+                          child: TextFormBox(
+                            controller: logic.state.passwdController,
+                            readOnly: logic.state.accountInfoLock,
+                            keyboardType: TextInputType.visiblePassword,
+                            obscureText: true,
+                            placeholder: "passwd",
+                            enableSuggestions: false,
+                            validator: (v) {
+                              if (v == '') {
+                                return "数据不能为空";
+                              }
+                              return null;
+                            },
+                          )),
                     ],
-              ),
-            )),
-          actions: [
-            FilledButton(child: Text("提交"), onPressed: () async {
-             if (!logic.state.formKey.currentState!.validate()) {
-               return;
-             }
-             if (!await logic.submitAccount()) {
-               info("登录成功");
-             }else {
-               error("登录失败");
-             }
-
-            }),
-            Button(child: Text("取消"), onPressed: (){
-              context.pop();
-            })
-          ],
-        ),
-          
-    );
+                  ),
+                )),
+                actions: [
+                  FilledButton(
+                      child: Text("提交"),
+                      onPressed: () async {
+                        if (!logic.state.formKey.currentState!.validate()) {
+                          return;
+                        }
+                        if (!await logic.submitAccount()) {
+                          info("登录成功");
+                        } else {
+                          error("登录失败");
+                        }
+                      }),
+                  Button(
+                      child: Text("取消"),
+                      onPressed: () {
+                        context.pop();
+                      })
+                ],
+              );
+            }));
   }
 
   @override
@@ -115,10 +133,9 @@ class SyncFilePage extends StatelessWidget {
           ));
     });
     return ScaffoldPage(
-      header: PageHeader(
-        title: const Text("文件同步"),
-        commandBar: GetBuilder<SyncFileController>(builder: (logic) {
-          return CommandBar(
+        header: PageHeader(
+          title: const Text("文件同步"),
+          commandBar: CommandBar(
             mainAxisAlignment: MainAxisAlignment.end,
             overflowItemAlignment: MainAxisAlignment.end,
             primaryItems: [
@@ -126,14 +143,12 @@ class SyncFilePage extends StatelessWidget {
                   icon: Icon(FluentIcons.account_management),
                   label: Text("账户管理"),
                   onPressed: () {
-                    _showAccountSetting(context, logic);
+                    _showAccountSetting(context);
                   }),
             ],
-          );
-        }),
-      ),
-        content: table
-    );
+          ),
+        ),
+        content: table);
   }
 }
 

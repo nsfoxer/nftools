@@ -76,7 +76,7 @@ impl Service for SyncFileService {
 
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         async_func_notype!(self, func, has_account, list_dirs);
-        async_func_typetype!(self, func, req_data, sync_dir, StringMessage, add_account, WebDavConfigMsg);
+        async_func_typetype!(self, func, req_data, sync_dir, StringMessage, set_account, WebDavConfigMsg);
 
         async_func_typeno!(
             self,
@@ -91,7 +91,7 @@ impl Service for SyncFileService {
         );
 
         func_typeno!(self, func, req_data, del_local_dir, StringMessage);
-        func_notype!(self, func, req_data, get_account);
+        func_notype!(self, func, get_account);
 
         func_end!(func)
     }
@@ -132,7 +132,7 @@ impl SyncFileService {
 
     /// 获取账户信息
     fn get_account(&self) -> Result<WebDavConfigMsg> {
-        let account = self.account_info.as_ref().ok_or_else(|_| anyhow!("无账户信息"))?;
+        let account = self.account_info.as_ref().ok_or_else(|| anyhow!("无账户信息"))?;
         Ok(WebDavConfigMsg {
             url: account.url.clone(),
             account: account.user.clone(),

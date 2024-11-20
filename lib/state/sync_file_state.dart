@@ -6,8 +6,9 @@ class SyncFileState {
   bool isLoading = true;
   // 所有文件列表
   List<FileMsg> fileList = [];
-  // 账号信息
-  late WebDavConfigMsg accountInfo;
+
+  // 是否锁定账户信息
+  bool accountInfoLock = false;
 
   // 账户信息输入表单
   GlobalKey<FormState> formKey = GlobalKey();
