@@ -1,11 +1,10 @@
-import 'dart:math';
-
 import 'package:data_table_2/data_table_2.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/controller/sync_file_controller.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf-widgets.dart';
 
 import '../messages/syncfile.pb.dart';
@@ -77,10 +76,16 @@ class SyncFilePage extends StatelessWidget {
               ),
             )),
           actions: [
-            FilledButton(child: Text("提交"), onPressed: () {
+            FilledButton(child: Text("提交"), onPressed: () async {
              if (!logic.state.formKey.currentState!.validate()) {
                return;
              }
+             if (!await logic.submitAccount()) {
+               info("登录成功");
+             }else {
+               error("登录失败");
+             }
+
             }),
             Button(child: Text("取消"), onPressed: (){
               context.pop();
