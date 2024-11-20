@@ -19,7 +19,13 @@ class SyncFileController extends GetxController {
       if (!await $api.hasAccount()) {
         info("无登录信息，请先登录");
       } else {
+        var accountInfo = await $api.getAccount();
+        state.urlController.text = accountInfo.url;
+        state.userController.text = accountInfo.account;
+        state.passwdController.text = accountInfo.passwd;
+        state.accountInfoLock = true;
         var result = await $api.listDirs();
+        info(result.toString());
         state.fileList = result.files;
       }
     } finally {
@@ -37,5 +43,11 @@ class SyncFileController extends GetxController {
       result = false;
     }
     return result;
+  }
+
+  // 切换锁定账户编辑信息
+  void changeAccountLogic() {
+    state.accountInfoLock = !state.accountInfoLock;
+    update();
   }
 }
