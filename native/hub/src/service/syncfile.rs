@@ -2,11 +2,9 @@ use crate::common::global_data::GlobalData;
 use crate::common::utils::{get_machine_id, sha256};
 use crate::common::WEBDAV_SYNC_DIR;
 use crate::messages::common::{BoolMessage, StringMessage};
-use crate::messages::syncfile::{
-    AddLocal4RemoteMsg, FileMsg, FileStatusEnum, ListFileMsg, SyncFileDetailMsg,
-};
+use crate::messages::syncfile::{AddLocal4RemoteMsg, FileMsg, FileStatusEnum, ListFileMsg, SyncFileDetailMsg, WebDavConfigMsg};
 use crate::service::service::Service;
-use crate::{async_func_notype, async_func_typeno, async_func_typetype, func_end, func_typeno};
+use crate::{async_func_notype, async_func_typeno, async_func_typetype, func_end, func_notype, func_typeno};
 use ahash::{AHashMap, AHashSet};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
@@ -78,7 +76,7 @@ impl Service for SyncFileService {
 
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         async_func_notype!(self, func, has_account, list_dirs);
-        async_func_typetype!(self, func, req_data, sync_dir, StringMessage);
+        async_func_typetype!(self, func, req_data, sync_dir, StringMessage, add_account, WebDavConfigMsg);
 
         async_func_typeno!(
             self,
@@ -93,6 +91,7 @@ impl Service for SyncFileService {
         );
 
         func_typeno!(self, func, req_data, del_local_dir, StringMessage);
+        func_notype!(self, func, req_data, get_account);
 
         func_end!(func)
     }
@@ -129,6 +128,27 @@ impl SyncFileService {
                 Ok(BoolMessage { value: true })
             }
         }
+    }
+
+    /// 获取账户信息
+    fn get_account(&self) -> Result<WebDavConfigMsg> {
+        let account = self.account_info.as_ref().ok_or_else(|_| anyhow!("无账户信息"))?;
+        Ok(WebDavConfigMsg {
+            url: account.url.clone(),
+            account: account.user.clone(),
+            passwd: account.passwd.clone(),
+        })
+    }
+
+    /// 设置账户信息
+    async fn set_account(&mut self, account: WebDavConfigMsg) -> Result<BoolMessage> {
+        let account = AccountInfo {
+            user: account.account,
+            passwd: account.passwd,
+            url: account.url
+        };
+        self.account_info = Some(account);
+        self.has_account().await
     }
 
     /// 同步文件列表信息

@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:nftools/api/syncfile.dart' as $api;
+import 'package:nftools/messages/syncfile.pb.dart';
 import 'package:nftools/state/sync_file_state.dart';
 import 'package:nftools/utils/log.dart';
 
@@ -25,5 +26,16 @@ class SyncFileController extends GetxController {
       state.isLoading = false;
       update();
     }
+  }
+
+  Future<bool> submitAccount() async {
+    var account = WebDavConfigMsg(url: state.urlController.text, account: state.userController.text, passwd: state.passwdController.text);
+    var result;
+    try {
+      result = await $api.setAccount(account);
+    } on Exception catch (_) {
+      result = false;
+    }
+    return result;
   }
 }
