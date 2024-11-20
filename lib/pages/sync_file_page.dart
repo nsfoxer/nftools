@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:data_table_2/data_table_2.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as $me;
@@ -49,6 +51,12 @@ class SyncFilePage extends StatelessWidget {
                         keyboardType: TextInputType.text,
                         placeholder: "username",
                         enableSuggestions: false,
+                        validator: (v) {
+                          if (v == '') {
+                            return "数据不能为空";
+                          }
+                          return null;
+                        },
                       )),
                   InfoLabel(
                       label: "密码",
@@ -58,13 +66,21 @@ class SyncFilePage extends StatelessWidget {
                         obscureText: true,
                         placeholder: "passwd",
                         enableSuggestions: false,
+                        validator: (v) {
+                          if (v == '') {
+                            return "数据不能为空";
+                          }
+                          return null;
+                        },
                       )),
                     ],
               ),
             )),
           actions: [
             FilledButton(child: Text("提交"), onPressed: () {
-
+             if (!logic.state.formKey.currentState!.validate()) {
+               return;
+             }
             }),
             Button(child: Text("取消"), onPressed: (){
               context.pop();
