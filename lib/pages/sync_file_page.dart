@@ -2,6 +2,7 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nftools/controller/sync_file_controller.dart';
 import 'package:nftools/utils/nf-widgets.dart';
 
@@ -18,8 +19,8 @@ class SyncFilePage extends StatelessWidget {
         builder: (context) => ContentDialog(
             title: Text("账户管理", style: typography.subtitle),
             content: SizedBox(
-                width: 260,
-                height: 260,
+                // width: 300,
+                // height: 260,
                 child:  Form(
               key: logic.state.formKey,
               autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -58,9 +59,20 @@ class SyncFilePage extends StatelessWidget {
                         placeholder: "passwd",
                         enableSuggestions: false,
                       )),
-                ],
+                    ],
               ),
-            ))));
+            )),
+          actions: [
+            FilledButton(child: Text("提交"), onPressed: () {
+
+            }),
+            Button(child: Text("取消"), onPressed: (){
+              context.pop();
+            })
+          ],
+        ),
+          
+    );
   }
 
   @override
