@@ -8,7 +8,7 @@ const String _service = "SyncFileService";
 const String _listDirs = "list_dirs";
 const String _hasAccount = "has_account";
 const String _getAccount = "get_account";
-const String _addAccount = "add_account";
+const String _setAccount = "set_account";
 
 Future<ListFileMsg> listDirs() async {
   var data = await sendRequest<EmptyMessage>(_service, _listDirs, null);
@@ -23,7 +23,7 @@ Future<bool> hasAccount() async {
 }
 
 Future<bool> setAccount(WebDavConfigMsg config) async {
-  var data = await sendRequest<WebDavConfigMsg>(_service, _addAccount, config);
+  var data = await sendRequest<WebDavConfigMsg>(_service, _setAccount, config);
   var result = BoolMessage.fromBuffer(data);
   return result.value;
 }
