@@ -1,4 +1,5 @@
 import 'package:data_table_2/data_table_2.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
@@ -24,7 +25,7 @@ class SyncFilePage extends StatelessWidget {
                   children: [
                     Text("账户管理", style: typography.subtitle),
                     InfoLabel(
-                        label: logic.state.accountInfoLock ? "已锁定": "可编辑",
+                        label: logic.state.accountInfoLock ? "已锁定" : "可编辑",
                         isHeader: false,
                         child: IconButton(
                             icon: Icon(logic.state.accountInfoLock
@@ -105,8 +106,9 @@ class SyncFilePage extends StatelessWidget {
                         if (logic.state.accountInfoLock) {
                           context.pop();
                         }
-                        if (!await logic.submitAccount()) {
+                        if (await logic.submitAccount()) {
                           info("登录成功");
+                          logic.listFiles();
                         } else {
                           error("登录失败");
                         }
@@ -143,18 +145,32 @@ class SyncFilePage extends StatelessWidget {
     return ScaffoldPage(
         header: PageHeader(
           title: const Text("文件同步"),
-          commandBar: CommandBar(
-            mainAxisAlignment: MainAxisAlignment.end,
-            overflowItemAlignment: MainAxisAlignment.end,
-            primaryItems: [
-              CommandBarButton(
-                  icon: Icon(FluentIcons.account_management),
-                  label: Text("账户管理"),
-                  onPressed: () {
-                    _showAccountSetting(context);
-                  }),
-            ],
-          ),
+          commandBar: GetBuilder<SyncFileController>(builder: (logic) {
+            return CommandBar(
+              mainAxisAlignment: MainAxisAlignment.end,
+              overflowItemAlignment: MainAxisAlignment.end,
+              primaryItems: [
+                CommandBarButton(
+                    icon: const Icon(FluentIcons.account_management),
+                    label: const Text("账户管理"),
+                    onPressed: () {
+                      _showAccountSetting(context);
+                    }),
+                CommandBarButton(
+                  icon: const Icon(FluentIcons.fabric_folder),
+                  label: const Text("新增文件夹"),
+                  onPressed: () async {
+                    final String? directoryPath =
+                        await FilePicker.platform.getDirectoryPath();
+                    if (directoryPath == null) {
+                      return;
+                    }
+                    logic.addSyncDir(directoryPath+"/");
+                  },
+                ),
+              ],
+            );
+          }),
         ),
         content: table);
   }

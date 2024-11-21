@@ -25,7 +25,6 @@ class SyncFileController extends GetxController {
         state.passwdController.text = accountInfo.passwd;
         state.accountInfoLock = true;
         var result = await $api.listDirs();
-        info(result.toString());
         state.fileList = result.files;
       }
     } finally {
@@ -45,9 +44,21 @@ class SyncFileController extends GetxController {
     return result;
   }
 
+  // 列出所有文件夹
+  void listFiles() async {
+    var result = await $api.listDirs();
+    state.fileList = result.files;
+    update();
+  }
+
   // 切换锁定账户编辑信息
   void changeAccountLogic() {
     state.accountInfoLock = !state.accountInfoLock;
     update();
+  }
+
+  // 添加同步文件夹
+  void addSyncDir(String localDir) {
+    $api.addSyncDir();
   }
 }
