@@ -14,6 +14,7 @@ class SyncFilePage extends StatelessWidget {
 
   void _showAccountSetting(BuildContext context) async {
     var typography = FluentTheme.of(context).typography;
+    var color = FluentTheme.of(context).activeColor;
     final result = await showDialog<String>(
         context: context,
         builder: (context) => GetBuilder<SyncFileController>(builder: (logic) {
@@ -23,7 +24,7 @@ class SyncFilePage extends StatelessWidget {
                   children: [
                     Text("账户管理", style: typography.subtitle),
                     InfoLabel(
-                        label: logic.state.accountInfoLock ? "已锁定": "未编辑",
+                        label: logic.state.accountInfoLock ? "已锁定": "可编辑",
                         isHeader: false,
                         child: IconButton(
                             icon: Icon(logic.state.accountInfoLock
@@ -46,6 +47,7 @@ class SyncFilePage extends StatelessWidget {
                           child: TextFormBox(
                             controller: logic.state.urlController,
                             readOnly: logic.state.accountInfoLock,
+                            cursorColor: color,
                             keyboardType: TextInputType.text,
                             placeholder: "https://dav.xxxx.com/dav/",
                             enableSuggestions: false,
@@ -61,6 +63,7 @@ class SyncFilePage extends StatelessWidget {
                           label: "账户",
                           child: TextFormBox(
                             controller: logic.state.userController,
+                            cursorColor: color,
                             readOnly: logic.state.accountInfoLock,
                             keyboardType: TextInputType.text,
                             placeholder: "username",
@@ -76,6 +79,7 @@ class SyncFilePage extends StatelessWidget {
                           label: "密码",
                           child: TextFormBox(
                             controller: logic.state.passwdController,
+                            cursorColor: color,
                             readOnly: logic.state.accountInfoLock,
                             keyboardType: TextInputType.visiblePassword,
                             obscureText: true,
@@ -93,10 +97,13 @@ class SyncFilePage extends StatelessWidget {
                 )),
                 actions: [
                   FilledButton(
-                      child: Text("提交"),
+                      child: const Text("提交"),
                       onPressed: () async {
                         if (!logic.state.formKey.currentState!.validate()) {
                           return;
+                        }
+                        if (logic.state.accountInfoLock) {
+                          context.pop();
                         }
                         if (!await logic.submitAccount()) {
                           info("登录成功");
@@ -105,8 +112,9 @@ class SyncFilePage extends StatelessWidget {
                         }
                       }),
                   Button(
-                      child: Text("取消"),
+                      child: const Text("取消"),
                       onPressed: () {
+                        logic.state.formKey.currentState!.reset();
                         context.pop();
                       })
                 ],
