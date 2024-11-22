@@ -9,6 +9,7 @@ const String _listDirs = "list_dirs";
 const String _hasAccount = "has_account";
 const String _getAccount = "get_account";
 const String _setAccount = "set_account";
+const String _addSyncDir = "add_sync_dir";
 
 Future<ListFileMsg> listDirs() async {
   var data = await sendRequest<EmptyMessage>(_service, _listDirs, null);
@@ -34,4 +35,8 @@ Future<WebDavConfigMsg> getAccount() async {
   return result;
 }
 
+
+Future<void> addSyncDir(String localDir) async {
+   await sendRequest(_service, _addSyncDir, StringMessage(value: localDir));
+}
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:data_table_2/data_table_2.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -160,12 +162,17 @@ class SyncFilePage extends StatelessWidget {
                   icon: const Icon(FluentIcons.fabric_folder),
                   label: const Text("新增文件夹"),
                   onPressed: () async {
-                    final String? directoryPath =
+                    String? directoryPath =
                         await FilePicker.platform.getDirectoryPath();
                     if (directoryPath == null) {
                       return;
                     }
-                    logic.addSyncDir(directoryPath+"/");
+                    if (Platform.isWindows) {
+                      directoryPath += "\\";
+                    } else if (Platform.isLinux) {
+                      directoryPath += "/";
+                    }
+                    logic.addSyncDir(directoryPath);
                   },
                 ),
               ],
@@ -188,7 +195,23 @@ class SourceData extends $me.DataTableSource {
     return DataRow2(cells: [
       $me.DataCell(Text(file.localDir)),
       $me.DataCell(Text(file.remoteDir)),
-      $me.DataCell(Text(file.status.name)),
+      $me.DataCell(() {
+        if (file.remoteDir.isEmpty || file.localDir.isEmpty) {
+          return Container();
+        }
+        switch(file.status) {
+          case FileStatusEnum.DOWNLOAD:
+            // TODO: Handle this case.
+            break;
+          case FileStatusEnum.SYNCED:
+            // TODO: Handle this case.
+            break;
+          case FileStatusEnum.UPLOAD:
+            // TODO: Handle this case.
+            break;
+        }
+        return Text();
+      }()),
       $me.DataCell(Text(file.new_4.toString())),
     ]);
   }

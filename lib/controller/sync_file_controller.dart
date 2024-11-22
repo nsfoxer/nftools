@@ -34,7 +34,10 @@ class SyncFileController extends GetxController {
   }
 
   Future<bool> submitAccount() async {
-    var account = WebDavConfigMsg(url: state.urlController.text, account: state.userController.text, passwd: state.passwdController.text);
+    var account = WebDavConfigMsg(
+        url: state.urlController.text,
+        account: state.userController.text,
+        passwd: state.passwdController.text);
     var result;
     try {
       result = await $api.setAccount(account);
@@ -58,7 +61,16 @@ class SyncFileController extends GetxController {
   }
 
   // 添加同步文件夹
-  void addSyncDir(String localDir) {
-    $api.addSyncDir();
+  void addSyncDir(String localDir) async {
+    state.isLoading = true;
+    update();
+    try {
+      await $api.addSyncDir(localDir);
+      var result = await $api.listDirs();
+      state.fileList = result.files;
+    } finally {
+      state.isLoading = false;
+      update();
+    }
   }
 }
