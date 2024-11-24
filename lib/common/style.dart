@@ -22,5 +22,9 @@ final class NFLayout {
   static const SizedBox vlineh1 = SizedBox(height: v1);
   static const SizedBox vlineh2 = SizedBox(height: v2);
   static const SizedBox vlineh3 = SizedBox(height: v3);
+
+  static const SizedBox hlineh1 = SizedBox(width: v1);
+  static const SizedBox hlineh2 = SizedBox(width: v2);
+  static const SizedBox hlineh3 = SizedBox(width: v3);
 }
 
