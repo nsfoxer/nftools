@@ -6,6 +6,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/sync_file_controller.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf-widgets.dart';
@@ -135,13 +136,18 @@ class SyncFilePage extends StatelessWidget {
           child: PaginatedDataTable2(
             rowsPerPage: 5,
             onPageChanged: (page) {},
+            minWidth: 900,
+            fixedLeftColumns: 1,
             columns: [
-              DataColumn2(label: Text("本地", style: typography.bodyStrong)),
-              DataColumn2(label: Text("远端", style: typography.bodyStrong)),
-              DataColumn2(label: Text("状态", style: typography.bodyStrong)),
               DataColumn2(label: Text("操作", style: typography.bodyStrong)),
+              DataColumn2(label: Text("本地", style: typography.bodyStrong)),
+              DataColumn2(label: Text("远端", style: typography.bodyStrong), size: ColumnSize.L),
+              DataColumn2(label: Text("状态", style: typography.bodyStrong), size: ColumnSize.M),
+              DataColumn2(label: Text("新增", style: typography.bodyStrong), size: ColumnSize.S),
+              DataColumn2(label: Text("删除", style: typography.bodyStrong), size: ColumnSize.S),
+              DataColumn2(label: Text("变更", style: typography.bodyStrong), size: ColumnSize.S),
             ],
-            source: SourceData(logic.state.fileList, logic),
+            source: SourceData(logic.state.fileList, logic, context),
           ));
     });
     return ScaffoldPage(
@@ -184,35 +190,50 @@ class SyncFilePage extends StatelessWidget {
 }
 
 class SourceData extends $me.DataTableSource {
-  SourceData(this.fileList, this.logic);
+  SourceData(this.fileList, this.logic, this.context);
 
   final List<FileMsg> fileList;
   final SyncFileController logic;
+  final BuildContext context;
+
+
 
   @override
   $me.DataRow? getRow(int index) {
     var file = fileList[index];
     return DataRow2(cells: [
+      $me.DataCell(
+        Row(
+          children: [
+            Button(child: Text("同步"), onPressed: file.status == FileStatusEnum.SYNCED ? null : () async {
+              await logic.syncDir(file.remoteDir);
+            }),
+           NFLayout.hlineh3,
+           FilledButton(child: Text("删除"), onPressed: () {}    ),
+          ],
+        )
+      ),
       $me.DataCell(Text(file.localDir)),
       $me.DataCell(Text(file.remoteDir)),
       $me.DataCell(() {
-        if (file.remoteDir.isEmpty || file.localDir.isEmpty) {
-          return Container();
-        }
+        var desc;
         switch(file.status) {
           case FileStatusEnum.DOWNLOAD:
-            // TODO: Handle this case.
+            desc = "待下载";
             break;
           case FileStatusEnum.SYNCED:
-            // TODO: Handle this case.
+            desc = "已同步";
             break;
           case FileStatusEnum.UPLOAD:
-            // TODO: Handle this case.
+            desc = "待上传";
             break;
         }
-        return Text();
+
+        return Text(desc);
       }()),
-      $me.DataCell(Text(file.new_4.toString())),
+      $me.DataCell(Text("${file.new_4}")),
+      $me.DataCell(Text("${file.del}")),
+      $me.DataCell(Text("${file.modify}")),
     ]);
   }
 

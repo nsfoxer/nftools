@@ -73,4 +73,16 @@ class SyncFileController extends GetxController {
       update();
     }
   }
+
+  // 同步一个文件夹
+  Future<SyncFileDetailMsg> syncDir(String remoteId) async {
+    state.isLoading = true;
+    update();
+    try {
+      return await $api.syncDir(remoteId);
+    } finally {
+      state.isLoading = false;
+      update();
+    }
+  }
 }
