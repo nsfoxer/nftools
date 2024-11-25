@@ -141,11 +141,21 @@ class SyncFilePage extends StatelessWidget {
             columns: [
               DataColumn2(label: Text("操作", style: typography.bodyStrong)),
               DataColumn2(label: Text("本地", style: typography.bodyStrong)),
-              DataColumn2(label: Text("远端", style: typography.bodyStrong), size: ColumnSize.L),
-              DataColumn2(label: Text("状态", style: typography.bodyStrong), size: ColumnSize.M),
-              DataColumn2(label: Text("新增", style: typography.bodyStrong), size: ColumnSize.S),
-              DataColumn2(label: Text("删除", style: typography.bodyStrong), size: ColumnSize.S),
-              DataColumn2(label: Text("变更", style: typography.bodyStrong), size: ColumnSize.S),
+              DataColumn2(
+                  label: Text("远端", style: typography.bodyStrong),
+                  size: ColumnSize.L),
+              DataColumn2(
+                  label: Text("状态", style: typography.bodyStrong),
+                  size: ColumnSize.M),
+              DataColumn2(
+                  label: Text("新增", style: typography.bodyStrong),
+                  size: ColumnSize.S),
+              DataColumn2(
+                  label: Text("删除", style: typography.bodyStrong),
+                  size: ColumnSize.S),
+              DataColumn2(
+                  label: Text("变更", style: typography.bodyStrong),
+                  size: ColumnSize.S),
             ],
             source: SourceData(logic.state.fileList, logic, context),
           ));
@@ -168,25 +178,38 @@ class SyncFilePage extends StatelessWidget {
                   icon: const Icon(FluentIcons.fabric_folder),
                   label: const Text("新增文件夹"),
                   onPressed: () async {
-                    String? directoryPath =
-                        await FilePicker.platform.getDirectoryPath();
-                    if (directoryPath == null) {
-                      return;
+                    var directoryPath = await _addLocalDir();
+                    if (directoryPath != null) {
+                      logic.addSyncDir(directoryPath);
                     }
-                    if (Platform.isWindows) {
-                      directoryPath += "\\";
-                    } else if (Platform.isLinux) {
-                      directoryPath += "/";
-                    }
-                    logic.addSyncDir(directoryPath);
                   },
                 ),
+                CommandBarButton(
+                    icon: const Icon(FluentIcons.refresh),
+                    label: const Text("刷新"),
+                    onPressed: () {
+                      logic.listFiles();
+                    }),
               ],
             );
           }),
         ),
         content: table);
   }
+}
+
+// 获取一个本地文件夹路径
+Future<String?> _addLocalDir() async {
+  String? directoryPath = await FilePicker.platform.getDirectoryPath();
+  if (directoryPath == null) {
+    return null;
+  }
+  if (Platform.isWindows) {
+    directoryPath += "\\";
+  } else if (Platform.isLinux) {
+    directoryPath += "/";
+  }
+  return directoryPath;
 }
 
 class SourceData extends $me.DataTableSource {
@@ -196,28 +219,55 @@ class SourceData extends $me.DataTableSource {
   final SyncFileController logic;
   final BuildContext context;
 
-
-
   @override
   $me.DataRow? getRow(int index) {
     var file = fileList[index];
     return DataRow2(cells: [
       $me.DataCell(
-        Row(
-          children: [
-            Button(child: Text("同步"), onPressed: file.status == FileStatusEnum.SYNCED ? null : () async {
-              await logic.syncDir(file.remoteDir);
-            }),
-           NFLayout.hlineh3,
-           FilledButton(child: Text("删除"), onPressed: () {}    ),
-          ],
-        )
+        () {
+          // 远端无记录，直接删除
+          if (file.remoteDir.isEmpty) {
+            return Tooltip(
+                message: "无远端记录，删除同步记录。\n(此操作不会对实际文件产生影响)",
+                child: FilledButton(
+                    child: const Text("删除"),
+                    onPressed: () {
+                      logic.deleteLocalDir(file.localDir);
+                    }));
+          }
+          // 本地无记录，添加本地文件
+          if (file.localDir.isEmpty) {
+            return Tooltip(
+                message: "无本地同步文件夹，新增本地文件夹以建立同步关系。\n(本地文件夹要求为空文件夹)",
+                child: Button(child: const Text("添加同步"), onPressed: () async{
+                  var dirPath = await _addLocalDir();
+                  if (dirPath!=null) {
+                    logic.addLocalDir(dirPath, file.remoteDir);
+                  }
+                }));
+          }
+          // 一般操作
+          return Row(
+            children: [
+              Button(
+                  onPressed: file.status == FileStatusEnum.SYNCED
+                      ? null
+                      : () async {
+                        info(file.remoteDir);
+                          await logic.syncDir(file.remoteDir);
+                        },
+                  child: const Text("同步")),
+              NFLayout.hlineh3,
+              FilledButton(child: const Text("删除"), onPressed: () {}),
+            ],
+          );
+        }(),
       ),
       $me.DataCell(Text(file.localDir)),
       $me.DataCell(Text(file.remoteDir)),
       $me.DataCell(() {
         var desc;
-        switch(file.status) {
+        switch (file.status) {
           case FileStatusEnum.DOWNLOAD:
             desc = "待下载";
             break;
