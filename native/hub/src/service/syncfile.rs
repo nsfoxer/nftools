@@ -20,6 +20,7 @@ use std::ops::Add;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tokio::fs;
 use tokio::fs::{create_dir_all, metadata, File};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -339,6 +340,13 @@ impl SyncFileService {
         // 1. 基本校验
         // 本地校验
         self.check_local_dir(&req.local_dir)?;
+        // 判断本地文件夹是否非空
+        let mut entries = fs::read_dir(&req.local_dir).await?;
+        let entry = entries.next_entry().await?;
+        if entry.is_some() {
+            return Err(anyhow!("添加的本地文件夹必须为空文件夹"));
+        }
+
         // 远端不校验
         self.file_sync.files.insert(req.remote_dir, req.local_dir);
 
@@ -410,7 +418,6 @@ impl SyncFileService {
         let dir = format!("{}{}{}", WEBDAV_SYNC_DIR, dir, METADATA_FILE);
         let rsp = client.get(&dir).await?;
         let rsp = rsp.text().await?;
-        eprintln!("{rsp}");
         Ok(serde_json::from_str(&rsp)?)
     }
 
@@ -690,6 +697,7 @@ mod test {
     use ahash::AHashMap;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
+    use tokio::fs;
     use tokio::fs::File;
 
     #[tokio::test]
@@ -780,6 +788,7 @@ mod test {
             passwd: "a22xnw294yj5h9d3".to_string(),
         };
         sync_file.account_info = Some(account);
+        sync_file.has_account().await;
         let local_dir = r"/home/nsfoxer/桌面/test/".to_string();
         // let local_dir = r"C:\Users\12618\Desktop\tmp\test\".to_string();
         // let medata = SyncFileService::get_newest_file(&local_dir).await.unwrap();
@@ -797,18 +806,18 @@ mod test {
         // eprintln!("{:?}", r);
 
         // 文件同步测试
-        // let message = StringMessage { value: "fc4910493945108d6c1015b5d69d5fceeddada052281437c28a73000c13bf518/".to_string() };
-        // let r = sync_file.sync_dir(message).await.unwrap();
-        // eprintln!("{r:?}");
+        let message = StringMessage { value: "2139cebc8d1f0c493b45517af0c99fea5cc81de8096b71520e039c815b2f3572/".to_string() };
+        let r = sync_file.sync_dir(message).await.unwrap();
+        eprintln!("{r:?}");
 
         // 删除远端测试
-        sync_file
-            .del_remote_dir(StringMessage {
-                value: "fc4910493945108d6c1015b5d69d5fceeddada052281437c28a73000c13bf518/"
-                    .to_string(),
-            })
-            .await
-            .unwrap();
+        // sync_file
+        //     .del_remote_dir(StringMessage {
+        //         value: "fc4910493945108d6c1015b5d69d5fceeddada052281437c28a73000c13bf518/"
+        //             .to_string(),
+        //     })
+        //     .await
+        //     .unwrap();
     }
 
     #[test]
@@ -838,4 +847,12 @@ mod test {
             .await
             .unwrap();
     }
+
+    #[tokio::test]
+    async fn dir() {
+        let mut entries = fs::read_dir("/home/nsfoxer/桌面/test/空文件夹/新建文件夹/").await.unwrap();
+        let entry = entries.next_entry().await.unwrap();
+        eprintln!("{entry:?}");
+    }
+
 }

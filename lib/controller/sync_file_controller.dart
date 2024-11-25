@@ -85,4 +85,22 @@ class SyncFileController extends GetxController {
       update();
     }
   }
+
+  // 删除一个本地文件夹记录
+  void deleteLocalDir(String localDir) {
+    $api.deleteLocalDir(localDir);
+    state.fileList.retainWhere((file) {
+      return file.localDir != localDir;
+    });
+    update();
+  }
+
+  // 对缺失的远端同步文件夹添加本地空文件夹
+  void addLocalDir(String dirPath, String remoteId) async {
+    try {
+      await $api.addLocalDir(dirPath, remoteId);
+      // 更新数据
+      listFiles();
+    } finally {}
+  }
 }

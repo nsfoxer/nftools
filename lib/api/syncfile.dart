@@ -11,6 +11,8 @@ const String _getAccount = "get_account";
 const String _setAccount = "set_account";
 const String _addSyncDir = "add_sync_dir";
 const String _syncDir = "sync_dir";
+const String _deleteLocalDir = "del_local_dir";
+const String _addLocalDir = "add_local_file";
 
 Future<ListFileMsg> listDirs() async {
   var data = await sendRequest<EmptyMessage>(_service, _listDirs, null);
@@ -42,6 +44,14 @@ Future<void> addSyncDir(String localDir) async {
 }
 
 Future<SyncFileDetailMsg> syncDir(String remoteId) async {
-  final data = await sendRequest(_service, _addSyncDir, StringMessage(value: remoteId));
+  final data = await sendRequest(_service, _syncDir, StringMessage(value: remoteId));
   return SyncFileDetailMsg.fromBuffer(data);
+}
+
+void deleteLocalDir(String localDir) async {
+  await sendRequest(_service, _deleteLocalDir, StringMessage(value: localDir));
+}
+
+Future<void> addLocalDir(String localDir, String remoteId) async {
+  await sendRequest(_service, _addLocalDir, AddLocal4RemoteMsg(localDir: localDir, remoteDir: remoteId));
 }
