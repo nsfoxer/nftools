@@ -47,7 +47,7 @@ impl UtilsService {
         let metadata = fs::metadata(&local_img.local_file).await?;
         let time = metadata.modified()?;
         let o_img = PathBuf::from(&local_img.local_file);
-        let mut cache = sha256(
+        let cache = sha256(
             format!(
                 "{}-{}-{}-{}",
                 local_img.local_file,

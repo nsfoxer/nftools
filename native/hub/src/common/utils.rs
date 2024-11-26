@@ -1,7 +1,7 @@
 use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
-use dirs::{cache_dir, config_dir, config_local_dir, data_local_dir};
+use dirs::{cache_dir, config_dir};
 use anyhow::{anyhow, Result};
 use sha2::{Digest, Sha256};
 

@@ -65,9 +65,8 @@ class SyncFileController extends GetxController {
     state.isLoading = true;
     update();
     try {
-      await $api.addSyncDir(localDir);
-      var result = await $api.listDirs();
-      state.fileList = result.files;
+      final r = await $api.addSyncDir(localDir);
+      state.fileList.add(r);
     } finally {
       state.isLoading = false;
       update();
@@ -79,7 +78,17 @@ class SyncFileController extends GetxController {
     state.isLoading = true;
     update();
     try {
-      return await $api.syncDir(remoteId);
+      final result = await $api.syncDir(remoteId);
+      for (var value in state.fileList) {
+        if (value.remoteDir != remoteId) {
+          continue;
+        }
+        value.modify = 0;
+        value.new_4 = 0;
+        value.del = 0;
+        value.status = FileStatusEnum.SYNCED;
+      }
+      return result;
     } finally {
       state.isLoading = false;
       update();
@@ -97,10 +106,22 @@ class SyncFileController extends GetxController {
 
   // 对缺失的远端同步文件夹添加本地空文件夹
   void addLocalDir(String dirPath, String remoteId) async {
-    try {
-      await $api.addLocalDir(dirPath, remoteId);
-      // 更新数据
-      listFiles();
-    } finally {}
+    final fileMsg = await $api.addLocalDir(dirPath, remoteId);
+    for (var value in state.fileList) {
+      if (value.remoteDir == remoteId) {
+        value = fileMsg;
+        break;
+      }
+    }
+    update();
+  }
+
+  // 删除远端同步文件夹，取消此条目的同步
+  void deleteRemoteDir(String remoteDir) async {
+    await $api.deleteRemoteDir(remoteDir);
+    state.fileList.retainWhere((file) {
+      return file.remoteDir != remoteDir;
+    });
+    update();
   }
 }
