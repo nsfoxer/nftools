@@ -13,6 +13,7 @@ const String _addSyncDir = "add_sync_dir";
 const String _syncDir = "sync_dir";
 const String _deleteLocalDir = "del_local_dir";
 const String _addLocalDir = "add_local_file";
+const String _deleteRemoteDir = "del_remote_dir";
 
 Future<ListFileMsg> listDirs() async {
   var data = await sendRequest<EmptyMessage>(_service, _listDirs, null);
@@ -20,6 +21,7 @@ Future<ListFileMsg> listDirs() async {
   return result;
 }
 
+// 是否有账户
 Future<bool> hasAccount() async {
   var data = await sendRequest<EmptyMessage>(_service, _hasAccount, null);
   var result = BoolMessage.fromBuffer(data);
@@ -38,9 +40,9 @@ Future<WebDavConfigMsg> getAccount() async {
   return result;
 }
 
-
-Future<void> addSyncDir(String localDir) async {
-   await sendRequest(_service, _addSyncDir, StringMessage(value: localDir));
+Future<FileMsg> addSyncDir(String localDir) async {
+   final data = await sendRequest(_service, _addSyncDir, StringMessage(value: localDir));
+   return FileMsg.fromBuffer(data);
 }
 
 Future<SyncFileDetailMsg> syncDir(String remoteId) async {
@@ -52,6 +54,11 @@ void deleteLocalDir(String localDir) async {
   await sendRequest(_service, _deleteLocalDir, StringMessage(value: localDir));
 }
 
-Future<void> addLocalDir(String localDir, String remoteId) async {
-  await sendRequest(_service, _addLocalDir, AddLocal4RemoteMsg(localDir: localDir, remoteDir: remoteId));
+Future<FileMsg> addLocalDir(String localDir, String remoteId) async {
+  final data = await sendRequest(_service, _addLocalDir, AddLocal4RemoteMsg(localDir: localDir, remoteDir: remoteId));
+  return FileMsg.fromBuffer(data);
+}
+
+Future<void> deleteRemoteDir(String remoteId) async {
+  await sendRequest(_service, _deleteRemoteDir, StringMessage(value: remoteId));
 }

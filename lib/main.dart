@@ -137,11 +137,17 @@ class _MainAppState extends State<MainApp>
     var m = FluentThemeData(
         brightness: Brightness.light,
         fontFamily: fonts,
+        tooltipTheme: const TooltipThemeData(
+          waitDuration: Duration(milliseconds: 300)
+        ),
         accentColor: AccentColor.swatch(swatch));
     if (View.of(context).platformDispatcher.platformBrightness.isDark) {
       m = FluentThemeData(
           brightness: Brightness.dark,
           fontFamily: fonts,
+          tooltipTheme: const TooltipThemeData(
+              waitDuration: Duration(milliseconds: 300)
+          ),
           accentColor: AccentColor.swatch(swatch));
     }
 

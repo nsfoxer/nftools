@@ -10,6 +10,7 @@ import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/sync_file_controller.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf-widgets.dart';
+import 'package:nftools/utils/utils.dart';
 
 import '../messages/syncfile.pb.dart';
 
@@ -136,26 +137,23 @@ class SyncFilePage extends StatelessWidget {
           child: PaginatedDataTable2(
             rowsPerPage: 5,
             onPageChanged: (page) {},
-            minWidth: 900,
+            minWidth: 1000,
             fixedLeftColumns: 1,
+            lmRatio: 1.6,
             columns: [
               DataColumn2(label: Text("操作", style: typography.bodyStrong)),
-              DataColumn2(label: Text("本地", style: typography.bodyStrong)),
+              DataColumn2(
+                  label: Text("本地", style: typography.bodyStrong),
+                  size: ColumnSize.L),
               DataColumn2(
                   label: Text("远端", style: typography.bodyStrong),
                   size: ColumnSize.L),
               DataColumn2(
                   label: Text("状态", style: typography.bodyStrong),
+                  size: ColumnSize.S),
+              DataColumn2(
+                  label: Text("新增 删除 变更", style: typography.bodyStrong),
                   size: ColumnSize.M),
-              DataColumn2(
-                  label: Text("新增", style: typography.bodyStrong),
-                  size: ColumnSize.S),
-              DataColumn2(
-                  label: Text("删除", style: typography.bodyStrong),
-                  size: ColumnSize.S),
-              DataColumn2(
-                  label: Text("变更", style: typography.bodyStrong),
-                  size: ColumnSize.S),
             ],
             source: SourceData(logic.state.fileList, logic, context),
           ));
@@ -221,6 +219,7 @@ class SourceData extends $me.DataTableSource {
 
   @override
   $me.DataRow? getRow(int index) {
+    var typography = FluentTheme.of(context).typography;
     var file = fileList[index];
     return DataRow2(cells: [
       $me.DataCell(
@@ -230,7 +229,7 @@ class SourceData extends $me.DataTableSource {
             return Tooltip(
                 message: "无远端记录，删除同步记录。\n(此操作不会对实际文件产生影响)",
                 child: FilledButton(
-                    child: const Text("删除"),
+                    child: Text("删除", style: typography.caption),
                     onPressed: () {
                       logic.deleteLocalDir(file.localDir);
                     }));
@@ -239,12 +238,14 @@ class SourceData extends $me.DataTableSource {
           if (file.localDir.isEmpty) {
             return Tooltip(
                 message: "无本地同步文件夹，新增本地文件夹以建立同步关系。\n(本地文件夹要求为空文件夹)",
-                child: Button(child: const Text("添加同步"), onPressed: () async{
-                  var dirPath = await _addLocalDir();
-                  if (dirPath!=null) {
-                    logic.addLocalDir(dirPath, file.remoteDir);
-                  }
-                }));
+                child: Button(
+                    child: Text("添加同步", style: typography.caption),
+                    onPressed: () async {
+                      var dirPath = await _addLocalDir();
+                      if (dirPath != null) {
+                        logic.addLocalDir(dirPath, file.remoteDir);
+                      }
+                    }));
           }
           // 一般操作
           return Row(
@@ -253,18 +254,38 @@ class SourceData extends $me.DataTableSource {
                   onPressed: file.status == FileStatusEnum.SYNCED
                       ? null
                       : () async {
-                        info(file.remoteDir);
                           await logic.syncDir(file.remoteDir);
                         },
                   child: const Text("同步")),
               NFLayout.hlineh3,
-              FilledButton(child: const Text("删除"), onPressed: () {}),
+              FilledButton(
+                  child: const Text("删除"),
+                  onPressed: () async {
+                    if (await confirmDialog(
+                        context, "确认删除", "此操作不会删除本地文件，但会导致远端服务器上文件全部删除!!！")) {
+                      logic.deleteRemoteDir(file.remoteDir);
+                    }
+                  }),
             ],
           );
         }(),
       ),
-      $me.DataCell(Text(file.localDir)),
-      $me.DataCell(Text(file.remoteDir)),
+      $me.DataCell(Tooltip(
+          message: file.localDir,
+          child: Text(
+            file.localDir,
+            overflow: TextOverflow.ellipsis,
+            style: typography.caption,
+            maxLines: 2,
+          ))),
+      $me.DataCell(Tooltip(
+          message: file.remoteDir,
+          child: Text(
+            file.remoteDir,
+            overflow: TextOverflow.ellipsis,
+            style: typography.caption,
+            maxLines: 2,
+          ))),
       $me.DataCell(() {
         var desc;
         switch (file.status) {
@@ -278,12 +299,10 @@ class SourceData extends $me.DataTableSource {
             desc = "待上传";
             break;
         }
-
-        return Text(desc);
+        return Text(desc, style: typography.caption,);
       }()),
-      $me.DataCell(Text("${file.new_4}")),
-      $me.DataCell(Text("${file.del}")),
-      $me.DataCell(Text("${file.modify}")),
+      $me.DataCell(
+          Text("${file.new_4}        ${file.del}        ${file.modify}")),
     ]);
   }
 
