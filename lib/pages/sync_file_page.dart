@@ -135,8 +135,7 @@ class SyncFilePage extends StatelessWidget {
       return LoadingWidgets(
           loading: logic.state.isLoading,
           child: PaginatedDataTable2(
-            rowsPerPage: 5,
-            onPageChanged: (page) {},
+            rowsPerPage: 2,
             minWidth: 1000,
             fixedLeftColumns: 1,
             lmRatio: 1.6,
@@ -219,6 +218,7 @@ class SourceData extends $me.DataTableSource {
 
   @override
   $me.DataRow? getRow(int index) {
+    debugPrint(index.toString());
     var typography = FluentTheme.of(context).typography;
     var file = fileList[index];
     return DataRow2(cells: [
