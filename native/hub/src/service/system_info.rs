@@ -9,7 +9,7 @@ use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
-use crate::common::utils::{get_data_dir, second_timestamp};
+use crate::common::utils::{get_cache_dir, second_timestamp};
 use crate::messages::system_info::{ChartInfo, ChartInfoReq, ChartInfoRsp, SystemInfoCache};
 use crate::service::service::Service;
 use crate::{func_end, func_notype, func_typetype};
@@ -111,7 +111,7 @@ impl SystemInfoService {
     async fn load_datas() -> (Vec<ChartInfo>, Vec<ChartInfo>) {
         let mut cpu_datas = Vec::new();
         let mut mem_datas = Vec::new();
-        let mut path = match get_data_dir() {
+        let mut path = match get_cache_dir() {
             Ok(r) => r,
             Err(_) => {
                 return (cpu_datas, mem_datas);
@@ -163,7 +163,7 @@ impl SystemInfoService {
 
 impl Drop for SystemInfoService {
     fn drop(&mut self) {
-        let mut path = match get_data_dir() {
+        let mut path = match get_cache_dir() {
             Ok(r) => r,
             Err(e) => {
                 error!("保存system_info数据失败{e}");

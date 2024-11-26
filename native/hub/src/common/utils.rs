@@ -1,7 +1,7 @@
 use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
-use dirs::{config_local_dir, data_local_dir};
+use dirs::{cache_dir, config_dir, config_local_dir, data_local_dir};
 use anyhow::{anyhow, Result};
 use sha2::{Digest, Sha256};
 
@@ -14,8 +14,8 @@ pub fn second_timestamp() -> u32  {
 
 /// 获取数据缓存文件夹
 /// 如果不存在，则会尝试创建
-pub fn get_data_dir() -> Result<PathBuf>  {
-    let mut path = data_local_dir().unwrap_or_default();
+pub fn get_cache_dir() -> Result<PathBuf>  {
+    let mut path = cache_dir().unwrap_or_default();
     path.push("nftools");
     if !path.exists() {
         create_dir_all(&path)?;
@@ -27,7 +27,7 @@ pub fn get_data_dir() -> Result<PathBuf>  {
 /// 获取数据配置文件夹
 /// 如果不存在，则会尝试创建
 pub fn get_config_dir() -> Result<PathBuf>  {
-    let mut path = config_local_dir().unwrap_or_default();
+    let mut path = config_dir().unwrap_or_default();
     path.push("nftools");
     if !path.exists() {
         create_dir_all(&path)?;

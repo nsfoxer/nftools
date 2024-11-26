@@ -1,0 +1,9 @@
+syntax = "proto3";
+package utils;
+
+// 压缩图片请求
+message CompressLocalPicMsg {
+  string local_file = 1;
+  uint64 width = 2;
+  uint64 height = 3;
+}
