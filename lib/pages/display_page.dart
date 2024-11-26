@@ -77,40 +77,42 @@ class _DisplayMode extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<DisplayModeController>(builder: (logic) {
       var state = logic.state;
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Container(),
-          MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: () => logic.setMode(true),
-                child: _Mode(
-                  display: const Text(
-                    "亮色模式",
-                    style: NFTextStyle.p3,
+      return LoadingWidgets(
+          loading: logic.state.loadingWallpaper,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Container(),
+              MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => logic.setMode(true),
+                    child: _Mode(
+                      display: const Text(
+                        "亮色模式",
+                        style: NFTextStyle.p3,
+                      ),
+                      isSelect: state.isLight ?? false,
+                      picFile: state.lightWallpaper,
+                    ),
+                  )),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => logic.setMode(false),
+                  child: _Mode(
+                    display: const Text(
+                      "暗色模式",
+                      style: NFTextStyle.p3,
+                    ),
+                    isSelect: !(state.isLight ?? true),
+                    picFile: state.darkWallpaper,
                   ),
-                  isSelect: state.isLight ?? false,
-                  picFile: state.lightWallpaper,
                 ),
-              )),
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => logic.setMode(false),
-              child: _Mode(
-                display: const Text(
-                  "暗色模式",
-                  style: NFTextStyle.p3,
-                ),
-                isSelect: !(state.isLight ?? true),
-                picFile: state.darkWallpaper,
               ),
-            ),
-          ),
-          Container(),
-        ],
-      );
+              Container(),
+            ],
+          ));
     });
   }
 }

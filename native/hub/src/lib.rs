@@ -17,6 +17,7 @@ use tokio;
 use common::global_data::GlobalData;
 use crate::service::syncfile::SyncFileService;
 use crate::service::system_info::SystemInfoService;
+use crate::service::utils::UtilsService;
 
 rinf::write_interface!();
 
@@ -54,6 +55,7 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
         }
     }
     api.add_service(Box::new(SystemInfoService::new().await));
+    api.add_imm_service(Box::new(UtilsService::new()));
 
     api
 }

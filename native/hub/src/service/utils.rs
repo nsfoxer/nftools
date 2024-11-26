@@ -1,13 +1,15 @@
 use crate::messages::common::StringMessage;
 use crate::service::service::ImmService;
+use prost::Message;
 use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::time::UNIX_EPOCH;
 
 use crate::common::utils::{get_cache_dir, sha256};
+use crate::messages::utils::CompressLocalPicMsg;
+use crate::{async_func_typetype, func_end};
 use anyhow::Result;
 use tokio::fs;
-use crate::messages::utils::CompressLocalPicMsg;
 
 /// 工具类服务
 pub struct UtilsService {}
@@ -18,13 +20,20 @@ impl ImmService for UtilsService {
         "Utils"
     }
 
-    async fn handle(&self, func: &str, req_data: Vec<u8>) -> anyhow::Result<Option<Vec<u8>>> {
-        todo!()
+    async fn handle(&self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
+        async_func_typetype!(
+            self,
+            func,
+            req_data,
+            compress_local_img,
+            CompressLocalPicMsg
+        );
+        func_end!(func)
     }
 }
 
 impl UtilsService {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {}
     }
 }
@@ -65,33 +74,41 @@ impl UtilsService {
 
         // 3. 压缩
         let handle = tokio::task::spawn_blocking(move || -> Result<PathBuf> {
-            let img = image::open(local_img.local_file)?;
-            let cimg = img.resize(local_img.width as u32, local_img.height as u32, image::imageops::FilterType::Lanczos3);
+            let img = image::ImageReader::open(&local_img.local_file)?.with_guessed_format()?.decode()?;
+            let cimg = img.resize(
+                local_img.width,
+                local_img.height,
+                image::imageops::FilterType::Lanczos3,
+            );
             cimg.save(&cache_path)?;
             Ok(cache_path)
         });
         let r = handle.await??;
 
-        Ok(StringMessage{
+        Ok(StringMessage {
             value: r.to_str().unwrap().to_string(),
         })
     }
 }
 
 mod test {
-    use tokio::time::Instant;
     use crate::messages::utils::CompressLocalPicMsg;
     use crate::service::utils::UtilsService;
+    use tokio::time::Instant;
 
     #[tokio::test]
     async fn compress_local_img() {
         let service = UtilsService::new();
         let instant = Instant::now();
-        let r = service.compress_local_img(CompressLocalPicMsg {
-            local_file: r"C:\Users\12618\Pictures\wallpaper\wallhaven-p97klp_2560x1440.png".to_string(),
-            width: 300,
-            height: 200,
-        }).await.unwrap();
+        let r = service
+            .compress_local_img(CompressLocalPicMsg {
+                local_file: r"C:\Users\12618\Pictures\wallpaper\wallhaven-p97klp_2560x1440.png"
+                    .to_string(),
+                width: 300,
+                height: 200,
+            })
+            .await
+            .unwrap();
         let r2 = instant.elapsed().as_millis();
         eprintln!("{:?} {r2}", r.value);
     }

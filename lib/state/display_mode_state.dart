@@ -4,4 +4,5 @@ class DisplayModeState {
   // 壁纸
   String? lightWallpaper;
   String? darkWallpaper;
+  bool loadingWallpaper = false;
 }

@@ -1,5 +1,6 @@
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:get/get.dart';
+import 'package:nftools/api/utils.dart';
 import 'package:nftools/messages/display.pb.dart';
 import 'package:nftools/state/display_mode_state.dart';
 import 'package:nftools/api/display_api.dart' as $api;
@@ -15,9 +16,16 @@ class DisplayModeController extends GetxController {
 
   void _init() async {
     state.isLight = (await $api.getCurrentMode()).isLight;
+    state.loadingWallpaper = true;
+    update();
+    _setWallpaper();
+  }
+
+  void _setWallpaper() async {
     var r1 = await $api.getWallpaper();
-    state.lightWallpaper = r1.lightWallpaper;
-    state.darkWallpaper = r1.darkWallpaper;
+    state.lightWallpaper = await compressLocalFile(r1.lightWallpaper, 600, 400);
+    state.darkWallpaper = await compressLocalFile(r1.darkWallpaper, 600, 400);
+    state.loadingWallpaper = false;
     update();
   }
 

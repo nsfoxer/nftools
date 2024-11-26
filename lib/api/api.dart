@@ -23,7 +23,7 @@ void initMsg() {
     }
     if (rsp.msg.isNotEmpty) {
       // 错误：处理错误
-      error("处理错误:${rsp.msg}");
+      error(rsp.msg);
       complete.completeError(rsp.msg);
     } else {
       complete.complete(data.binary);
