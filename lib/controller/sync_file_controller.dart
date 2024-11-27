@@ -1,3 +1,4 @@
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/api/syncfile.dart' as $api;
 import 'package:nftools/messages/syncfile.pb.dart';
@@ -51,6 +52,9 @@ class SyncFileController extends GetxController {
   void listFiles() async {
     var result = await $api.listDirs();
     state.fileList = result.files;
+    state.fileList.sort((a,b) {
+      return (a.status.name + a.localDir + a.remoteDir).compareTo(b.status.name + b.localDir + b.remoteDir);
+    });
     update();
   }
 
@@ -124,22 +128,32 @@ class SyncFileController extends GetxController {
   // === page ===
   void nextPage() {
     state.pageController.goToNextPage();
+    update();
   }
 
   void prevPage() {
     state.pageController.goToPreviousPage();
+    update();
   }
 
   int pageCount() {
-    int page = state.pageController.rowCount ~/ state.pageController.rowsPerPage;
-    if (state.pageController.rowCount % state.pageController.rowsPerPage != 0) {
+    final rowCount = state.fileList.length;
+    if (rowCount==0) {
+      return 1;
+    }
+    int page = rowCount ~/ state.pageController.rowsPerPage;
+    if (rowCount % state.pageController.rowsPerPage != 0) {
       page += 1;
     }
     return page;
   }
 
   int currentPage() {
-    return (state.pageController.currentRowIndex ~/ state.pageController.rowsPerPage) + 1;
+    final rowCount = state.fileList.length;
+    if (rowCount==0 || state.pageController.currentRowIndex == 0) {
+      return 1;
+    }
+    return (rowCount ~/ state.pageController.currentRowIndex) + 1;
   }
 
 }
