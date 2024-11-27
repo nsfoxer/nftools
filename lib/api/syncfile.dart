@@ -40,8 +40,8 @@ Future<WebDavConfigMsg> getAccount() async {
   return result;
 }
 
-Future<FileMsg> addSyncDir(String localDir) async {
-   final data = await sendRequest(_service, _addSyncDir, StringMessage(value: localDir));
+Future<FileMsg> addSyncDir(String localDir, String tag) async {
+   final data = await sendRequest(_service, _addSyncDir, AddSyncDirMsg(localDir: localDir, tag: tag));
    return FileMsg.fromBuffer(data);
 }
 

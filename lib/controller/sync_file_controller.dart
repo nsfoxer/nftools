@@ -68,7 +68,7 @@ class SyncFileController extends GetxController {
     state.isLoading = true;
     update();
     try {
-      final r = await $api.addSyncDir(localDir);
+      final r = await $api.addSyncDir(localDir, tag);
       state.fileList.add(r);
     } finally {
       state.isLoading = false;
@@ -125,16 +125,19 @@ class SyncFileController extends GetxController {
   }
 
   // === page ===
+  // 下一页
   void nextPage() {
     state.pageController.goToNextPage();
     update();
   }
 
+  // 上一页
   void prevPage() {
     state.pageController.goToPreviousPage();
     update();
   }
 
+  // 获取总页数
   int pageCount() {
     final rowCount = state.fileList.length;
     if (rowCount==0) {
@@ -147,16 +150,13 @@ class SyncFileController extends GetxController {
     return page;
   }
 
+  // 获取当前页码
   int currentPage() {
     final rowCount = state.fileList.length;
     if (rowCount==0 || state.pageController.currentRowIndex == 0) {
       return 1;
     }
     return (rowCount ~/ state.pageController.currentRowIndex) + 1;
-  }
-
-  void setAddLocalDir(String directoryPath) {
-    update();
   }
 
 }
