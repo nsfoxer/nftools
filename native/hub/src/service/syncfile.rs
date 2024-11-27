@@ -2,9 +2,7 @@ use crate::common::global_data::GlobalData;
 use crate::common::utils::{get_machine_id, sha256};
 use crate::common::WEBDAV_SYNC_DIR;
 use crate::messages::common::{BoolMessage, StringMessage};
-use crate::messages::syncfile::{
-    AddLocal4RemoteMsg, FileMsg, FileStatusEnum, ListFileMsg, SyncFileDetailMsg, WebDavConfigMsg,
-};
+use crate::messages::syncfile::{AddLocal4RemoteMsg, AddSyncDirMsg, FileMsg, FileStatusEnum, ListFileMsg, SyncFileDetailMsg, WebDavConfigMsg};
 use crate::service::service::Service;
 use crate::{
     async_func_notype, async_func_typeno, async_func_typetype, func_end, func_notype, func_typeno,
@@ -90,7 +88,7 @@ impl Service for SyncFileService {
             set_account,
             WebDavConfigMsg,
             add_sync_dir,
-            StringMessage,
+            AddSyncDirMsg,
             add_local_file,
             AddLocal4RemoteMsg
         );
@@ -182,6 +180,7 @@ impl SyncFileService {
                 new: 0,
                 del: 0,
                 modify: 0,
+                tag: "".to_string(),
             });
         }
 
@@ -194,6 +193,7 @@ impl SyncFileService {
                 new: 0,
                 del: 0,
                 modify: 0,
+                tag: remote_files.get(*file).unwrap().tag.clone(),
             });
         }
 
@@ -210,6 +210,7 @@ impl SyncFileService {
                 new: diff_result.1.len() as u32,
                 del: diff_result.2.len() as u32,
                 modify: diff_result.3.len() as u32,
+                tag: remote_files.get(*file).unwrap().tag.clone(),
             });
         }
         Ok(ListFileMsg { files: result })
@@ -319,13 +320,13 @@ impl SyncFileService {
     }
 
     /// 新增一个同步文件夹条目
-    async fn add_sync_dir(&mut self, local_dir: StringMessage) -> Result<FileMsg> {
+    async fn add_sync_dir(&mut self, sync: AddSyncDirMsg) -> Result<FileMsg> {
         // 1. 基本校验
-        self.check_local_dir(&local_dir.value)?;
+        self.check_local_dir(&sync.local_dir)?;
 
         // 2. 构造远端目录
         let remote_dir =
-            sha256(format!("{}_{}", get_machine_id()?, local_dir.value).as_bytes()) + "/";
+            sha256(format!("{}_{}", get_machine_id()?, sync.local_dir).as_bytes()) + "/";
         let dir = format!("{}{remote_dir}", WEBDAV_SYNC_DIR);
         let client = self
             .client
@@ -335,24 +336,25 @@ impl SyncFileService {
 
         // 3. 构造空的文件属性
         let metadata = RemoteFileMedata {
-            tag: local_dir.value.clone(),
+            tag: sync.tag.clone(),
             last_time: 0,
             files: Default::default(),
         };
         Self::update_remote_metadata(&metadata, &remote_dir, &client).await?;
         self.file_sync
             .files
-            .insert(remote_dir.clone(), local_dir.value.clone());
+            .insert(remote_dir.clone(), sync.local_dir.clone());
 
         // 返回需要上传的所有文件
-        let l_metadata = Self::get_newest_file(&local_dir.value).await?;
+        let l_metadata = Self::get_newest_file(&sync.local_dir).await?;
         let result = FileMsg {
-            local_dir: local_dir.value,
+            local_dir: sync.local_dir,
             remote_dir,
             status: FileStatusEnum::Upload.into(),
             new: l_metadata.files.keys().len() as u32,
             del: 0,
             modify: 0,
+            tag: sync.tag
         };
         Ok(result)
     }
@@ -384,6 +386,7 @@ impl SyncFileService {
             new: r_metadata.files.len() as u32,
             del: 0,
             modify: 0,
+            tag: r_metadata.tag
         })
     }
 

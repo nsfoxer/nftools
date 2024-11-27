@@ -88,7 +88,7 @@ class SyncFilePage extends StatelessWidget {
                             readOnly: logic.state.accountInfoLock,
                             keyboardType: TextInputType.visiblePassword,
                             obscureText: true,
-                            placeholder: "passwd",
+                            placeholder: "密码",
                             enableSuggestions: false,
                             validator: (v) {
                               if (v == '') {
@@ -227,7 +227,7 @@ class SyncFilePage extends StatelessWidget {
             ],
           ),
           rowsPerPage: 7,
-          minWidth: 1000,
+          minWidth: 800,
           fixedLeftColumns: 1,
           lmRatio: 1.6,
           columns: [
@@ -236,8 +236,8 @@ class SyncFilePage extends StatelessWidget {
                 label: Text("本地", style: typography.bodyStrong),
                 size: ColumnSize.L),
             DataColumn2(
-                label: Text("远端", style: typography.bodyStrong),
-                size: ColumnSize.L),
+                label: Text("标签", style: typography.bodyStrong),
+                size: ColumnSize.S),
             DataColumn2(
                 label: Text("状态", style: typography.bodyStrong),
                 size: ColumnSize.S),
@@ -401,9 +401,9 @@ class SourceData extends $me.DataTableSource {
             maxLines: 2,
           ))),
       $me.DataCell(Tooltip(
-          message: file.remoteDir,
+          message: file.tag,
           child: Text(
-            file.remoteDir,
+            file.tag,
             overflow: TextOverflow.ellipsis,
             style: typography.caption,
             maxLines: 2,

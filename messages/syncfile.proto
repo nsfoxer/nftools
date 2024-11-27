@@ -17,7 +17,7 @@ message ListFileMsg {
 message FileMsg {
 	// 本地地址
 	string local_dir = 1;
-	// 远端地址
+	// 远端地址 同时为唯一id
 	string remote_dir = 2;
 	// 同步状态
 	FileStatusEnum status = 3;
@@ -27,8 +27,9 @@ message FileMsg {
 	uint32 del = 5;
 	// 需要修改的文件数量
 	uint32 modify = 6;
+	// 标签
+	string tag = 7;
 }
-
 
 // 同步文件详情
 message SyncFileDetailMsg {
@@ -56,4 +57,12 @@ enum FileStatusEnum {
 message AddLocal4RemoteMsg {
 	string local_dir = 1;
 	string remote_dir = 2;
+}
+
+// 新增同步文件夹
+message AddSyncDirMsg {
+	// 本地路径
+	string local_dir = 1;
+	// tag
+	string tag = 2;
 }

@@ -91,6 +91,7 @@ impl UtilsService {
     }
 }
 
+#[allow(unused_imports)]
 mod test {
     use crate::messages::utils::CompressLocalPicMsg;
     use crate::service::utils::UtilsService;
