@@ -125,4 +125,21 @@ class SyncFileController extends GetxController {
   void nextPage() {
     state.pageController.goToNextPage();
   }
+
+  void prevPage() {
+    state.pageController.goToPreviousPage();
+  }
+
+  int pageCount() {
+    int page = state.pageController.rowCount ~/ state.pageController.rowsPerPage;
+    if (state.pageController.rowCount % state.pageController.rowsPerPage != 0) {
+      page += 1;
+    }
+    return page;
+  }
+
+  int currentPage() {
+    return (state.pageController.currentRowIndex ~/ state.pageController.rowsPerPage) + 1;
+  }
+
 }

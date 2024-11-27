@@ -18,18 +18,25 @@ class SyncFilePage extends StatelessWidget {
   const SyncFilePage({super.key});
 
   void _showAccountSetting(BuildContext context) async {
-    var typography = FluentTheme.of(context).typography;
-    var color = FluentTheme.of(context).activeColor;
+    var typography = FluentTheme
+        .of(context)
+        .typography;
+    var color = FluentTheme
+        .of(context)
+        .activeColor;
     await showDialog<String>(
         context: context,
-        builder: (context) => GetBuilder<SyncFileController>(builder: (logic) {
+        builder: (context) =>
+            GetBuilder<SyncFileController>(builder: (logic) {
               return ContentDialog(
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text("账户管理", style: typography.subtitle),
                     InfoLabel(
-                        label: logic.state.accountInfoLock ? "已锁定" : "可编辑",
+                        label: logic.state.accountInfoLock
+                            ? "已锁定"
+                            : "可编辑",
                         isHeader: false,
                         child: IconButton(
                             icon: Icon(logic.state.accountInfoLock
@@ -42,64 +49,64 @@ class SyncFilePage extends StatelessWidget {
                 ),
                 content: SizedBox(
                     child: Form(
-                  key: logic.state.formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      InfoLabel(
-                          label: "服务器地址",
-                          child: TextFormBox(
-                            controller: logic.state.urlController,
-                            readOnly: logic.state.accountInfoLock,
-                            cursorColor: color,
-                            keyboardType: TextInputType.text,
-                            placeholder: "https://dav.xxxx.com/dav/",
-                            enableSuggestions: false,
-                            validator: (v) {
-                              if (v!.startsWith("http://") ||
-                                  v.startsWith("https://")) {
-                                return null;
-                              }
-                              return "必须以http://或https://开头";
-                            },
-                          )),
-                      InfoLabel(
-                          label: "账户",
-                          child: TextFormBox(
-                            controller: logic.state.userController,
-                            cursorColor: color,
-                            readOnly: logic.state.accountInfoLock,
-                            keyboardType: TextInputType.text,
-                            placeholder: "username",
-                            enableSuggestions: false,
-                            validator: (v) {
-                              if (v == '') {
-                                return "数据不能为空";
-                              }
-                              return null;
-                            },
-                          )),
-                      InfoLabel(
-                          label: "密码",
-                          child: TextFormBox(
-                            controller: logic.state.passwdController,
-                            cursorColor: color,
-                            readOnly: logic.state.accountInfoLock,
-                            keyboardType: TextInputType.visiblePassword,
-                            obscureText: true,
-                            placeholder: "passwd",
-                            enableSuggestions: false,
-                            validator: (v) {
-                              if (v == '') {
-                                return "数据不能为空";
-                              }
-                              return null;
-                            },
-                          )),
-                    ],
-                  ),
-                )),
+                      key: logic.state.formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          InfoLabel(
+                              label: "服务器地址",
+                              child: TextFormBox(
+                                controller: logic.state.urlController,
+                                readOnly: logic.state.accountInfoLock,
+                                cursorColor: color,
+                                keyboardType: TextInputType.text,
+                                placeholder: "https://dav.xxxx.com/dav/",
+                                enableSuggestions: false,
+                                validator: (v) {
+                                  if (v!.startsWith("http://") ||
+                                      v.startsWith("https://")) {
+                                    return null;
+                                  }
+                                  return "必须以http://或https://开头";
+                                },
+                              )),
+                          InfoLabel(
+                              label: "账户",
+                              child: TextFormBox(
+                                controller: logic.state.userController,
+                                cursorColor: color,
+                                readOnly: logic.state.accountInfoLock,
+                                keyboardType: TextInputType.text,
+                                placeholder: "username",
+                                enableSuggestions: false,
+                                validator: (v) {
+                                  if (v == '') {
+                                    return "数据不能为空";
+                                  }
+                                  return null;
+                                },
+                              )),
+                          InfoLabel(
+                              label: "密码",
+                              child: TextFormBox(
+                                controller: logic.state.passwdController,
+                                cursorColor: color,
+                                readOnly: logic.state.accountInfoLock,
+                                keyboardType: TextInputType.visiblePassword,
+                                obscureText: true,
+                                placeholder: "passwd",
+                                enableSuggestions: false,
+                                validator: (v) {
+                                  if (v == '') {
+                                    return "数据不能为空";
+                                  }
+                                  return null;
+                                },
+                              )),
+                        ],
+                      ),
+                    )),
                 actions: [
                   FilledButton(
                       child: const Text("提交"),
@@ -133,7 +140,9 @@ class SyncFilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var typography = FluentTheme.of(context).typography;
+    var typography = FluentTheme
+        .of(context)
+        .typography;
     var table = GetBuilder<SyncFileController>(builder: (logic) {
       return LoadingWidgets(
         loading: logic.state.isLoading,
@@ -208,7 +217,30 @@ class SyncFilePage extends StatelessWidget {
             );
           }),
         ),
-        content: table);
+        content: table,
+        bottomBar: GetBuilder<SyncFileController>(builder: (logic) {
+          return
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(" ${logic.currentPage()} - ${logic.pageCount()}"),
+                Tooltip(message: "上一页",
+                    child:
+                    IconButton(
+                        icon: const Icon(FluentIcons.chevron_left_med),
+                        onPressed: () {
+                          logic.prevPage();
+                        })),
+                Tooltip(message: "下一页",
+                    child:
+                    IconButton(icon: const Icon(FluentIcons.chevron_right_med),
+                        onPressed: () {
+                          logic.nextPage();
+                        })),
+              ],
+            );
+        }),
+    );
   }
 }
 
@@ -236,11 +268,13 @@ class SourceData extends $me.DataTableSource {
   @override
   $me.DataRow? getRow(int index) {
     debugPrint(index.toString());
-    var typography = FluentTheme.of(context).typography;
+    var typography = FluentTheme
+        .of(context)
+        .typography;
     var file = fileList[index];
     return DataRow2(cells: [
       $me.DataCell(
-        () {
+            () {
           // 远端无记录，直接删除
           if (file.remoteDir.isEmpty) {
             return Tooltip(
@@ -271,15 +305,16 @@ class SourceData extends $me.DataTableSource {
                   onPressed: file.status == FileStatusEnum.SYNCED
                       ? null
                       : () async {
-                          await logic.syncDir(file.remoteDir);
-                        },
+                    await logic.syncDir(file.remoteDir);
+                  },
                   child: const Text("同步")),
               NFLayout.hlineh3,
               FilledButton(
                   child: const Text("删除"),
                   onPressed: () async {
                     if (await confirmDialog(
-                        context, "确认删除", "此操作不会删除本地文件，但会导致远端服务器上文件全部删除!!！")) {
+                        context, "确认删除",
+                        "此操作不会删除本地文件，但会导致远端服务器上文件全部删除!!！")) {
                       logic.deleteRemoteDir(file.remoteDir);
                     }
                   }),
