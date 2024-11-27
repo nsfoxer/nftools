@@ -1,4 +1,3 @@
-import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/api/syncfile.dart' as $api;
 import 'package:nftools/messages/syncfile.pb.dart';
@@ -65,7 +64,7 @@ class SyncFileController extends GetxController {
   }
 
   // 添加同步文件夹
-  void addSyncDir(String localDir) async {
+  void addSyncDir(String localDir, String tag) async {
     state.isLoading = true;
     update();
     try {
@@ -154,6 +153,10 @@ class SyncFileController extends GetxController {
       return 1;
     }
     return (rowCount ~/ state.pageController.currentRowIndex) + 1;
+  }
+
+  void setAddLocalDir(String directoryPath) {
+    update();
   }
 
 }

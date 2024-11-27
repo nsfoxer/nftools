@@ -20,5 +20,12 @@ class SyncFileState {
   // passwd控制器
   TextEditingController passwdController = TextEditingController();
 
+  // 新增同步文件夹输入表单
+  GlobalKey<FormState> syncFormKey = GlobalKey();
+  // Tag控制器
+  TextEditingController tagController = TextEditingController();
+  // add file local
+  TextEditingController addSyncDirController = TextEditingController();
+
   PaginatorController pageController = PaginatorController();
 }
