@@ -1,6 +1,6 @@
-
 import 'package:nftools/messages/common.pb.dart';
 import 'package:nftools/messages/syncfile.pb.dart';
+import 'package:nftools/utils/log.dart';
 
 import 'api.dart';
 
@@ -23,15 +23,25 @@ Future<ListFileMsg> listDirs() async {
 
 // 是否有账户
 Future<bool> hasAccount() async {
-  var data = await sendRequest<EmptyMessage>(_service, _hasAccount, null);
-  var result = BoolMessage.fromBuffer(data);
-  return result.value;
+  try {
+    var data = await sendRequest<EmptyMessage>(_service, _hasAccount, null);
+    var result = BoolMessage.fromBuffer(data);
+    return result.value;
+  } catch (e) {
+    info("message ============");
+    return false;
+  }
 }
 
 Future<bool> setAccount(WebDavConfigMsg config) async {
-  var data = await sendRequest<WebDavConfigMsg>(_service, _setAccount, config);
-  var result = BoolMessage.fromBuffer(data);
-  return result.value;
+  try {
+    var data =
+        await sendRequest<WebDavConfigMsg>(_service, _setAccount, config);
+    var result = BoolMessage.fromBuffer(data);
+    return result.value;
+  } catch (e) {
+    return false;
+  }
 }
 
 Future<WebDavConfigMsg> getAccount() async {
@@ -41,12 +51,14 @@ Future<WebDavConfigMsg> getAccount() async {
 }
 
 Future<FileMsg> addSyncDir(String localDir, String tag) async {
-   final data = await sendRequest(_service, _addSyncDir, AddSyncDirMsg(localDir: localDir, tag: tag));
-   return FileMsg.fromBuffer(data);
+  final data = await sendRequest(
+      _service, _addSyncDir, AddSyncDirMsg(localDir: localDir, tag: tag));
+  return FileMsg.fromBuffer(data);
 }
 
 Future<SyncFileDetailMsg> syncDir(String remoteId) async {
-  final data = await sendRequest(_service, _syncDir, StringMessage(value: remoteId));
+  final data =
+      await sendRequest(_service, _syncDir, StringMessage(value: remoteId));
   return SyncFileDetailMsg.fromBuffer(data);
 }
 
@@ -55,7 +67,8 @@ void deleteLocalDir(String localDir) async {
 }
 
 Future<FileMsg> addLocalDir(String localDir, String remoteId) async {
-  final data = await sendRequest(_service, _addLocalDir, AddLocal4RemoteMsg(localDir: localDir, remoteDir: remoteId));
+  final data = await sendRequest(_service, _addLocalDir,
+      AddLocal4RemoteMsg(localDir: localDir, remoteDir: remoteId));
   return FileMsg.fromBuffer(data);
 }
 

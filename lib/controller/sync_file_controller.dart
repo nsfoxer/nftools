@@ -17,16 +17,16 @@ class SyncFileController extends GetxController {
   _init() async {
     try {
       if (!await $api.hasAccount()) {
-        info("无登录信息，请先登录");
+        info("无登录信息或登录失败，请先登录");
       } else {
-        var accountInfo = await $api.getAccount();
-        state.urlController.text = accountInfo.url;
-        state.userController.text = accountInfo.account;
-        state.passwdController.text = accountInfo.passwd;
-        state.accountInfoLock = true;
         var result = await $api.listDirs();
         state.fileList = result.files;
       }
+      var accountInfo = await $api.getAccount();
+      state.urlController.text = accountInfo.url;
+      state.userController.text = accountInfo.account;
+      state.passwdController.text = accountInfo.passwd;
+      state.accountInfoLock = true;
     } finally {
       state.isLoading = false;
       update();
@@ -51,8 +51,9 @@ class SyncFileController extends GetxController {
   void listFiles() async {
     var result = await $api.listDirs();
     state.fileList = result.files;
-    state.fileList.sort((a,b) {
-      return (a.status.name + a.localDir + a.remoteDir).compareTo(b.status.name + b.localDir + b.remoteDir);
+    state.fileList.sort((a, b) {
+      return (a.status.name + a.localDir + a.remoteDir)
+          .compareTo(b.status.name + b.localDir + b.remoteDir);
     });
     update();
   }
@@ -140,7 +141,7 @@ class SyncFileController extends GetxController {
   // 获取总页数
   int pageCount() {
     final rowCount = state.fileList.length;
-    if (rowCount==0) {
+    if (rowCount == 0) {
       return 1;
     }
     int page = rowCount ~/ state.pageController.rowsPerPage;
@@ -153,10 +154,9 @@ class SyncFileController extends GetxController {
   // 获取当前页码
   int currentPage() {
     final rowCount = state.fileList.length;
-    if (rowCount==0 || state.pageController.currentRowIndex == 0) {
+    if (rowCount == 0 || state.pageController.currentRowIndex == 0) {
       return 1;
     }
     return (rowCount ~/ state.pageController.currentRowIndex) + 1;
   }
-
 }

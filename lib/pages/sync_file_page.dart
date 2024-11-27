@@ -103,14 +103,12 @@ class SyncFilePage extends StatelessWidget {
                 actions: [
                   FilledButton(
                       child: const Text("提交"),
-                      onPressed: () async {
+                      onPressed: logic.state.accountInfoLock ? null :  () async {
                         if (!logic.state.formKey.currentState!.validate()) {
                           return;
                         }
-                        if (logic.state.accountInfoLock) {
-                          context.pop();
-                        }
                         if (await logic.submitAccount()) {
+                          logic.state.accountInfoLock = true;
                           info("登录成功");
                           logic.listFiles();
                           if (context.mounted) {
@@ -189,7 +187,8 @@ class SyncFilePage extends StatelessWidget {
                         if (!logic.state.syncFormKey.currentState!.validate()) {
                           return;
                         }
-                        logic.addSyncDir(logic.state.addSyncDirController.text, logic.state.tagController.text);
+                        logic.addSyncDir(logic.state.addSyncDirController.text,
+                            logic.state.tagController.text);
                         logic.state.tagController.text = "";
                         logic.state.addSyncDirController.text = "";
                         context.pop();
@@ -237,7 +236,7 @@ class SyncFilePage extends StatelessWidget {
                 size: ColumnSize.L),
             DataColumn2(
                 label: Text("标签", style: typography.bodyStrong),
-                size: ColumnSize.S),
+                size: ColumnSize.M),
             DataColumn2(
                 label: Text("状态", style: typography.bodyStrong),
                 size: ColumnSize.S),
