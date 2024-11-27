@@ -20,7 +20,7 @@ class SyncFilePage extends StatelessWidget {
   void _showAccountSetting(BuildContext context) async {
     var typography = FluentTheme.of(context).typography;
     var color = FluentTheme.of(context).activeColor;
-    final result = await showDialog<String>(
+    await showDialog<String>(
         context: context,
         builder: (context) => GetBuilder<SyncFileController>(builder: (logic) {
               return ContentDialog(
@@ -113,6 +113,9 @@ class SyncFilePage extends StatelessWidget {
                         if (await logic.submitAccount()) {
                           info("登录成功");
                           logic.listFiles();
+                          if (context.mounted) {
+                            context.pop();
+                          }
                         } else {
                           error("登录失败");
                         }
@@ -133,29 +136,43 @@ class SyncFilePage extends StatelessWidget {
     var typography = FluentTheme.of(context).typography;
     var table = GetBuilder<SyncFileController>(builder: (logic) {
       return LoadingWidgets(
-          loading: logic.state.isLoading,
-          child: PaginatedDataTable2(
-            rowsPerPage: 2,
-            minWidth: 1000,
-            fixedLeftColumns: 1,
-            lmRatio: 1.6,
-            columns: [
-              DataColumn2(label: Text("操作", style: typography.bodyStrong)),
-              DataColumn2(
-                  label: Text("本地", style: typography.bodyStrong),
-                  size: ColumnSize.L),
-              DataColumn2(
-                  label: Text("远端", style: typography.bodyStrong),
-                  size: ColumnSize.L),
-              DataColumn2(
-                  label: Text("状态", style: typography.bodyStrong),
-                  size: ColumnSize.S),
-              DataColumn2(
-                  label: Text("新增 删除 变更", style: typography.bodyStrong),
-                  size: ColumnSize.M),
+        loading: logic.state.isLoading,
+        child: PaginatedDataTable2(
+          controller: logic.state.pageController,
+          hidePaginator: true,
+          empty: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                FluentIcons.cloud_flow,
+                size: 60,
+              ),
+              NFLayout.vlineh1,
+              Text("无数据")
             ],
-            source: SourceData(logic.state.fileList, logic, context),
-          ));
+          ),
+          rowsPerPage: 7,
+          minWidth: 1000,
+          fixedLeftColumns: 1,
+          lmRatio: 1.6,
+          columns: [
+            DataColumn2(label: Text("操作", style: typography.bodyStrong)),
+            DataColumn2(
+                label: Text("本地", style: typography.bodyStrong),
+                size: ColumnSize.L),
+            DataColumn2(
+                label: Text("远端", style: typography.bodyStrong),
+                size: ColumnSize.L),
+            DataColumn2(
+                label: Text("状态", style: typography.bodyStrong),
+                size: ColumnSize.S),
+            DataColumn2(
+                label: Text("新增 删除 变更", style: typography.bodyStrong),
+                size: ColumnSize.M),
+          ],
+          source: SourceData(logic.state.fileList, logic, context),
+        ),
+      );
     });
     return ScaffoldPage(
         header: PageHeader(
@@ -299,7 +316,10 @@ class SourceData extends $me.DataTableSource {
             desc = "待上传";
             break;
         }
-        return Text(desc, style: typography.caption,);
+        return Text(
+          desc,
+          style: typography.caption,
+        );
       }()),
       $me.DataCell(
           Text("${file.new_4}        ${file.del}        ${file.modify}")),

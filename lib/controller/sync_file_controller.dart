@@ -107,12 +107,8 @@ class SyncFileController extends GetxController {
   // 对缺失的远端同步文件夹添加本地空文件夹
   void addLocalDir(String dirPath, String remoteId) async {
     final fileMsg = await $api.addLocalDir(dirPath, remoteId);
-    for (var value in state.fileList) {
-      if (value.remoteDir == remoteId) {
-        value = fileMsg;
-        break;
-      }
-    }
+    final i = state.fileList.indexWhere((file) => file.remoteDir == remoteId);
+    state.fileList[i] = fileMsg;
     update();
   }
 
@@ -123,5 +119,10 @@ class SyncFileController extends GetxController {
       return file.remoteDir != remoteDir;
     });
     update();
+  }
+
+  // === page ===
+  void nextPage() {
+    state.pageController.goToNextPage();
   }
 }
