@@ -122,9 +122,6 @@ impl SyncFileService {
 impl SyncFileService {
     /// 测试帐号是否可用
     async fn has_account(&mut self) -> Result<BoolMessage> {
-        if self.client.is_some() {
-            return Ok(BoolMessage { value: true });
-        }
         match &self.account_info {
             None => Ok(BoolMessage { value: false }),
             Some(account) => {
