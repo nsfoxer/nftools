@@ -131,6 +131,81 @@ class SyncFilePage extends StatelessWidget {
             }));
   }
 
+  void _showAddSyncDir(BuildContext context) async {
+    var typography = FluentTheme.of(context).typography;
+    var color = FluentTheme.of(context).activeColor;
+    await showDialog(
+        context: context,
+        builder: (context) => GetBuilder<SyncFileController>(builder: (logic) {
+              return ContentDialog(
+                title: Text("新增同步文件夹", style: typography.subtitle),
+                content: SizedBox(
+                    child: Form(
+                  key: logic.state.syncFormKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InfoLabel(
+                          label: "标签",
+                          child: TextFormBox(
+                            controller: logic.state.tagController,
+                            cursorColor: color,
+                            keyboardType: TextInputType.text,
+                            placeholder: "标签",
+                            enableSuggestions: false,
+                            validator: (v) {
+                              if (v!.isEmpty) {
+                                return "不能为空";
+                              }
+                              return null;
+                            },
+                          )),
+                      InfoLabel(
+                          label: "文件地址",
+                          child: TextFormBox(
+                            readOnly: true,
+                            controller: logic.state.addSyncDirController,
+                            placeholder: "选取一个要同步的文件夹",
+                            validator: (v) {
+                              if (v!.isEmpty) {
+                                return "不能为空";
+                              }
+                              return null;
+                            },
+                            onTap: () async {
+                              final dir = await _addLocalDir();
+                              if (dir != null) {
+                                logic.state.addSyncDirController.text = dir;
+                              }
+                            },
+                          )),
+                    ],
+                  ),
+                )),
+                actions: [
+                  FilledButton(
+                      child: const Text("添加"),
+                      onPressed: () {
+                        if (!logic.state.syncFormKey.currentState!.validate()) {
+                          return;
+                        }
+                        logic.addSyncDir(logic.state.addSyncDirController.text, logic.state.tagController.text);
+                        logic.state.tagController.text = "";
+                        logic.state.addSyncDirController.text = "";
+                        context.pop();
+                      }),
+                  Button(
+                      child: const Text("取消"),
+                      onPressed: () {
+                        logic.state.tagController.text = "";
+                        logic.state.addSyncDirController.text = "";
+                        context.pop();
+                      })
+                ],
+              );
+            }));
+  }
+
   @override
   Widget build(BuildContext context) {
     var typography = FluentTheme.of(context).typography;
@@ -191,11 +266,8 @@ class SyncFilePage extends StatelessWidget {
               CommandBarButton(
                 icon: const Icon(FluentIcons.fabric_folder),
                 label: const Text("新增文件夹"),
-                onPressed: () async {
-                  var directoryPath = await _addLocalDir();
-                  if (directoryPath != null) {
-                    logic.addSyncDir(directoryPath);
-                  }
+                onPressed: () {
+                  _showAddSyncDir(context);
                 },
               ),
               CommandBarButton(
@@ -224,17 +296,21 @@ class SyncFilePage extends StatelessWidget {
                     message: "上一页",
                     child: IconButton(
                         icon: const Icon(FluentIcons.chevron_left_med),
-                        onPressed: logic.currentPage() == 1? null : () {
-                          logic.prevPage();
-                        })),
+                        onPressed: logic.currentPage() == 1
+                            ? null
+                            : () {
+                                logic.prevPage();
+                              })),
                 NFLayout.hlineh3,
                 Tooltip(
                     message: "下一页",
                     child: IconButton(
                         icon: const Icon(FluentIcons.chevron_right_med),
-                        onPressed: logic.currentPage() == logic.pageCount() ? null : (){
-                          logic.nextPage();
-                        })),
+                        onPressed: logic.currentPage() == logic.pageCount()
+                            ? null
+                            : () {
+                                logic.nextPage();
+                              })),
               ],
             ));
       }),
