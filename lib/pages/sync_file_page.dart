@@ -102,7 +102,6 @@ class SyncFilePage extends StatelessWidget {
                 )),
                 actions: [
                   FilledButton(
-                      child: const Text("提交"),
                       onPressed: logic.state.accountInfoLock ? null :  () async {
                         if (!logic.state.formKey.currentState!.validate()) {
                           return;
@@ -117,7 +116,8 @@ class SyncFilePage extends StatelessWidget {
                         } else {
                           error("登录失败");
                         }
-                      }),
+                      },
+                      child: const Text("提交")),
                   Button(
                       child: const Text("取消"),
                       onPressed: () {

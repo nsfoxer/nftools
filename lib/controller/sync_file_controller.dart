@@ -13,6 +13,13 @@ class SyncFileController extends GetxController {
     super.onReady();
   }
 
+
+  @override
+  void onClose() {
+    state.dispose();
+    super.dispose();
+  }
+
   // 初始化数据
   _init() async {
     try {
