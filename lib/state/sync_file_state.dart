@@ -28,4 +28,15 @@ class SyncFileState {
   TextEditingController addSyncDirController = TextEditingController();
 
   PaginatorController pageController = PaginatorController();
+
+
+  void dispose() {
+    urlController.dispose();
+    userController.dispose();
+    passwdController.dispose();
+    tagController.dispose();
+    addSyncDirController.dispose();
+    pageController.dispose();
+  }
+
 }
