@@ -32,18 +32,14 @@ void main() async {
     await windowManager.focus();
   });
 
-  runApp(AnimatedSplashScreen.withScreenFunction(
-      splash: splash,
-      screenFunction: () async {
-        // 2. 初始化托盘
-        initSystemTray();
+  // 2. 初始化托盘
+  initSystemTray();
 
-        // 3. 初始化后端
-        await initializeRust(assignRustSignal);
-        initMsg();
+  // 3. 初始化后端
+  await initializeRust(assignRustSignal);
+  initMsg();
 
-        return MainApp();
-      }));
+  runApp(const MainApp());
 }
 
 class MainApp extends StatefulWidget {
