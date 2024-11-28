@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
@@ -26,20 +27,23 @@ void main() async {
     skipTaskbar: false,
     titleBarStyle: TitleBarStyle.hidden,
   );
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
+  await windowManager.waitUntilReadyToShow(windowOptions, () async {
     await windowManager.show();
     await windowManager.focus();
   });
 
-  // 2. 初始化托盘
-  initSystemTray();
+  runApp(AnimatedSplashScreen.withScreenFunction(
+      splash: splash,
+      screenFunction: () async {
+        // 2. 初始化托盘
+        initSystemTray();
 
-  // 2. 初始化后端
-  await initializeRust(assignRustSignal);
-  initMsg();
+        // 3. 初始化后端
+        await initializeRust(assignRustSignal);
+        initMsg();
 
-  // 启动GUI
-  runApp(const MainApp());
+        return MainApp();
+      }));
 }
 
 class MainApp extends StatefulWidget {
@@ -137,39 +141,45 @@ class _MainAppState extends State<MainApp>
     var m = FluentThemeData(
         brightness: Brightness.light,
         fontFamily: fonts,
-        tooltipTheme: const TooltipThemeData(
-          waitDuration: Duration(milliseconds: 300)
-        ),
+        tooltipTheme:
+            const TooltipThemeData(waitDuration: Duration(milliseconds: 300)),
         accentColor: AccentColor.swatch(swatch));
     if (View.of(context).platformDispatcher.platformBrightness.isDark) {
       m = FluentThemeData(
           brightness: Brightness.dark,
           fontFamily: fonts,
-          tooltipTheme: const TooltipThemeData(
-              waitDuration: Duration(milliseconds: 300)
-          ),
+          tooltipTheme:
+              const TooltipThemeData(waitDuration: Duration(milliseconds: 300)),
           accentColor: AccentColor.swatch(swatch));
     }
 
     var bgColor = m.resources.solidBackgroundFillColorTertiary;
     return GetMaterialApp.router(
-        themeMode: ThemeMode.dark,
-        theme: FlexThemeData.light(primary: primaryColor, background: bgColor, surface: bgColor, fontFamily: fonts),
-        darkTheme: FlexThemeData.dark(primary: primaryColor, background: bgColor, surface: bgColor, fontFamily: fonts),
-        title: Constants.appName,
-        debugShowCheckedModeBanner: false,
-        initialBinding: GlobalControllerBindings(),
-        localizationsDelegates: FluentLocalizations.localizationsDelegates,
-        routeInformationParser: router.routeInformationParser,
-        routerDelegate: router.routerDelegate,
-        routeInformationProvider: router.routeInformationProvider,
-        builder: (context, child) {
-          return AnimatedFluentTheme(
-            data: m,
-            child: child!,
-          );
-        },
-       );
+      themeMode: ThemeMode.dark,
+      theme: FlexThemeData.light(
+          primary: primaryColor,
+          background: bgColor,
+          surface: bgColor,
+          fontFamily: fonts),
+      darkTheme: FlexThemeData.dark(
+          primary: primaryColor,
+          background: bgColor,
+          surface: bgColor,
+          fontFamily: fonts),
+      title: Constants.appName,
+      debugShowCheckedModeBanner: false,
+      initialBinding: GlobalControllerBindings(),
+      localizationsDelegates: FluentLocalizations.localizationsDelegates,
+      routeInformationParser: router.routeInformationParser,
+      routerDelegate: router.routerDelegate,
+      routeInformationProvider: router.routeInformationProvider,
+      builder: (context, child) {
+        return AnimatedFluentTheme(
+          data: m,
+          child: child!,
+        );
+      },
+    );
   }
 }
 
