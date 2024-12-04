@@ -426,7 +426,7 @@ class SourceData extends $me.DataTableSource {
         );
       }()),
       $me.DataCell(
-          Text("${file.new_4}        ${file.del}        ${file.modify}")),
+          Text("${file.new_4}        ${file.del}        ${file.modify}", style: typography.caption,)),
     ]);
   }
 
