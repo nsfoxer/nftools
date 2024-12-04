@@ -78,7 +78,8 @@ class _MainAppState extends State<MainApp>
       return;
     }
     // linux后端需要等待才能得到正确的值，否则会是上次的值
-    await Future.delayed(const Duration(seconds: 2));
+    final duration = Platform.isLinux ? const Duration(seconds: 6): const Duration(seconds: 2);
+    await Future.delayed(duration);
     primaryColor = await getSystemColor();
     setState(() {});
   }
