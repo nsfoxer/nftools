@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+import 'package:local_notifier/local_notifier.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/api/display_api.dart';
 import 'package:nftools/common/constants.dart';
@@ -38,6 +38,12 @@ void main() async {
   // 3. 初始化后端
   await initializeRust(assignRustSignal);
   initMsg();
+  
+  try {
+    await getSystemColor();
+  } on Exception {
+    return;
+  };
 
   runApp(const MainApp());
 }
@@ -80,7 +86,6 @@ class _MainAppState extends State<MainApp>
     // linux后端需要等待才能得到正确的值，否则会是上次的值
     final duration = Platform.isLinux ? const Duration(seconds: 6): const Duration(seconds: 2);
     await Future.delayed(duration);
-    primaryColor = await getSystemColor();
     setState(() {});
   }
 

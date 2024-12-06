@@ -47,3 +47,12 @@ pub fn sha256(data: &[u8]) -> String {
     sha256.update(data);
     format!("{:x}", sha256.finalize())
 }
+
+/// 获取当前用户名，没有则返回空
+pub fn get_user_name() -> String {
+    if cfg!(target_os = "windows") {
+        std::env::var("USERNAME").unwrap_or_default()
+    } else {
+        std::env::var("USER").unwrap_or_else()
+    }
+}
