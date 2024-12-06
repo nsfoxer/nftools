@@ -7,8 +7,9 @@ use std::time::UNIX_EPOCH;
 
 use crate::common::utils::{get_cache_dir, sha256};
 use crate::messages::utils::CompressLocalPicMsg;
-use crate::{async_func_typetype, func_end};
+use crate::{async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
+use notify_rust::Notification;
 use tokio::fs;
 
 /// 工具类服务
@@ -28,6 +29,7 @@ impl ImmService for UtilsService {
             compress_local_img,
             CompressLocalPicMsg
         );
+        func_typeno!(self, func, req_data, notify, StringMessage);
         func_end!(func)
     }
 }
@@ -88,6 +90,15 @@ impl UtilsService {
         Ok(StringMessage {
             value: r.to_str().unwrap().to_string(),
         })
+    }
+
+    /// 桌面通知
+    fn notify(&self, body: StringMessage) -> Result<()> {
+        Notification::new()
+            .summary(crate::common::APP_NAME)
+            .body(body.value.as_str())
+            .show()?;
+        Ok(())
     }
 }
 

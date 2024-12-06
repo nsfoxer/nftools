@@ -37,6 +37,8 @@ filetime = "0.2.25"
 sha2 = "0.10.8"
 hex-literal = "0.4.1"
 image = "0.25.5"
+process_lock = "0.1.0"
+notify-rust = "4.11.3"
 
 # Uncomment below to target the web.
 # tokio_with_wasm = { version = "0.6.0", features = ["sync", "rt"] }
