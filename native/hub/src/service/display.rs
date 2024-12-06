@@ -15,8 +15,6 @@ pub mod display_os {
     use serde::{Deserialize, Serialize};
     use std::path::PathBuf;
     use std::sync::Arc;
-    use std::time::Duration;
-    use tokio::task::JoinHandle;
     use tokio_stream::wrappers::ReadDirStream;
     use tokio_stream::StreamExt;
     use winreg::enums::{KEY_READ, KEY_WRITE};
