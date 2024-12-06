@@ -5,9 +5,9 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
-import 'package:local_notifier/local_notifier.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/api/display_api.dart';
+import 'package:nftools/api/utils.dart';
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/messages/generated.dart';
@@ -38,10 +38,11 @@ void main() async {
   // 3. 初始化后端
   await initializeRust(assignRustSignal);
   initMsg();
-  
+
   try {
     await getSystemColor();
   } on Exception {
+    notify("似乎已在运行中");
     return;
   };
 

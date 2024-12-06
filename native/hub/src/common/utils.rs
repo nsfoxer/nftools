@@ -53,6 +53,6 @@ pub fn get_user_name() -> String {
     if cfg!(target_os = "windows") {
         std::env::var("USERNAME").unwrap_or_default()
     } else {
-        std::env::var("USER").unwrap_or_else()
+        std::env::var("USER").unwrap_or_default()
     }
 }

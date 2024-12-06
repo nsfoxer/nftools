@@ -7,12 +7,12 @@ mod messages;
 mod service;
 mod dbus;
 
+use std::any::Any;
 use std::sync::Arc;
 use anyhow::anyhow;
 use log::error;
 use process_lock::{LockGuard, ProcessLock};
 use rinf::debug_print;
-use sysinfo::{Pid, System};
 use crate::api::api::ApiService;
 use crate::common::*;
 use crate::messages::base::BaseRequest;
@@ -30,14 +30,14 @@ async fn main() {
     tokio::spawn(base_request(global_data));
 }
 
-async fn init_service(gd: Arc<GlobalData>) -> (ApiService, Option<LockGuard>) {
+async fn init_service(gd: Arc<GlobalData>) -> ApiService {
     let mut api = ApiService::new();
     api.add_imm_service(Box::new(UtilsService::new()));
 
     let lg = match lock() {
         Ok(r) => {r}
-        Err(e) => {
-            return (api, None);
+        Err(_e) => {
+            return api;
         }
     };
 
@@ -46,7 +46,7 @@ async fn init_service(gd: Arc<GlobalData>) -> (ApiService, Option<LockGuard>) {
         api.add_imm_service(Box::new(DisplayLight::new()));
         api.add_lazy_service(Box::new(DisplayMode::new(gd.clone()).await));
     }
-
+    lg.type_id();
     #[cfg(target_os = "linux")]
     {
         if let Some(display) = DisplayLight::new().await {
@@ -68,12 +68,13 @@ async fn init_service(gd: Arc<GlobalData>) -> (ApiService, Option<LockGuard>) {
     }
     api.add_service(Box::new(SystemInfoService::new().await));
 
-    (api, Some(lg))
+    api
 }
 
 async fn base_request(gd: GlobalData) -> Result<()> {
     let gd = Arc::new(gd);
-    let (api, lg) = init_service(gd.clone()).await;
+    let api = init_service(gd.clone()).await;
+
     let mut receiver = BaseRequest::get_dart_signal_receiver()?;
     while let Some(signal) = receiver.recv().await {
         api.handle(signal);
@@ -87,7 +88,7 @@ fn lock() -> anyhow::Result<LockGuard> {
     let mut path = utils::get_user_name();
     path.push_str(APP_NAME);
     path.push_str(".lock");
-    let mut lock = ProcessLock::new(path, None)?;
-    let lg = lock.trylock()?.ok_or_else(|| Err(anyhow!("加锁失败")))?;
+    let lock = ProcessLock::new(path, None)?;
+    let lg = lock.trylock()?.ok_or(anyhow!("lock"))?;
     Ok(lg)
 }

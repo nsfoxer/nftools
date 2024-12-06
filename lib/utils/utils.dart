@@ -10,11 +10,6 @@ Future<int> measureDelay(Future<void> Function() func) async {
   return watch.elapsedMicroseconds;
 }
 
-// 本地图片压缩
-Future<String> compressLocalPic(String localFile, int width, int height) async {
-  return await $api.compressLocalFile(localFile, width, height);
-}
-
 // 确认弹出框
 Future<bool> confirmDialog(
     BuildContext context, String title, String content) async {
