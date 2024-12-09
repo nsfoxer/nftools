@@ -43,6 +43,7 @@ void main() async {
     await getSystemColor();
   } on Exception {
     notify("似乎已在运行中");
+    await Future.delayed(Duration(seconds: 2));
     return;
   };
 
