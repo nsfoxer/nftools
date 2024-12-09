@@ -3,25 +3,26 @@
 
 mod api;
 mod common;
+mod dbus;
 mod messages;
 mod service;
-mod dbus;
 
-use std::any::Any;
-use std::sync::Arc;
-use anyhow::anyhow;
-use log::error;
-use process_lock::{LockGuard, ProcessLock};
-use rinf::debug_print;
 use crate::api::api::ApiService;
 use crate::common::*;
 use crate::messages::base::BaseRequest;
 use crate::service::display::display_os::{DisplayLight, DisplayMode};
-use tokio;
-use common::global_data::GlobalData;
 use crate::service::syncfile::SyncFileService;
 use crate::service::system_info::SystemInfoService;
 use crate::service::utils::UtilsService;
+use anyhow::anyhow;
+use common::global_data::GlobalData;
+use log::error;
+use rinf::debug_print;
+use std::any::Any;
+use std::path::PathBuf;
+use std::sync::Arc;
+use sysinfo::{Pid, Process, ProcessRefreshKind, RefreshKind, System};
+use tokio;
 
 rinf::write_interface!();
 
@@ -30,23 +31,26 @@ async fn main() {
     tokio::spawn(base_request(global_data));
 }
 
-async fn init_service(gd: Arc<GlobalData>) -> ApiService {
+async fn init_service(gd: Arc<GlobalData>) -> (ApiService, Option<PathBuf>) {
     let mut api = ApiService::new();
     api.add_imm_service(Box::new(UtilsService::new()));
 
-    let lg = match lock() {
-        Ok(r) => {r}
-        Err(_e) => {
-            return api;
+    let path = match lock() {
+        Ok(p) => {
+            if p.is_none() {
+                return (api, None);
+            }
+            p
         }
+        Err(_) => {None}
     };
+
 
     #[cfg(target_os = "windows")]
     {
         api.add_imm_service(Box::new(DisplayLight::new()));
         api.add_lazy_service(Box::new(DisplayMode::new(gd.clone()).await));
     }
-    lg.type_id();
     #[cfg(target_os = "linux")]
     {
         if let Some(display) = DisplayLight::new().await {
@@ -54,41 +58,105 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
         } else {
             error!("display light 服务创建失败");
         }
-        
+
         match DisplayMode::new(gd.clone()).await {
             Ok(mode) => api.add_service(Box::new(mode)),
             Err(e) => error!("display mode服务创建失败。原因:{e}"),
         }
     }
     match SyncFileService::new(gd.clone()) {
-        Ok(s) => {api.add_service(Box::new(s));}
+        Ok(s) => {
+            api.add_service(Box::new(s));
+        }
         Err(e) => {
             error!("sync file服务创建失败：原因:{e}");
         }
     }
     api.add_service(Box::new(SystemInfoService::new().await));
 
-    api
+    (api, path)
 }
 
 async fn base_request(gd: GlobalData) -> Result<()> {
     let gd = Arc::new(gd);
-    let api = init_service(gd.clone()).await;
+    let (api, path) = init_service(gd.clone()).await;
 
     let mut receiver = BaseRequest::get_dart_signal_receiver()?;
     while let Some(signal) = receiver.recv().await {
         api.handle(signal);
     }
 
+    if let Some(path) = path {
+        std::fs::remove_file(path)?;
+    }
     Ok(())
 }
 
 /// 加锁成功，则返回lg，否则，返回Err
-fn lock() -> anyhow::Result<LockGuard> {
-    let mut path = utils::get_user_name();
-    path.push_str(APP_NAME);
-    path.push_str(".lock");
-    let lock = ProcessLock::new(path, None)?;
-    let lg = lock.trylock()?.ok_or(anyhow!("lock"))?;
-    Ok(lg)
+fn lock() -> anyhow::Result<Option<PathBuf>> {
+    let process = System::new_with_specifics(
+        RefreshKind::new().with_processes(ProcessRefreshKind::everything()),
+    );
+    let mut path = utils::get_cache_dir()?;
+    for entry in std::fs::read_dir(&path)? {
+        if let Ok(entry) = entry {
+            let path = entry.path().to_str().unwrap_or_default().to_string();
+            let filename = entry.file_name();
+            let filename = filename.to_str().unwrap_or_default();
+            if path.ends_with(".lock") {
+                let path1 = filename.strip_suffix(".lock").unwrap();
+                let paths: Vec<&str> = path1.splitn(2, "_^_^_").collect();
+                if paths.len() != 2 {
+                    std::fs::remove_file(&path)?;
+                    continue;
+                }
+                let name = paths[0];
+                let pid = paths[1].parse::<u32>();
+                if pid.is_err() {
+                    eprintln!("1");
+                    std::fs::remove_file(&path)?;
+                    continue;
+                }
+                let pid = pid.unwrap();
+                match process.process(Pid::from_u32(pid)) {
+                    None => {
+                        std::fs::remove_file(&path)?;
+                        eprintln!("2");
+                        continue;
+                    }
+                    Some(p) => {
+                        let pname = p.name().to_str().unwrap_or_default();
+                        if pname != name {
+                            eprintln!("{name}   {pname}");
+                            std::fs::remove_file(&path)?;
+                            eprintln!("3");
+                            continue;
+                        } else {
+                            return Ok(None);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    let pid = std::process::id();
+    let name = match process.process(Pid::from_u32(pid)) {
+        None => {""}
+        Some(p) => {p.name().to_str().unwrap_or_default()}
+    };
+    path.push(format!("{name}_^_^_{pid}.lock"));
+    let _ = std::fs::File::create(&path)?;
+    Ok(Some(path))
+}
+
+mod test {
+    use crate::lock;
+
+    #[test]
+    fn s() {
+        let result = lock();
+        eprintln!("{:?}", result);
+        let result = lock();
+        eprintln!("{:?}", result);
+    }
 }

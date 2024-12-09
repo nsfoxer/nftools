@@ -1072,7 +1072,6 @@ dependencies = [
  "log",
  "machine-uid",
  "notify-rust",
- "process_lock",
  "prost",
  "rand",
  "reqwest_dav",
@@ -1888,16 +1887,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e719e8df665df0d1c8fbfd238015744736151d4445ec0836b8e628aae103b77"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "process_lock"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f65bb184e8200818595872a96b044d28ce9c1da359104707cedfe7fc0828152c"
-dependencies = [
- "libc",
- "winapi",
 ]
 
 [[package]]
