@@ -7,7 +7,6 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/api/display_api.dart';
-import 'package:nftools/api/utils.dart';
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/messages/generated.dart';
@@ -302,15 +301,17 @@ class MainPage extends StatelessWidget {
                 child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                // 最小化按钮
                 IconButton(
                     icon: Icon(
                       FluentIcons.chrome_minimize,
                       size: typography.caption?.fontSize,
                     ),
                     onPressed: () {
-                      windowManager.hide();
+                      windowManager.minimize();
                       context.go("/");
                     }),
+                // 最大化按钮
                 IconButton(
                     icon: Icon(
                       FluentIcons.chrome_restore,
@@ -323,6 +324,7 @@ class MainPage extends StatelessWidget {
                         windowManager.maximize();
                       }
                     }),
+                // 关闭窗口按钮
                 IconButton(
                     icon: Icon(
                       FluentIcons.chrome_close,
@@ -331,12 +333,12 @@ class MainPage extends StatelessWidget {
                     style: ButtonStyle(
                         backgroundColor: WidgetStateColor.resolveWith((state) {
                       if (state.contains(WidgetState.hovered)) {
-                        return Color.fromARGB(255, 192, 43, 28);
+                        return const Color.fromARGB(255, 192, 43, 28);
                       }
                       return bg ?? Colors.transparent;
                     })),
                     onPressed: () {
-                      windowManager.close();
+                      windowManager.hide();
                     }),
               ],
             ))),
