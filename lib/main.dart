@@ -67,7 +67,13 @@ class _MainAppState extends State<MainApp>
       },
     );
     WidgetsBinding.instance.addObserver(this);
+    _init();
     _initColor(false);
+  }
+
+  void _init() async {
+    await windowManager.setPreventClose(true);
+    setState(() {});
   }
 
   void _initColor(bool wait) async {
@@ -79,6 +85,7 @@ class _MainAppState extends State<MainApp>
     // linux后端需要等待才能得到正确的值，否则会是上次的值
     final duration = Platform.isLinux ? const Duration(seconds: 6): const Duration(seconds: 2);
     await Future.delayed(duration);
+
     setState(() {});
   }
 
@@ -94,7 +101,7 @@ class _MainAppState extends State<MainApp>
   void onWindowClose() {
     windowManager.hide();
   }
-
+  
   @override
   void onWindowFocus() {
     setState(() {});
