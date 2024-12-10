@@ -9,7 +9,6 @@ use crate::common::utils::{get_cache_dir, sha256};
 use crate::messages::utils::CompressLocalPicMsg;
 use crate::{async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
-use notify_rust::Notification;
 use tokio::fs;
 
 /// 工具类服务
@@ -94,11 +93,7 @@ impl UtilsService {
 
     /// 桌面通知
     fn notify(&self, body: StringMessage) -> Result<()> {
-        Notification::new()
-            .summary(crate::common::APP_NAME)
-            .body(body.value.as_str())
-            .show()?;
-        Ok(())
+        crate::common::utils::notify(body.value.as_str())
     }
 }
 

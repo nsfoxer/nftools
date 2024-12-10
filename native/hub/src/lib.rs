@@ -23,27 +23,17 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use sysinfo::{Pid, Process, ProcessRefreshKind, RefreshKind, System};
 use tokio;
+use crate::common::utils::notify;
 
 rinf::write_interface!();
 
 async fn main() {
-    let global_data = GlobalData::new().expect("Global data initialized");
-    tokio::spawn(base_request(global_data));
+    tokio::spawn(base_request());
 }
 
-async fn init_service(gd: Arc<GlobalData>) -> (ApiService, Option<PathBuf>) {
+async fn init_service(gd: Arc<GlobalData>) -> ApiService {
     let mut api = ApiService::new();
     api.add_imm_service(Box::new(UtilsService::new()));
-
-    let path = match lock() {
-        Ok(p) => {
-            if p.is_none() {
-                return (api, None);
-            }
-            p
-        }
-        Err(_) => {None}
-    };
 
 
     #[cfg(target_os = "windows")]
@@ -74,26 +64,25 @@ async fn init_service(gd: Arc<GlobalData>) -> (ApiService, Option<PathBuf>) {
     }
     api.add_service(Box::new(SystemInfoService::new().await));
 
-    (api, path)
+    api
 }
 
-async fn base_request(gd: GlobalData) -> Result<()> {
-    let gd = Arc::new(gd);
-    let (api, path) = init_service(gd.clone()).await;
+async fn base_request() -> Result<()> {
+    let path = lock().ok();
+    let global_data = GlobalData::new(path).expect("Global data initialized");
+    let gd = Arc::new(global_data);
+    let api = init_service(gd.clone()).await;
 
     let mut receiver = BaseRequest::get_dart_signal_receiver()?;
     while let Some(signal) = receiver.recv().await {
         api.handle(signal);
     }
 
-    if let Some(path) = path {
-        std::fs::remove_file(path)?;
-    }
     Ok(())
 }
 
 /// 加锁成功，则返回lg，否则，返回Err
-fn lock() -> anyhow::Result<Option<PathBuf>> {
+fn lock() -> anyhow::Result<PathBuf> {
     let process = System::new_with_specifics(
         RefreshKind::new().with_processes(ProcessRefreshKind::everything()),
     );
@@ -113,7 +102,6 @@ fn lock() -> anyhow::Result<Option<PathBuf>> {
                 let name = paths[0];
                 let pid = paths[1].parse::<u32>();
                 if pid.is_err() {
-                    eprintln!("1");
                     std::fs::remove_file(&path)?;
                     continue;
                 }
@@ -121,18 +109,17 @@ fn lock() -> anyhow::Result<Option<PathBuf>> {
                 match process.process(Pid::from_u32(pid)) {
                     None => {
                         std::fs::remove_file(&path)?;
-                        eprintln!("2");
                         continue;
                     }
                     Some(p) => {
                         let pname = p.name().to_str().unwrap_or_default();
                         if pname != name {
-                            eprintln!("{name}   {pname}");
                             std::fs::remove_file(&path)?;
-                            eprintln!("3");
                             continue;
                         } else {
-                            return Ok(None);
+                            // 已在运行 kill me
+                            let _ = notify(format!("{}已在运行中", APP_NAME).as_str());
+                            std::process::exit(0);
                         }
                     }
                 }
@@ -146,7 +133,7 @@ fn lock() -> anyhow::Result<Option<PathBuf>> {
     };
     path.push(format!("{name}_^_^_{pid}.lock"));
     let _ = std::fs::File::create(&path)?;
-    Ok(Some(path))
+    Ok(path)
 }
 
 mod test {

@@ -17,7 +17,11 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main() async {
-  // 1，初始化 window manager
+  // 1. 初始化后端
+  await initializeRust(assignRustSignal);
+  initMsg();
+
+  // 2，初始化 window manager
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   WindowOptions windowOptions = const WindowOptions(
@@ -32,20 +36,8 @@ void main() async {
     await windowManager.focus();
   });
 
-  // 2. 初始化托盘
+  // 3. 初始化托盘
   initSystemTray();
-
-  // 3. 初始化后端
-  await initializeRust(assignRustSignal);
-  initMsg();
-
-  try {
-    await getSystemColor();
-  } on Exception {
-    notify("似乎已在运行中");
-    await Future.delayed(Duration(seconds: 2));
-    return;
-  };
 
   runApp(const MainApp());
 }

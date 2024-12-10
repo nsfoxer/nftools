@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use dirs::{cache_dir, config_dir};
 use anyhow::{anyhow, Result};
+use notify_rust::Timeout;
 use sha2::{Digest, Sha256};
 
 /// 工具类
@@ -55,4 +56,15 @@ pub fn get_user_name() -> String {
     } else {
         std::env::var("USER").unwrap_or_default()
     }
+}
+
+/// 桌面通知
+pub fn notify(body: &str) -> Result<()> {
+    notify_rust::Notification::new()
+        .summary(crate::common::APP_NAME)
+        .icon(crate::common::APP_NAME)
+        .timeout(Timeout::Milliseconds(2000))
+        .body(body)
+        .show()?;
+    Ok(())
 }
