@@ -1,6 +1,7 @@
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs;
 use std::path::PathBuf;
 use anyhow::Result;
 use serde::de::DeserializeOwned;
@@ -9,6 +10,7 @@ use crate::common::utils::get_config_dir;
 /// 全局数据
 pub struct GlobalData {
     inner_data: DashMap<String, String>,
+    lock_file: Option<PathBuf>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -16,9 +18,11 @@ struct GlobalDataCopy {
     inner_data: HashMap<String, String>,
 }
 impl GlobalData {
-    pub fn new() -> Result<Self> {
+    pub fn new(lock_file: Option<PathBuf>) -> Result<Self> {
         let gd = GlobalDataCopy::new()?;
-        Ok(gd.into())
+        let mut gd: GlobalData = gd.into();
+        gd.lock_file = lock_file;
+        Ok(gd)
     }
 
     pub fn set_data<T>(&self, key: String, value: &T) -> Result<()>
@@ -45,6 +49,9 @@ impl Drop for GlobalData {
     fn drop(&mut self) {
         let data: GlobalDataCopy = self.into();
         data.save().unwrap_or_else(|e| eprintln!("{}", e));
+        if let Some(path) = self.lock_file.as_ref() {
+            fs::remove_file(path).unwrap_or_else(|e| eprintln!("{}", e));
+        }
     }
 }
 
@@ -57,6 +64,7 @@ impl From<GlobalDataCopy> for GlobalData {
 
         Self {
             inner_data: datas,
+            lock_file: None,
         }
     }
 }
@@ -113,14 +121,14 @@ mod tests {
     #[test]
     fn a() {
         use crate::common::global_data::GlobalData;
-        let data = GlobalData::new().unwrap();
+        let data = GlobalData::new(None).unwrap();
         let s = vec!["1", "2", "3", "abcb"];
         data.set_data("SyncFile".to_string(), &s).unwrap();
     }
     #[test]
     fn b() {
         use crate::common::global_data::GlobalData;
-        let data = GlobalData::new().unwrap();
+        let data = GlobalData::new(None).unwrap();
         eprintln!("{:?}", data.get_data::<Vec<String>>("SyncFile").unwrap());
     }
 }
