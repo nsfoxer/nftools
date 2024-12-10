@@ -91,6 +91,16 @@ class _MainAppState extends State<MainApp>
   }
 
   @override
+  void onWindowClose() {
+    windowManager.hide();
+  }
+
+  @override
+  void onWindowFocus() {
+    setState(() {});
+  }
+
+  @override
   void onTrayIconMouseDown() {
     _displayApp();
     super.onTrayIconMouseDown();
