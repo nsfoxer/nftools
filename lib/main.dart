@@ -124,7 +124,7 @@ class _MainAppState extends State<MainApp>
     if (menuItem.key == 'display') {
       _displayApp();
     } else if (menuItem.key == 'exit') {
-      windowManager.close();
+      windowManager.destroy();
     }
   }
 

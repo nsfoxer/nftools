@@ -23,8 +23,8 @@ class DisplayModeController extends GetxController {
 
   void _setWallpaper() async {
     var r1 = await $api.getWallpaper();
-    state.lightWallpaper = await compressLocalFile(r1.lightWallpaper, 600, 400);
-    state.darkWallpaper = await compressLocalFile(r1.darkWallpaper, 600, 400);
+    state.lightWallpaper = await compressLocalFile(r1.lightWallpaper, 300, 200);
+    state.darkWallpaper = await compressLocalFile(r1.darkWallpaper, 300, 200);
     state.loadingWallpaper = false;
     update();
   }
