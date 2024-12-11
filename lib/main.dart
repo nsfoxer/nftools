@@ -307,7 +307,7 @@ class MainPage extends StatelessWidget {
             child: Container(
                 height: double.infinity,
                 width: double.infinity,
-                color: bg,
+                color: Colors.transparent,
                 child: const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(Constants.appName),
@@ -362,7 +362,6 @@ class MainPage extends StatelessWidget {
       ),
       pane: NavigationPane(
         selected: _calculateIndex(context),
-        header: const Text("pane Header"),
         displayMode: PaneDisplayMode.compact,
         items: _buildPaneItem(MyRouterConfig.menuDatas, context),
         footerItems: _buildPaneItem(MyRouterConfig.footerDatas, context),
