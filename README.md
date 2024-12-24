@@ -58,3 +58,10 @@ For detailed instructions on writing Rust and Flutter together,
 please refer to Rinf's [documentation](https://rinf.cunarist.com).
 
 
+## 编译依赖
+
+```bash
+cmake
+ninja
+libayatana-indicator (ayatana-appindicator3-0.1 or appindicator3)
+```

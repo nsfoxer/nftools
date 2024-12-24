@@ -147,7 +147,7 @@ impl ApiService {
 
 /// 生成错误响应
 fn generate_error_response(id: u64, error: String) -> BaseResponse {
-    BaseResponse { id, msg: error }
+    BaseResponse { id, msg: error, is_stream: false, is_end: false, }
 }
 
 mod macros {
@@ -175,4 +175,8 @@ mod macros {
             }
         };
     }
+}
+
+struct StreamResponse {
+
 }
