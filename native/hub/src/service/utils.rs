@@ -99,6 +99,8 @@ impl UtilsService {
 
 #[allow(unused_imports)]
 mod test {
+    use std::time::SystemTime;
+    use futures_util::StreamExt;
     use crate::messages::utils::CompressLocalPicMsg;
     use crate::service::utils::UtilsService;
     use tokio::time::Instant;
@@ -118,5 +120,28 @@ mod test {
             .unwrap();
         let r2 = instant.elapsed().as_millis();
         eprintln!("{:?} {r2}", r.value);
+    }
+
+
+
+    #[tokio::test]
+    async fn ai() -> anyhow::Result<()>{
+        let client = reqwest::Client::new();
+        let mut stream =client.post("https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/yi_34b_chat?access_token=24.23104fdfb30a1d1cec5560891e7bb6e0.2592000.1737605136.282335-116815013")
+            .body(r#"{"messages":[{"role":"user","content":"好饿"}],"stream":true}"#)
+            .send()
+            .await?
+            .bytes_stream();
+
+
+        while let Some(item) = stream.next().await {
+            let item = item.unwrap();
+            let item = String::from_utf8_lossy(&item);
+            let now: chrono::DateTime<chrono::Utc> = chrono::Utc::now();
+            println!("{:?}",now);
+            println!("{}", item);
+        }
+
+        Ok(())
     }
 }

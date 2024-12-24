@@ -814,7 +814,7 @@ mod test {
 
     #[tokio::test]
     async fn add_file() {
-        let gd = Arc::new(GlobalData::new().unwrap());
+        let gd = Arc::new(GlobalData::new(None/* std::option::Option<PathBuf> */).unwrap());
         let mut sync_file = SyncFileService::new(gd).unwrap();
         let account = AccountInfo {
             url: "https://dav.jianguoyun.com/dav/".to_string(),

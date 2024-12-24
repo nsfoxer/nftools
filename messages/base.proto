@@ -3,6 +3,7 @@ package base;
 
 // [RINF:DART-SIGNAL-BINARY]
 // 基础请求
+// 请求体 位于binary字段响应体中
 message BaseRequest {
   // 请求id
   uint64 id = 1;
@@ -10,17 +11,20 @@ message BaseRequest {
   string service = 2;
   // 请求方法
   string func = 3;
-  // 请求体
-  // bytes request = 4;
+  // 是否为流式请求
+  bool is_stream = 4;
 }
 
 // [RINF:RUST-SIGNAL-BINARY]
 // 基础响应
+// 响应体 位于binary字段响应体中
 message BaseResponse {
   // 响应id
   uint64 id = 1;
   // 响应错误信息,当存在时，则response无意义
   string msg = 2;
-  // 响应体
-  // bytes response = 3;
+  // 是否为流式响应
+  bool is_stream = 4;
+  // 流式响应是否结束
+  bool is_end = 5;
 }
