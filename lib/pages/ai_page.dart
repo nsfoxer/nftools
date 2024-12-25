@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/controller/ai_controller.dart';
@@ -77,8 +78,11 @@ class AiPage extends StatelessWidget {
             }));
   }
 
+  void _submit() {}
+
   @override
   Widget build(BuildContext context) {
+    final res = FluentTheme.of(context).resources;
     return ScaffoldPage(
       header: PageHeader(
         title: const Text("BaiduAI"),
@@ -105,35 +109,68 @@ class AiPage extends StatelessWidget {
         return Column(
           children: [
             Expanded(
-              flex: 9,
+              flex: 8,
               child: TextBox(
                 readOnly: true,
+                maxLines: null,
+                maxLength: null,
+                foregroundDecoration: const WidgetStatePropertyAll(
+                    BoxDecoration(
+                        border: Border.fromBorderSide(BorderSide.none))),
+                decoration: WidgetStatePropertyAll(BoxDecoration(
+                  color: res.controlFillColorSecondary,
+                )),
                 controller: logic.state.displayController,
               ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Expanded(
-                  flex: 9,
-                  child: TextBox(
-                    minLines: null,
-                    maxLines: null,
-                    controller: logic.state.questController,
-                  ),
-                ),
-                Expanded(
-                    flex: 1,
-                    child: Button(
-                        child: const Text("提问"),
-                        onPressed: () {
-                          logic.quest();
-                        }))
-              ],
-            )
+            Expanded(
+                flex: 2,
+                child: Stack(
+                  children: [
+                    Shortcuts(
+                        shortcuts: {
+                          LogicalKeySet(LogicalKeyboardKey.alt,
+                              LogicalKeyboardKey.enter): _SubmitIntent(logic)
+                        },
+                        child: Actions(
+                          actions: {
+                            _SubmitIntent: CallbackAction<_SubmitIntent>(
+                                onInvoke: (_SubmitIntent intent) {
+                              intent.logic.quest();
+                              return null;
+                            })
+                          },
+                          child: TextBox(
+                            decoration: WidgetStatePropertyAll(BoxDecoration(
+                              color: res.controlFillColorInputActive,
+                            )),
+                            enableSuggestions: false,
+                            minLines: null,
+                            maxLines: null,
+                            controller: logic.state.questController,
+                            onSubmitted: (msg) {
+                              info(msg);
+                            },
+                          ),
+                        )),
+                    Positioned(
+                        right: 10,
+                        bottom: 10,
+                        child: Button(
+                            onPressed: () {
+                              logic.quest();
+                            },
+                            child: const Text("提问")))
+                  ],
+                ))
           ],
         );
       }),
     );
   }
+}
+
+class _SubmitIntent extends Intent {
+  final AiController logic;
+  const _SubmitIntent(this.logic);
 }

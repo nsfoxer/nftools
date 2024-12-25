@@ -9,7 +9,6 @@ use bytes::Bytes;
 use futures_util::StreamExt;
 use prost::Message;
 use reqwest::Client;
-use rinf::debug_print;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::mpsc::UnboundedSender;
@@ -143,7 +142,6 @@ impl BaiduAiService {
         if info.trim().is_empty() {
             return Ok(None);
         }
-        debug_print!("{}", info);
         if !info.starts_with("data:") {
             let error = serde_json::from_str::<BaiduAiErrorRsp>(&info)?;
             if error.error_code == 336002 {

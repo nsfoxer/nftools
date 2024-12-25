@@ -36,6 +36,9 @@ class AiController extends GetxController {
   }
 
   void quest() {
+    if (state.questController.text.isEmpty) {
+      return;
+    }
     final question = state.questController.text;
     _quest(question);
     state.questController.clear();
@@ -43,12 +46,11 @@ class AiController extends GetxController {
   }
 
   void _quest(String question) async {
-   var stream =  await $api.quest(question);
+   var stream = $api.quest(question);
    stream.listen((data) {
-     state.questController.text += data.content;
+     state.displayController.text += data.content;
      update();
    });
-
   }
 
 }
