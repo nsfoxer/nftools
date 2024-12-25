@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:nftools/controller/MainPageController.dart';
+import 'package:nftools/controller/ai_controller.dart';
 import 'package:nftools/controller/display_controller.dart';
 import 'package:nftools/controller/display_mode_controller.dart';
 import 'package:nftools/controller/sync_file_controller.dart';
@@ -16,5 +17,6 @@ class GlobalControllerBindings implements Bindings {
     Get.lazyPut<SystemModeController>(() => SystemModeController(), fenix: true);
     Get.put<SystemInfoController>(SystemInfoController(), permanent: true);
     Get.put<SyncFileController>(SyncFileController(), permanent: true);
+    Get.lazyPut<AiController>(() => AiController(), fenix: true);
   }
 }

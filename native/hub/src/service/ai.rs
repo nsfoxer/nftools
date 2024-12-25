@@ -180,7 +180,10 @@ impl BaiduAiService {
     async fn set_kv(&mut self, req: BaiduAiKeyReqMsg) -> Result<()> {
         let _ = self.gd.set_data(APP_ID.to_string(), &req.api_key);
         let _ = self.gd.set_data(SECRET.to_string(), &req.secret);
-
+        
+        self.app_id = Some(req.api_key);
+        self.secret = Some(req.secret);
+        self.refresh_token().await?;
         Ok(())
     }
 
