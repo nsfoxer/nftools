@@ -5,13 +5,14 @@ import 'package:nftools/common/style.dart';
 
 // card 内容体
 class NFCardContent extends StatelessWidget {
-  NFCardContent({Key? key, required this.child}) : super(key: key);
+  const NFCardContent({super.key, required this.child, this.noMargin});
   final Widget child;
+  final bool? noMargin;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(NFLayout.v2),
+      margin: (noMargin ?? false) ? null :const EdgeInsets.all(NFLayout.v2) ,
       padding: const EdgeInsets.all(NFLayout.v1),
       decoration: BoxDecoration(
         border: Border.all(color: FluentTheme.of(context).cardColor, width: 1),
