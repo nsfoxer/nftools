@@ -1,5 +1,5 @@
 use crate::messages::common::StringMessage;
-use crate::service::service::StreamService;
+use crate::service::service::{ServiceName, StreamService};
 use anyhow::Result;
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -49,12 +49,14 @@ impl BaiduAiService {
     }
 }
 
-#[async_trait]
-impl StreamService for BaiduAiService {
+impl ServiceName for BaiduAiService {
     fn get_service_name(&self) -> &'static str {
         BAIDU_AI
     }
+}
 
+#[async_trait]
+impl StreamService for BaiduAiService {
     async fn handle(
         &mut self,
         func: &str,

@@ -1,5 +1,5 @@
 use crate::messages::common::StringMessage;
-use crate::service::service::ImmService;
+use crate::service::service::{ImmService, ServiceName};
 use prost::Message;
 use std::ffi::OsStr;
 use std::path::PathBuf;
@@ -14,11 +14,14 @@ use tokio::fs;
 /// 工具类服务
 pub struct UtilsService {}
 
-#[async_trait::async_trait]
-impl ImmService for UtilsService {
+impl ServiceName for UtilsService {
     fn get_service_name(&self) -> &'static str {
         "Utils"
     }
+}
+
+#[async_trait::async_trait]
+impl ImmService for UtilsService {
 
     async fn handle(&self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         async_func_typetype!(

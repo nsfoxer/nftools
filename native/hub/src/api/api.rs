@@ -5,7 +5,6 @@ use ahash::AHashMap;
 use rinf::{debug_print, DartSignal};
 use std::ops::DerefMut;
 use std::sync::Arc;
-use log::info;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::Mutex;
 
@@ -65,12 +64,27 @@ impl ApiService {
             ServiceEnum::ImmService(Arc::from(service)),
         );
     }
-    
+
     /// 新增stream服务
     pub fn add_stream_service(&mut self, service: Box<dyn StreamService>) {
         self.stream_services.insert(
             service.get_service_name(),
             StreamServiceEnum::StreamService(Arc::from(Mutex::from(service))),
+        );
+    }
+
+    /// 对同一服务新增stream服务+服务
+    pub async fn add_service_and_stream_service(&mut self, service: Arc<Mutex<Box<dyn Service>>>, stream_service: Arc<Mutex<Box<dyn StreamService>>>) {
+        let guard = service.lock().await;
+        let name = guard.get_service_name();
+        drop(guard);
+        self.services.insert(
+            name,
+            ServiceEnum::Service(service),
+        );
+        self.stream_services.insert(
+            name,
+            StreamServiceEnum::StreamService(stream_service),
         );
     }
 
@@ -275,6 +289,3 @@ mod macros {
     }
 }
 
-struct StreamResponse {
-
-}
