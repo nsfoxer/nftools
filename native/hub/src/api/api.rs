@@ -73,21 +73,6 @@ impl ApiService {
         );
     }
 
-    /// 对同一服务新增stream服务+服务
-    pub async fn add_service_and_stream_service(&mut self, service: Arc<Mutex<Box<dyn Service>>>, stream_service: Arc<Mutex<Box<dyn StreamService>>>) {
-        let guard = service.lock().await;
-        let name = guard.get_service_name();
-        drop(guard);
-        self.services.insert(
-            name,
-            ServiceEnum::Service(service),
-        );
-        self.stream_services.insert(
-            name,
-            StreamServiceEnum::StreamService(stream_service),
-        );
-    }
-
     /// 处理服务
     /// 如果该服务已被使用，则阻塞
     pub fn handle(&self, signal: DartSignal<BaseRequest>) {
@@ -98,12 +83,20 @@ impl ApiService {
         }
         // 一般服务处理
         let Some(service) = self.services.get(signal.message.service.as_str()) else {
-            generate_error_response(
-                signal.message.id,
-                format!("未知服务 {}", signal.message.service),
-                false
-            )
-            .send_signal_to_dart(Vec::with_capacity(0));
+            // 如果一般性服务也没有，则再次查找stream服务
+            match self.stream_services.get(signal.message.service.as_str()) {
+                None => {
+                    generate_error_response(
+                        signal.message.id,
+                        format!("未知服务 {}", signal.message.service),
+                        false
+                    )
+                        .send_signal_to_dart(Vec::with_capacity(0));
+                }
+                Some(service) => {
+                    Self::handle_stream_service_for_service(service, signal);
+                }
+            }
             return;
         };
 
@@ -185,7 +178,7 @@ impl ApiService {
         tokio::spawn(async move {
             let mut service = service.lock().await;
             let tx_clone = tx.clone();
-            if let Err(e) = service.handle(&signal.message.func, signal.binary, tx).await {
+            if let Err(e) = service.handle_stream(&signal.message.func, signal.binary, tx).await {
                 tx_clone.send(Err(e)).unwrap();
             }
         });
@@ -251,6 +244,29 @@ impl ApiService {
             .handle(func, data)
             .await?
             .unwrap_or(Vec::with_capacity(0)))
+    }
+    
+    async fn _handle_stream_service(
+        service: Arc<Mutex<Box<dyn StreamService>>>,
+        func: &str,
+        data: Vec<u8>,
+    ) -> anyhow::Result<Vec<u8>> {
+        let mut service = service.lock().await;
+        Ok(service
+            .handle(func, data)
+            .await?
+            .unwrap_or(Vec::with_capacity(0)))
+    }
+
+    fn handle_stream_service_for_service(service: &StreamServiceEnum, signal: DartSignal<BaseRequest>) {
+        match service { 
+            StreamServiceEnum::StreamService(service) => {
+                let service = service.clone();
+                tokio::spawn(async move {
+                    service_handle!(_handle_stream_service, service, signal);
+                });
+            }
+        }
     }
 }
 

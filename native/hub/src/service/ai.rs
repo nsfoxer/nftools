@@ -1,5 +1,8 @@
+use crate::common::global_data::GlobalData;
+use crate::messages::ai::{BaiduAiKeyReqMsg, BaiduAiRspMsg};
 use crate::messages::common::StringMessage;
-use crate::service::service::{ServiceName, StreamService};
+use crate::service::service::{Service, ServiceName, StreamService};
+use crate::{async_func_nono, async_func_notype, async_func_typeno, async_stream_func_typeno, func_end};
 use anyhow::Result;
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -8,9 +11,8 @@ use prost::Message;
 use reqwest::Client;
 use rinf::debug_print;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use tokio::sync::mpsc::UnboundedSender;
-use crate::{async_stream_func_typeno, func_end};
-use crate::messages::ai::BaiduAiRspMsg;
 
 #[derive(Deserialize)]
 struct BaiduAiRsp {
@@ -36,16 +38,34 @@ struct InnerMessage {
     content: String,
 }
 
+#[derive(Deserialize)]
+struct BaiduTokenRsp {
+    access_token: Option<String>,
+    error_description: Option<String>,
+}
+
 const BAIDU_AI: &str = "BaiduAiService";
+const APP_ID: &str = "BaiduAiService:APP_ID";
+const SECRET: &str = "BaiduAiService:SECRET";
 
 pub struct BaiduAiService {
     client: Client,
+    gd: Arc<GlobalData>,
+    token: Option<String>,
+    app_id: Option<String>,
+    secret: Option<String>,
 }
 
 impl BaiduAiService {
-    pub fn new() -> Self {
-        let client = reqwest::Client::new();
-        Self { client }
+    pub fn new(gd: Arc<GlobalData>) -> Self {
+        let client = Client::new();
+        Self {
+            client,
+            token: None,
+            app_id: gd.get_data(APP_ID),
+            secret: gd.get_data(SECRET),
+            gd,
+        }
     }
 }
 
@@ -57,13 +77,23 @@ impl ServiceName for BaiduAiService {
 
 #[async_trait]
 impl StreamService for BaiduAiService {
-    async fn handle(
+    async fn handle_stream(
         &mut self,
         func: &str,
         req_data: Vec<u8>,
         tx: UnboundedSender<Result<Option<Vec<u8>>>>,
     ) -> Result<()> {
         async_stream_func_typeno!(self, func, req_data, question, StringMessage, tx);
+        func_end!(func)
+    }
+}
+
+#[async_trait]
+impl Service for BaiduAiService {
+    async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
+        async_func_notype!(self, func, get_kv);
+        async_func_nono!(self, func, refresh_token);
+        async_func_typeno!(self, func, req_data, set_kv, BaiduAiKeyReqMsg);
         func_end!(func)
     }
 }
@@ -83,8 +113,11 @@ impl BaiduAiService {
             stream: true,
             messages: msg,
         };
+        if self.token.is_none() {
+            self.refresh_token().await?;
+        }
         let mut stream = self.client
-                .post("https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/yi_34b_chat?access_token=24.23104fdfb30a1d1cec5560891e7bb6e0.2592000.1737605136.282335-116815013")
+                .post(&format!( "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/yi_34b_chat?access_token={}", self.token.as_ref().unwrap()))
                 .json(&req).send().await?.bytes_stream();
 
         while let Some(info) = stream.next().await {
@@ -93,13 +126,11 @@ impl BaiduAiService {
                     if data.is_none() {
                         continue;
                     }
-                   Ok(Some(data.unwrap().encode_to_vec()))
+                    Ok(Some(data.unwrap().encode_to_vec()))
                 }
-                Err(e) => {
-                    Err(e)
-                }
+                Err(e) => Err(e),
             };
-            if let Err(e) =  tx.send(data) {
+            if let Err(e) = tx.send(data) {
                 panic!("发送通道已关闭: {}", e);
             }
         }
@@ -115,11 +146,50 @@ impl BaiduAiService {
         debug_print!("{}", info);
         if !info.starts_with("data:") {
             let error = serde_json::from_str::<BaiduAiErrorRsp>(&info)?;
+            if error.error_code == 336002 {
+                return Err(anyhow::anyhow!("token已失效,请手动刷新token"));
+            }
             return Err(anyhow::anyhow!(error.error_msg));
         }
         let rsp: BaiduAiRsp = serde_json::from_str(info.trim_start_matches("data:"))?;
-        Ok(Some( BaiduAiRspMsg{
+        Ok(Some(BaiduAiRspMsg {
             content: rsp.result,
         }))
+    }
+}
+
+impl BaiduAiService {
+    /// 刷新token
+    async fn refresh_token(&mut self) -> Result<()> {
+        let app_id = self.app_id.as_ref().ok_or(anyhow::anyhow!("appid未设置"))?;
+        let secret = self.secret.as_ref().ok_or(anyhow::anyhow!("secret未设置"))?;
+        let rsp = self.client
+            .post(&format!("https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id={app_id}&client_secret={secret}"))
+            .header("Content-Type", "application/json")
+            .send().await?;
+        let token =  rsp.json::<BaiduTokenRsp>().await?;
+        if token.error_description.is_some() {
+            return Err(anyhow::anyhow!(token.error_description.unwrap()));
+        }
+
+        self.token = Some(token.access_token.ok_or(anyhow::anyhow!("无法获取token"))?);
+        Ok(())
+    }
+
+    /// 设置API Key与应用Secret Key
+    async fn set_kv(&mut self, req: BaiduAiKeyReqMsg) -> Result<()> {
+        let _ = self.gd.set_data(APP_ID.to_string(), &req.api_key);
+        let _ = self.gd.set_data(SECRET.to_string(), &req.secret);
+
+        Ok(())
+    }
+
+    /// 获取key和secret
+    async fn get_kv(&mut self) -> Result<BaiduAiKeyReqMsg> {
+        self.refresh_token().await?;
+        Ok(BaiduAiKeyReqMsg {
+            api_key: self.app_id.as_ref().unwrap().clone(),
+            secret: self.secret.as_ref().unwrap().clone(),
+        })
     }
 }

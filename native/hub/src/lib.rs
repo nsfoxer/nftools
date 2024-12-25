@@ -17,8 +17,8 @@ use crate::service::utils::UtilsService;
 use common::global_data::GlobalData;
 use log::error;
 use std::path::PathBuf;
-use std::sync::Arc;
-use sysinfo::{Pid, Process, ProcessRefreshKind, RefreshKind, System};
+use std::sync::{Arc};
+use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use tokio;
 use crate::common::utils::notify;
 use crate::service::ai::BaiduAiService;
@@ -61,8 +61,7 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
         }
     }
     api.add_service(Box::new(SystemInfoService::new().await));
-    
-    api.add_stream_service(Box::new(BaiduAiService::new()));
+    api.add_stream_service(Box::new(BaiduAiService::new(gd.clone())));
 
     api
 }

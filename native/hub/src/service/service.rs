@@ -28,10 +28,10 @@ pub trait ImmService: Send + Sync + ServiceName {
     async fn handle(&self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>>;
 }
 
-/// stream响应服务
+/// stream响应服务,同时需要支持service
 #[async_trait]
-pub trait StreamService:  Send + ServiceName { 
-    async fn handle(
+pub trait StreamService: Service  { 
+    async fn handle_stream(
         &mut self,
         func: &str,
         req_data: Vec<u8>,
