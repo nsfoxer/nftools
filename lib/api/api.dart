@@ -84,7 +84,13 @@ void _handleStream(RustSignal<BaseResponse> data) {
     error("无法处理响应:无法找到对应id：${rsp.id}");
     return;
   }
-  controller.add(data.binary);
+  if (rsp.msg.isNotEmpty) {
+    // 错误：处理错误
+    error(rsp.msg);
+    controller.addError(rsp.msg);
+  } else {
+    controller.add(data.binary);
+  }
   if (rsp.isEnd) {
     controller.close();
   }

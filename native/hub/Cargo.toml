@@ -37,10 +37,10 @@ filetime = "0.2.25"
 sha2 = "0.10.8"
 image = "0.25.5"
 notify-rust = "4.11.3"
-reqwest = { version = "0.12.9", features = ["stream"] }
+reqwest = { version = "0.12.9", features = ["stream", "json"] }
 futures-util = "0.3.31"
 futures = "0.3.31"
-stream_generator = "0.1.0"
+bytes = "1.9.0"
 
 # Uncomment below to target the web.
 # tokio_with_wasm = { version = "0.6.0", features = ["sync", "rt"] }

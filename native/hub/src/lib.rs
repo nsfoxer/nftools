@@ -24,6 +24,7 @@ use std::sync::Arc;
 use sysinfo::{Pid, Process, ProcessRefreshKind, RefreshKind, System};
 use tokio;
 use crate::common::utils::notify;
+use crate::service::ai::BaiduAiService;
 
 rinf::write_interface!();
 
@@ -63,6 +64,8 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
         }
     }
     api.add_service(Box::new(SystemInfoService::new().await));
+    
+    api.add_stream_service(Box::new(BaiduAiService::new()));
 
     api
 }
