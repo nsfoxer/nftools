@@ -1,5 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use futures::Stream;
+use tokio::sync::mpsc::UnboundedSender;
 
 /// 服务
 #[async_trait]
@@ -24,6 +26,19 @@ pub trait ImmService: Send + Sync {
 
     /// 实际处理
     async fn handle(&self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>>;
+}
+
+/// stream响应服务
+#[async_trait]
+pub trait StreamService: Send {
+    /// 服务标识
+    fn get_service_name(&self) -> &'static str;
+    async fn handle(
+        &mut self,
+        func: &str,
+        req_data: Vec<u8>,
+        tx: UnboundedSender<Result<Option<Vec<u8>>>>,
+    ) -> Result<()>;
 }
 
 mod macros {
@@ -160,6 +175,23 @@ mod macros {
         }
     }
 }
+    // async fn stream_func(&mut self, req: Req) -> Result(());
+    #[macro_export]
+    macro_rules! async_stream_func_typeno {
+    ($self:ident, $function:ident, $data:ident, $($name:ident, $req: ty, $tx:ident),+) => {
+    match $function {
+        $(
+        stringify!($name) => {
+            let req = <$req>::decode(&$data[..])?;
+            $self.$name(req, $tx).await?;
+            return Ok(());
+        }
+        )*
+            _ =>{}
+        }
+    }
+}
+    
     #[macro_export]
     macro_rules! func_end {
         ($function:ident) => {

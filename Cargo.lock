@@ -379,9 +379,9 @@ checksum = "8f1fe948ff07f4bd06c30984e69f5b4899c516a3ef74f34df92a2df2ab535495"
 
 [[package]]
 name = "bytes"
-version = "1.7.2"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "428d9aa8fbc0670b7b8d6030a7fadd0f86151cae55e4dbbece15f3780a3dfaf3"
+checksum = "325918d6fe32f23b19878fe4b34794ae41fc19ddbe53b10571a4874d44ffd39b"
 
 [[package]]
 name = "cc"
@@ -1098,6 +1098,7 @@ dependencies = [
  "ahash",
  "anyhow",
  "async-trait",
+ "bytes",
  "chrono",
  "dashmap",
  "dbus",
@@ -1123,7 +1124,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "stream_generator",
  "sysinfo",
  "tokio",
  "tokio-stream",
@@ -2537,15 +2537,6 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
-
-[[package]]
-name = "stream_generator"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3eef07b08bf0ff7aa7d8f0f35f632344d69c4fc2b49e3887cd0c08ee4de82d26"
-dependencies = [
- "futures",
-]
 
 [[package]]
 name = "subtle"
