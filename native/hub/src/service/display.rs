@@ -5,7 +5,7 @@ pub mod display_os {
     use crate::messages::display::{
         DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp, SystemModeMsg,
     };
-    use crate::service::service::{ImmService, LazyService, Service};
+    use crate::service::service::{ImmService, LazyService, Service, ServiceName};
     use crate::{async_func_notype, async_func_typeno, func_end, func_notype, func_typeno};
     use anyhow::{anyhow, Error, Result};
     use async_trait::async_trait;
@@ -22,13 +22,15 @@ pub mod display_os {
 
     /// 显示器亮度调节
     pub struct DisplayLight {}
-
-    #[async_trait]
-    impl ImmService for DisplayLight {
+    
+    impl ServiceName for DisplayLight {
         fn get_service_name(&self) -> &'static str {
             "DisplayLight"
         }
-
+    }
+    
+    #[async_trait]
+    impl ImmService for DisplayLight {
         async fn handle(&self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
             func_notype!(self, func, get_all_devices);
             func_typeno!(self, func, req_data, set_light, DisplayInfo);
@@ -94,13 +96,15 @@ pub mod display_os {
         global_data: Arc<GlobalData>,
         system_mode: SystemModeData,
     }
-
-    #[async_trait]
-    impl Service for DisplayMode {
+    
+    impl ServiceName for DisplayMode {
         fn get_service_name(&self) -> &'static str {
             "DisplayMode"
         }
+    }
 
+    #[async_trait]
+    impl Service for DisplayMode {
         async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
             func_notype!(
                 self,

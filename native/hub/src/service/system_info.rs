@@ -11,7 +11,7 @@ use tokio::io::AsyncReadExt;
 
 use crate::common::utils::{get_cache_dir, second_timestamp};
 use crate::messages::system_info::{ChartInfo, ChartInfoReq, ChartInfoRsp, SystemInfoCache};
-use crate::service::service::Service;
+use crate::service::service::{Service, ServiceName};
 use crate::{func_end, func_notype, func_typetype};
 
 // 缓存文件
@@ -34,12 +34,14 @@ pub struct SystemInfoService {
     mem_datas: Vec<ChartInfo>,
 }
 
-#[async_trait::async_trait]
-impl Service for SystemInfoService {
+impl ServiceName for SystemInfoService {
     fn get_service_name(&self) -> &'static str {
         "SystemInfo"
     }
+}
 
+#[async_trait::async_trait]
+impl Service for SystemInfoService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         func_notype!(self, func, get_cpu, get_ram);
         func_typetype!(

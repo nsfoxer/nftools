@@ -1,13 +1,16 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::Stream;
 use tokio::sync::mpsc::UnboundedSender;
+
+/// 服务标识
+pub trait ServiceName {
+    /// 服务标识
+    fn get_service_name(&self) -> &'static str;
+}
 
 /// 服务
 #[async_trait]
-pub trait Service: Send {
-    /// 服务标识
-    fn get_service_name(&self) -> &'static str;
+pub trait Service: Send + ServiceName {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>>;
 }
 
@@ -20,19 +23,14 @@ pub trait LazyService: Service {
 
 /// "无状态"服务 可多请求同时处理
 #[async_trait]
-pub trait ImmService: Send + Sync {
-    /// 服务标识
-    fn get_service_name(&self) -> &'static str;
-
+pub trait ImmService: Send + Sync + ServiceName {
     /// 实际处理
     async fn handle(&self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>>;
 }
 
 /// stream响应服务
 #[async_trait]
-pub trait StreamService: Send {
-    /// 服务标识
-    fn get_service_name(&self) -> &'static str;
+pub trait StreamService:  Send + ServiceName { 
     async fn handle(
         &mut self,
         func: &str,
