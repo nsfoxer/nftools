@@ -1,0 +1,13 @@
+syntax = "proto3";
+package ai;
+
+// 百度AI响应
+message BaiduAiRspMsg {
+	string content = 1;
+}
+
+// 设置API Key与应用Secret Key
+message BaiduAiKeyReqMsg {
+	string api_key = 1;
+	string secret = 2;
+}
