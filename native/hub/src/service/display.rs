@@ -295,7 +295,7 @@ pub mod display_os {
         DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp,
         SystemModeMsg,
     };
-    use crate::service::service::Service;
+    use crate::service::service::{Service, ServiceName};
     use crate::{async_func_notype, async_func_typeno, func_end, func_notype, func_typeno};
     use ahash::{HashMap, HashMapExt};
     use anyhow::{Error, Result};
@@ -322,12 +322,15 @@ pub mod display_os {
     pub struct DisplayLight {
         devices: HashMap<String, I2cDeviceDdc>,
     }
-
-    #[async_trait]
-    impl Service for DisplayLight {
+    
+    impl ServiceName for DisplayLight {
         fn get_service_name(&self) -> &'static str {
             "DisplayLight"
         }
+    }
+
+    #[async_trait]
+    impl Service for DisplayLight {
 
         async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
             func_notype!(self, func, get_all_devices);
@@ -452,12 +455,15 @@ pub mod display_os {
         power_manage_proxy: Proxy<'static, Arc<SyncConnection>>,
         power_id: Option<u32>,
     }
-
-    #[async_trait]
-    impl Service for DisplayMode {
+    
+    impl ServiceName for DisplayMode {
         fn get_service_name(&self) -> &'static str {
             "DisplayMode"
         }
+    }
+
+    #[async_trait]
+    impl Service for DisplayMode {
 
         async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
             func_notype!(self, func, get_system_mode);

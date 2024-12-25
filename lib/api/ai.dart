@@ -1,4 +1,5 @@
 import 'package:nftools/messages/ai.pb.dart';
+import 'package:nftools/utils/log.dart';
 
 import '../messages/common.pb.dart';
 import 'api.dart';
@@ -6,6 +7,7 @@ import 'api.dart';
 const String _service = "BaiduAiService";
 const String _question = "question";
 const String _get_kv = "get_kv";
+const String _set_kv = "set_kv";
 const String _refresh = "refresh_token";
 
 // ai 测试
@@ -23,8 +25,9 @@ Future<BaiduAiKeyReqMsg> getKV() async {
 
 // set kv
 Future<void> setKV(String appId, String secret) async {
+  info("$appId   $secret");
   final data = BaiduAiKeyReqMsg(apiKey: appId, secret: secret);
-  await sendRequest<BaiduAiKeyReqMsg>(_service, _refresh, data);
+  await sendRequest<BaiduAiKeyReqMsg>(_service, _set_kv, data);
 }
 
 // 刷新token

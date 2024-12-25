@@ -2,7 +2,7 @@ use crate::messages::base::{BaseRequest, BaseResponse};
 use crate::service::service::{ImmService, LazyService, Service, StreamService};
 use crate::service_handle;
 use ahash::AHashMap;
-use rinf::{debug_print, DartSignal};
+use rinf::DartSignal;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
@@ -134,7 +134,6 @@ impl ApiService {
         let func = signal.message.func.clone();
         tokio::spawn(async move {
             while let Some(result) = rx.recv().await {
-                debug_print!("stream收到一条消息");
                 match result {
                     Ok(r) => {
                         BaseResponse {
@@ -162,7 +161,6 @@ impl ApiService {
                 is_stream:true,
                 is_end: true,
             }.send_signal_to_dart(Vec::with_capacity(0));
-            debug_print!("stream已关闭");
         });
         
         match service {
