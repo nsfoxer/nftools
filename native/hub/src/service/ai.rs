@@ -1,14 +1,19 @@
 use crate::common::global_data::GlobalData;
-use crate::messages::ai::{BaiduAiKeyReqMsg, BaiduAiRspMsg};
-use crate::messages::common::StringMessage;
+use crate::messages::ai::{BaiduAiKeyReqMsg, BaiduAiRspMsg, QuestionListMsg, QuestionMsg};
+use crate::messages::common::{Uint32Message, VecStringMessage};
 use crate::service::service::{Service, ServiceName, StreamService};
-use crate::{async_func_nono, async_func_notype, async_func_typeno, async_stream_func_typeno, func_end};
+use crate::{
+    async_func_nono, async_func_notype, async_func_typeno, async_stream_func_typeno, func_end,
+    func_notype, func_typetype,
+};
+use ahash::AHashMap;
 use anyhow::Result;
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures_util::StreamExt;
 use prost::Message;
 use reqwest::Client;
+use rinf::debug_print;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::mpsc::UnboundedSender;
@@ -33,7 +38,7 @@ struct BaiduAiRequest {
 }
 #[derive(Serialize)]
 struct InnerMessage {
-    role: String,
+    role: RoleEnum,
     content: String,
 }
 
@@ -43,9 +48,18 @@ struct BaiduTokenRsp {
     error_description: Option<String>,
 }
 
+#[derive(Serialize)]
+enum RoleEnum {
+    #[serde(rename = "user")]
+    User,
+    #[serde(rename = "assistant")]
+    Assistant,
+}
+
 const BAIDU_AI: &str = "BaiduAiService";
 const APP_ID: &str = "BaiduAiService:APP_ID";
 const SECRET: &str = "BaiduAiService:SECRET";
+const HISTORY: &str = "BaiduAiService:HISTORY";
 
 pub struct BaiduAiService {
     client: Client,
@@ -53,17 +67,22 @@ pub struct BaiduAiService {
     token: Option<String>,
     app_id: Option<String>,
     secret: Option<String>,
+    // 所有的历史数据
+    history: AHashMap<u32, Vec<String>>,
 }
 
 impl BaiduAiService {
     pub fn new(gd: Arc<GlobalData>) -> Self {
         let client = Client::new();
+        let history = gd.get_data(HISTORY).unwrap_or(AHashMap::new());
+        debug_print!("{:?}", history);
         Self {
             client,
             token: None,
             app_id: gd.get_data(APP_ID),
             secret: gd.get_data(SECRET),
             gd,
+            history,
         }
     }
 }
@@ -82,7 +101,7 @@ impl StreamService for BaiduAiService {
         req_data: Vec<u8>,
         tx: UnboundedSender<Result<Option<Vec<u8>>>>,
     ) -> Result<()> {
-        async_stream_func_typeno!(self, func, req_data, question, StringMessage, tx);
+        async_stream_func_typeno!(self, func, req_data, question, QuestionMsg, tx);
         func_end!(func)
     }
 }
@@ -93,21 +112,68 @@ impl Service for BaiduAiService {
         async_func_notype!(self, func, get_kv);
         async_func_nono!(self, func, refresh_token);
         async_func_typeno!(self, func, req_data, set_kv, BaiduAiKeyReqMsg);
+        func_notype!(self, func, get_question_list);
+        func_typetype!(self, func, req_data, get_question, Uint32Message);
         func_end!(func)
     }
 }
 
+const MAX_SIZE: usize = 8000;
+
 impl BaiduAiService {
     async fn question(
         &mut self,
-        req: StringMessage,
+        req: QuestionMsg,
         tx: UnboundedSender<Result<Option<Vec<u8>>>>,
     ) -> Result<()> {
-        let mut msg = Vec::with_capacity(1);
+        if !self.history.contains_key(&req.id) {
+            self.history.insert(req.id, Vec::new());
+        }
+        let current_size = req.desc.len();
+        if current_size > MAX_SIZE {
+            return Err(anyhow::anyhow!("提问最大长度为8000"));
+        }
+
+        // 对最大长度字符8000进行限制
+        let mut sum_size = current_size;
+        let msg = self.history.get(&req.id).unwrap().iter().rev();
+        let mut history_msg = Vec::new();
+        for msg in msg {
+            sum_size += msg.len();
+            if sum_size <= MAX_SIZE {
+                history_msg.push(msg);
+            }
+        }
+        if !history_msg.is_empty() && history_msg.len() % 2 != 0 {
+            history_msg.remove(history_msg.len() - 1);
+        }
+        // 转换为inner msg
+        let mut msg = history_msg
+            .iter()
+            .rev()
+            .enumerate()
+            .map(|(i, v)| {
+                if i % 2 == 0 {
+                    InnerMessage {
+                        role: RoleEnum::User,
+                        content: v.to_string(),
+                    }
+                } else {
+                    InnerMessage {
+                        role: RoleEnum::Assistant,
+                        content: v.to_string(),
+                    }
+                }
+            })
+            .collect::<Vec<InnerMessage>>();
         msg.push(InnerMessage {
-            role: "user".to_string(),
-            content: req.value,
+            role: RoleEnum::User,
+            content: req.desc.to_string(),
         });
+
+        // 发起请求
+        let id = req.id;
+        let desc = req.desc;
         let req = BaiduAiRequest {
             stream: true,
             messages: msg,
@@ -119,19 +185,30 @@ impl BaiduAiService {
                 .post(&format!( "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/yi_34b_chat?access_token={}", self.token.as_ref().unwrap()))
                 .json(&req).send().await?.bytes_stream();
 
+        let mut result = String::new();
         while let Some(info) = stream.next().await {
             let data = match Self::parser_rsp(info) {
                 Ok(data) => {
                     if data.is_none() {
                         continue;
                     }
-                    Ok(Some(data.unwrap().encode_to_vec()))
+                    let data = data.unwrap();
+                    result.push_str(data.content.as_str());
+                    Ok(Some(data.encode_to_vec()))
                 }
                 Err(e) => Err(e),
             };
             if let Err(e) = tx.send(data) {
                 panic!("发送通道已关闭: {}", e);
             }
+        }
+
+        // 保存历史数据
+        if !result.is_empty() {
+            let msg = self.history.get_mut(&id).unwrap();
+            msg.push(desc);
+            msg.push(result);
+            let _ = self.gd.set_data(HISTORY.to_string(), &self.history);
         }
 
         Ok(())
@@ -160,12 +237,15 @@ impl BaiduAiService {
     /// 刷新token
     async fn refresh_token(&mut self) -> Result<()> {
         let app_id = self.app_id.as_ref().ok_or(anyhow::anyhow!("appid未设置"))?;
-        let secret = self.secret.as_ref().ok_or(anyhow::anyhow!("secret未设置"))?;
+        let secret = self
+            .secret
+            .as_ref()
+            .ok_or(anyhow::anyhow!("secret未设置"))?;
         let rsp = self.client
             .post(&format!("https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id={app_id}&client_secret={secret}"))
             .header("Content-Type", "application/json")
             .send().await?;
-        let token =  rsp.json::<BaiduTokenRsp>().await?;
+        let token = rsp.json::<BaiduTokenRsp>().await?;
         if token.error_description.is_some() {
             return Err(anyhow::anyhow!(token.error_description.unwrap()));
         }
@@ -178,7 +258,7 @@ impl BaiduAiService {
     async fn set_kv(&mut self, req: BaiduAiKeyReqMsg) -> Result<()> {
         let _ = self.gd.set_data(APP_ID.to_string(), &req.api_key);
         let _ = self.gd.set_data(SECRET.to_string(), &req.secret);
-        
+
         self.app_id = Some(req.api_key);
         self.secret = Some(req.secret);
         self.refresh_token().await?;
@@ -192,5 +272,32 @@ impl BaiduAiService {
             api_key: self.app_id.as_ref().unwrap().clone(),
             secret: self.secret.as_ref().unwrap().clone(),
         })
+    }
+
+    /// 获取所有的历史数据列表
+    fn get_question_list(&self) -> Result<QuestionListMsg> {
+        let result: Vec<QuestionMsg> = self
+            .history
+            .iter()
+            .map(|(k, v)| {
+                let desc = match v.get(0) {
+                    Some(r) => r.to_string(),
+                    None => "".to_string(),
+                };
+                QuestionMsg { id: *k, desc }
+            })
+            .collect();
+        Ok(QuestionListMsg {
+            question_list: result,
+        })
+    }
+
+    fn get_question(&self, req: Uint32Message) -> Result<VecStringMessage> {
+        let result = self
+            .history
+            .get(&req.value)
+            .ok_or(anyhow::anyhow!("无法找到对应id"))?;
+        let result = result.into_iter().map(|x| x.to_string()).collect();
+        Ok(VecStringMessage { values: result })
     }
 }

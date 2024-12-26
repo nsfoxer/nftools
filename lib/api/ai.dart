@@ -9,11 +9,13 @@ const String _question = "question";
 const String _get_kv = "get_kv";
 const String _set_kv = "set_kv";
 const String _refresh = "refresh_token";
+const String _getQuestionList = "get_question_list";
+const String _getQuestion = "get_question";
 
 // ai 测试
-Stream<BaiduAiRspMsg> quest(String msg) {
+Stream<BaiduAiRspMsg> quest(String msg, int id) {
   var stream =
-      sendRequestStream(_service, _question, StringMessage(value: msg));
+      sendRequestStream(_service, _question, QuestionMsg(id: id, desc: msg));
   return stream.map((x) => BaiduAiRspMsg.fromBuffer(x));
 }
 
@@ -35,3 +37,14 @@ Future<void> refreshToken() async {
   await sendRequest<EmptyMessage>(_service, _refresh, null);
 }
 
+// 获取所有问题列表
+Future<List<QuestionMsg>> getQuestionList() async {
+  final data = await sendRequest<EmptyMessage>(_service, _getQuestionList, null);
+  return QuestionListMsg.fromBuffer(data).questionList;
+}
+
+// 获取指定问题的请求数据
+Future<List<String>> getQuestion(int id) async {
+  final data = await sendRequest<EmptyMessage>(_service, _getQuestion, null);
+  return VecStringMessage.fromBuffer(data).values;
+}
