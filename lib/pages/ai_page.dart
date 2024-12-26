@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'dart:math';
 
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as $me;
 import 'package:flutter/services.dart';
@@ -10,6 +12,7 @@ import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/ai_controller.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf-widgets.dart';
+import 'package:nftools/utils/utils.dart';
 
 class AiPage extends StatelessWidget {
   const AiPage({super.key});
@@ -212,6 +215,36 @@ class AssistantDisplay extends StatelessWidget {
             ],
           )
         : Container();
+    final config = isDark(context)
+        ? MarkdownConfig.darkConfig.copy(configs: [
+            HrConfig.darkConfig,
+            H1Config(style: typography.titleLarge ?? H1Config.darkConfig.style),
+            H2Config(style: typography.title ?? H2Config.darkConfig.style),
+            H3Config(style: typography.subtitle ?? H3Config.darkConfig.style),
+            H4Config(style: typography.bodyLarge ?? H4Config.darkConfig.style),
+            H5Config(style: typography.bodyStrong ?? H5Config.darkConfig.style),
+            H6Config(style: typography.body ?? H6Config.darkConfig.style),
+            // PreConfig(textStyle: typography.body ?? PreConfig.darkConfig.textStyle, styleNotMatched: typography.body ?? PreConfig.darkConfig.textStyle),
+            PConfig(
+                textStyle: typography.body ?? PConfig.darkConfig.textStyle),
+            CodeConfig(
+                style: typography.caption ?? CodeConfig.darkConfig.style),
+            BlockquoteConfig.darkConfig,
+          ])
+        : MarkdownConfig.defaultConfig.copy(configs: [
+            H1Config(style: typography.titleLarge ?? H1Config.darkConfig.style),
+            H2Config(style: typography.title ?? H2Config.darkConfig.style),
+            H3Config(style: typography.subtitle ?? H3Config.darkConfig.style),
+            H4Config(style: typography.bodyLarge ?? H4Config.darkConfig.style),
+            H5Config(style: typography.bodyStrong ?? H5Config.darkConfig.style),
+            H6Config(style: typography.body ?? H6Config.darkConfig.style),
+            // PreConfig(textStyle: typography.body ?? PreConfig.darkConfig.textStyle, styleNotMatched: typography.body ?? PreConfig.darkConfig.textStyle),
+            PConfig(
+                textStyle: typography.body ?? PConfig.darkConfig.textStyle),
+            CodeConfig(
+                style: typography.caption ?? CodeConfig.darkConfig.style),
+          ]);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,11 +264,9 @@ class AssistantDisplay extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     NFCardContent(
-                        noMargin: true,
-                        child: $me.Card(
-                          child: MarkdownBlock(
-                              config: MarkdownConfig.darkConfig, data: data),
-                        )),
+                      noMargin: true,
+                      child: MarkdownBlock(config: config, data: data),
+                    ),
                     loadingWidget
                   ],
                 ))),
@@ -284,6 +315,8 @@ const DATA = '''
 > 安得广厦千万间，大庇天下寒士俱欢颜！风雨不动安如山。
 > > 呜呼！何时眼前突兀见此屋，吾庐独破受冻死亦足！
 
+情况 
+
 这是行内代码：`int a=1;`。这是代码块：
 
 ```c++
@@ -316,7 +349,6 @@ int main(int argc , char** argv){
 
 这是一张图片：
 
-![1fa0f7b958d4234db58eac4f75318d7b.jpeg](https://user-images.githubusercontent.com/30992818/211159089-ec4acd11-ee02-46f2-af4f-f8c47eb28410.png)
 
 这是表格：
 
@@ -326,6 +358,7 @@ int main(int argc , char** argv){
 内容单元格 第一列第二格 多加文字 | 内容单元格第二列第二格
 
 水平分割线[^这是脚注]：
-
 ------
+
+情况
 ''';
