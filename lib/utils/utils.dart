@@ -35,3 +35,8 @@ Future<bool> confirmDialog(
   );
   return result ?? false;
 }
+
+// 是否为黑色模式
+bool isDark(BuildContext context) {
+  return View.of(context).platformDispatcher.platformBrightness.isDark;
+}

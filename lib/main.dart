@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
@@ -11,6 +12,7 @@ import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/GlobalController.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
+import 'package:nftools/utils/utils.dart';
 import 'package:rinf/rinf.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
@@ -156,7 +158,7 @@ class _MainAppState extends State<MainApp>
         tooltipTheme:
             const TooltipThemeData(waitDuration: Duration(milliseconds: 300)),
         accentColor: AccentColor.swatch(swatch));
-    if (View.of(context).platformDispatcher.platformBrightness.isDark) {
+    if (isDark(context)) {
       m = FluentThemeData(
           brightness: Brightness.dark,
           fontFamily: fonts,
