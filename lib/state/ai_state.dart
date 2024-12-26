@@ -1,13 +1,15 @@
 import 'package:fluent_ui/fluent_ui.dart';
 
-
 class AiState {
   // 对话列表controller
   ScrollController scrollController = ScrollController();
+
   // 当前对话数据
   AiContentData contentData = AiContentData(0, "", []);
+
   // 当前是否结束
   bool isLoading = false;
+
   // 对话列表 (id, desc)
   List<(int, String)> idList = [];
 
@@ -16,8 +18,10 @@ class AiState {
 
   // 账户信息输入表单
   GlobalKey<FormState> formKey = GlobalKey();
+
   // user控制器
   TextEditingController appIdController = TextEditingController();
+
   // passwd控制器
   TextEditingController secretController = TextEditingController();
 
@@ -32,8 +36,10 @@ class AiState {
 class AiContentData {
   // 对话id
   final int id;
+
   // 描述
   final String description;
+
   // 内容 奇数为user 偶数为assistant
   final List<String> contents;
 

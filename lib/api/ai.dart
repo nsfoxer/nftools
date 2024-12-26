@@ -39,7 +39,8 @@ Future<void> refreshToken() async {
 
 // 获取所有问题列表
 Future<List<QuestionMsg>> getQuestionList() async {
-  final data = await sendRequest<EmptyMessage>(_service, _getQuestionList, null);
+  final data =
+      await sendRequest<EmptyMessage>(_service, _getQuestionList, null);
   return QuestionListMsg.fromBuffer(data).questionList;
 }
 

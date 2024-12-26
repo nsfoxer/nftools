@@ -114,7 +114,7 @@ class AiPage extends StatelessWidget {
             Expanded(
               flex: 8,
               child: ListView.builder(
-                controller: logic.state.scrollController,
+                  controller: logic.state.scrollController,
                   shrinkWrap: true,
                   itemCount: contents.length,
                   itemBuilder: (context, index) {
@@ -122,7 +122,10 @@ class AiPage extends StatelessWidget {
                     if (index % 2 == 0) {
                       return UserDisplay(msg: contents[index]);
                     } else {
-                      return AssistantDisplay(data: contents[index], isLoading: logic.state.isLoading && index+1 == contents.length);
+                      return AssistantDisplay(
+                          data: contents[index],
+                          isLoading: logic.state.isLoading &&
+                              index + 1 == contents.length);
                     }
                   }),
             ),
@@ -160,9 +163,11 @@ class AiPage extends StatelessWidget {
                         right: 10,
                         bottom: 10,
                         child: Button(
-                            onPressed: logic.state.isLoading ? null : () {
-                              logic.quest();
-                            },
+                            onPressed: logic.state.isLoading
+                                ? null
+                                : () {
+                                    logic.quest();
+                                  },
                             child: const Text("提问")))
                   ],
                 ))
