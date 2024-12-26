@@ -28,3 +28,7 @@ final class NFLayout {
   static const SizedBox hlineh3 = SizedBox(width: v3);
 }
 
+final class NFColor {
+  static const Color textUserLightBackground = Color(0xff95ec69);
+  static const Color textUserDarkBackground = Color(0xff3eb575);
+}

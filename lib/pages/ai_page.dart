@@ -1,10 +1,9 @@
-import 'dart:math';
-
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/material.dart' as $me;
 import 'package:flutter/services.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+import 'package:markdown_widget/markdown_widget.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/ai_controller.dart';
 import 'package:nftools/utils/log.dart';
@@ -81,8 +80,6 @@ class AiPage extends StatelessWidget {
             }));
   }
 
-  void _submit() {}
-
   @override
   Widget build(BuildContext context) {
     final res = FluentTheme.of(context).resources;
@@ -116,7 +113,10 @@ class AiPage extends StatelessWidget {
               child: SingleChildScrollView(
                   child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [AssistantDisplay()],
+                children: [
+                  AssistantDisplay(data: "### 测试", isLoading: true),
+                  UserDisplay(msg: "ss"),
+                ],
               )),
             ),
             Expanded(
@@ -169,17 +169,42 @@ class AiPage extends StatelessWidget {
 // 快捷键intent
 class _SubmitIntent extends Intent {
   final AiController logic;
+
   const _SubmitIntent(this.logic);
 }
 
+// 回复展示
 class AssistantDisplay extends StatelessWidget {
+  final String data;
+  final bool isLoading;
+
+  const AssistantDisplay(
+      {super.key, required this.data, required this.isLoading});
+
   @override
   Widget build(BuildContext context) {
+    Typography typography = FluentTheme.of(context).typography;
+    final loadingWidget = isLoading
+        ? Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Text(
+                "加载中... ",
+                style: typography.body,
+              ),
+              NFRotationWidget(
+                  child: Icon(
+                $me.Icons.hourglass_bottom,
+                size: typography.body?.fontSize,
+              )),
+            ],
+          )
+        : Container();
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Image(
+        const Image(
           image: AssetImage("assets/baidu.ico"),
           width: 25,
           height: 25,
@@ -187,14 +212,45 @@ class AssistantDisplay extends StatelessWidget {
         Expanded(
             flex: 8,
             child: Padding(
-                padding: EdgeInsets.symmetric(
+                padding: const EdgeInsets.symmetric(
                   horizontal: NFLayout.v3,
                 ),
-                child: NFCardContent(
-                    noMargin: true,
-                    child: MarkdownBody(
-                      selectable: true,
-                      data: '''
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    NFCardContent(
+                        noMargin: true,
+                        child: $me.Card(
+                          child: MarkdownBlock(
+                              config: MarkdownConfig.darkConfig, data: data),
+                        )),
+                    loadingWidget
+                  ],
+                ))),
+      ],
+    );
+  }
+}
+
+// 用户展示
+class UserDisplay extends StatelessWidget {
+  final String msg;
+
+  const UserDisplay({super.key, required this.msg});
+
+  @override
+  Widget build(BuildContext context) {
+    final res = FluentTheme.of(context).accentColor.withAlpha(75);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        NFCardContent(color: res, child: Text(msg)),
+      ],
+    );
+  }
+}
+
+const DATA = '''
 ## 二级标题
 
 ### 三级标题
@@ -211,7 +267,7 @@ class AssistantDisplay extends StatelessWidget {
 
 这是**加粗**，*斜体*，~~删除线~~，[链接](https://blog.imalan.cn)。
 
-这是块引用与嵌套块引用：
+这是块引用与嵌套块引用111：
 
 > 安得广厦千万间，大庇天下寒士俱欢颜！风雨不动安如山。
 > > 呜呼！何时眼前突兀见此屋，吾庐独破受冻死亦足！
@@ -248,7 +304,7 @@ int main(int argc , char** argv){
 
 这是一张图片：
 
-![1fa0f7b958d4234db58eac4f75318d7b.jpeg](https://cdn.imalan.cn/img/post/2934349b033b5bb5a19efc7233d3d539b700bcf5.jpg)
+![1fa0f7b958d4234db58eac4f75318d7b.jpeg](https://user-images.githubusercontent.com/30992818/211159089-ec4acd11-ee02-46f2-af4f-f8c47eb28410.png)
 
 这是表格：
 
@@ -260,9 +316,4 @@ int main(int argc , char** argv){
 水平分割线[^这是脚注]：
 
 ------
-              ''',
-                    ))))
-      ],
-    );
-  }
-}
+''';

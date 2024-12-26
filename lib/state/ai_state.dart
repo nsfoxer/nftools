@@ -1,5 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 
+import '../utils/log.dart';
+
 class AiState {
   // 展示结果
   TextEditingController displayController = TextEditingController();
@@ -14,7 +16,7 @@ class AiState {
   TextEditingController secretController = TextEditingController();
 
   void dispose() {
-    debugPrint("dispose start");
+    info("dispose start");
     appIdController.dispose();
     secretController.dispose();
     questController.dispose();

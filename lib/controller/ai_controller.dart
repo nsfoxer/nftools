@@ -12,6 +12,11 @@ class AiController extends GetxController {
     _init();
     super.onReady();
   }
+  @override
+  void dispose() {
+    state.dispose();
+    super.dispose();
+  }
 
   void _init() async {
     // get_kv
