@@ -14,6 +14,7 @@ class AiController extends GetxController {
     _init();
     super.onReady();
   }
+
   // @override
   // void onClose() {
   //   // state.dispose();
@@ -57,31 +58,34 @@ class AiController extends GetxController {
     _jumpBottom();
     update();
   }
-  
+
   void _jumpBottom() {
-    EasyDebounce.debounce("baiduAI_question", const Duration(milliseconds: 50), () {
-      state.scrollController.animateTo(state.scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300), curve: Curves.ease);
+    EasyDebounce.debounce("baiduAI_question", const Duration(milliseconds: 50),
+        () {
+      state.scrollController.animateTo(
+          state.scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.ease);
     });
   }
 
   void _quest(String question) async {
-   var stream = $api.quest(question, state.contentData.id);
-   stream.listen((data) {
-     state.contentData.contents.last += data.content;
-     _jumpBottom();
-     update();
-   }, onDone: () {
-     state.isLoading = false;
-     update();
-   }, onError: (e) {
-     if (state.questController.text.isEmpty) {
-       state.questController.text = question;
-     }
-     state.contentData.contents.removeLast();
-     state.contentData.contents.removeLast();
-     state.isLoading = false;
-     update();
-   });
+    var stream = $api.quest(question, state.contentData.id);
+    stream.listen((data) {
+      state.contentData.contents.last += data.content;
+      _jumpBottom();
+      update();
+    }, onDone: () {
+      state.isLoading = false;
+      update();
+    }, onError: (e) {
+      if (state.questController.text.isEmpty) {
+        state.questController.text = question;
+      }
+      state.contentData.contents.removeLast();
+      state.contentData.contents.removeLast();
+      state.isLoading = false;
+      update();
+    });
   }
 }
