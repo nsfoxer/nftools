@@ -11,3 +11,16 @@ message BaiduAiKeyReqMsg {
 	string api_key = 1;
 	string secret = 2;
 }
+
+// 所有的对话列表
+message QuestionListMsg {
+	repeated QuestionMsg questionList = 1;
+}
+
+// 一个问题条目
+message QuestionMsg {
+	// id
+	uint32 id = 1;
+	// 简要描述
+	string desc = 2;
+}

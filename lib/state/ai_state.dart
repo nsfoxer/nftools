@@ -1,10 +1,16 @@
 import 'package:fluent_ui/fluent_ui.dart';
 
-import '../utils/log.dart';
 
 class AiState {
-  // 展示结果
-  TextEditingController displayController = TextEditingController();
+  // 对话列表controller
+  ScrollController scrollController = ScrollController();
+  // 当前对话数据
+  AiContentData contentData = AiContentData(0, "", []);
+  // 当前是否结束
+  bool isLoading = false;
+  // 对话列表 (id, desc)
+  List<(int, String)> idList = [];
+
   // 输入问题
   TextEditingController questController = TextEditingController();
 
@@ -16,10 +22,20 @@ class AiState {
   TextEditingController secretController = TextEditingController();
 
   void dispose() {
-    info("dispose start");
     appIdController.dispose();
     secretController.dispose();
     questController.dispose();
-    displayController.dispose();
+    scrollController.dispose();
   }
+}
+
+class AiContentData {
+  // 对话id
+  final int id;
+  // 描述
+  final String description;
+  // 内容 奇数为user 偶数为assistant
+  final List<String> contents;
+
+  AiContentData(this.id, this.description, this.contents);
 }

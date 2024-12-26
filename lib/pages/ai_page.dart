@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as $me;
 import 'package:flutter/services.dart';
@@ -93,7 +95,7 @@ class AiPage extends StatelessWidget {
             primaryItems: [
               CommandBarButton(
                   icon: const Icon(FluentIcons.account_management),
-                  label: const Text("账户管理"),
+                  label: const Text("密钥管理"),
                   onPressed: () {
                     _showKVSetting(context);
                   }),
@@ -106,18 +108,23 @@ class AiPage extends StatelessWidget {
         }),
       ),
       content: GetBuilder<AiController>(builder: (logic) {
+        final contents = logic.state.contentData.contents;
         return Column(
           children: [
             Expanded(
               flex: 8,
-              child: SingleChildScrollView(
-                  child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AssistantDisplay(data: "### 测试", isLoading: true),
-                  UserDisplay(msg: "ss"),
-                ],
-              )),
+              child: ListView.builder(
+                controller: logic.state.scrollController,
+                  shrinkWrap: true,
+                  itemCount: contents.length,
+                  itemBuilder: (context, index) {
+                    debugPrint("$index");
+                    if (index % 2 == 0) {
+                      return UserDisplay(msg: contents[index]);
+                    } else {
+                      return AssistantDisplay(data: contents[index], isLoading: logic.state.isLoading && index+1 == contents.length);
+                    }
+                  }),
             ),
             Expanded(
                 flex: 2,
@@ -153,7 +160,7 @@ class AiPage extends StatelessWidget {
                         right: 10,
                         bottom: 10,
                         child: Button(
-                            onPressed: () {
+                            onPressed: logic.state.isLoading ? null : () {
                               logic.quest();
                             },
                             child: const Text("提问")))
