@@ -45,7 +45,7 @@ class SyncFileController extends GetxController {
         url: state.urlController.text,
         account: state.userController.text,
         passwd: state.passwdController.text);
-    var result;
+    var result = true;
     try {
       result = await $api.setAccount(account);
     } on Exception catch (_) {

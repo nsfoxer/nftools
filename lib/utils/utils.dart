@@ -1,7 +1,6 @@
 // 时间操作
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nftools/api/utils.dart' as $api;
 
 Future<int> measureDelay(Future<void> Function() func) async {
   var watch = Stopwatch()..start();

@@ -6,7 +6,7 @@ import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/display_controller.dart';
 import 'package:nftools/controller/display_mode_controller.dart';
 import 'package:nftools/controller/system_mode_controller.dart';
-import 'package:nftools/utils/nf-widgets.dart';
+import 'package:nftools/utils/nf_widgets.dart';
 
 class DisplayPage extends StatelessWidget {
   const DisplayPage({super.key});
@@ -27,7 +27,7 @@ class DisplayPage extends StatelessWidget {
 }
 
 class _DisplayLight extends StatelessWidget {
-  const _DisplayLight({Key? key}) : super(key: key);
+  const _DisplayLight({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +136,7 @@ class _Mode extends StatelessWidget {
     if (isSelect) {
       boxShadow = [
         BoxShadow(
-            color: color.withOpacity(0.5), spreadRadius: 5, blurRadius: 20)
+            color: color.withValues(alpha: 0.5), spreadRadius: 5, blurRadius: 20)
       ];
     }
     return Column(children: [

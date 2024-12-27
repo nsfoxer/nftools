@@ -8,7 +8,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     var typography = FluentTheme.of(context).typography;
     return ScaffoldPage(
-      header: PageHeader(
+      header: const PageHeader(
         title: Text("主页"),
       ),
       content: Center(

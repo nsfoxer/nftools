@@ -9,7 +9,7 @@ class DisplayState {
   // 主题模式
   _ThemeMode displayMode = _ThemeMode.light;
 
-  DisplayState() {}
+  DisplayState();
 }
 
 enum _ThemeMode { light, dark }

@@ -9,7 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/sync_file_controller.dart';
 import 'package:nftools/utils/log.dart';
-import 'package:nftools/utils/nf-widgets.dart';
+import 'package:nftools/utils/nf_widgets.dart';
 import 'package:nftools/utils/utils.dart';
 
 import '../messages/syncfile.pb.dart';
@@ -408,7 +408,7 @@ class SourceData extends $me.DataTableSource {
             maxLines: 2,
           ))),
       $me.DataCell(() {
-        var desc;
+        var desc = "";
         switch (file.status) {
           case FileStatusEnum.DOWNLOAD:
             desc = "待下载";

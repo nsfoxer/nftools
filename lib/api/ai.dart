@@ -1,13 +1,12 @@
 import 'package:nftools/messages/ai.pb.dart';
-import 'package:nftools/utils/log.dart';
 
 import '../messages/common.pb.dart';
 import 'api.dart';
 
 const String _service = "BaiduAiService";
 const String _question = "question";
-const String _get_kv = "get_kv";
-const String _set_kv = "set_kv";
+const String _getKV = "get_kv";
+const String _setKV = "set_kv";
 const String _refresh = "refresh_token";
 const String _getQuestionList = "get_question_list";
 const String _getQuestion = "get_question";
@@ -23,14 +22,14 @@ Stream<BaiduAiRspMsg> quest(String msg, int id) {
 
 // 获取kv
 Future<BaiduAiKeyReqMsg> getKV() async {
-  var data = await sendRequest<EmptyMessage>(_service, _get_kv, null);
+  var data = await sendRequest<EmptyMessage>(_service, _getKV, null);
   return BaiduAiKeyReqMsg.fromBuffer(data);
 }
 
 // set kv
 Future<void> setKV(String appId, String secret) async {
   final data = BaiduAiKeyReqMsg(apiKey: appId, secret: secret);
-  await sendRequest<BaiduAiKeyReqMsg>(_service, _set_kv, data);
+  await sendRequest<BaiduAiKeyReqMsg>(_service, _setKV, data);
 }
 
 // 刷新token

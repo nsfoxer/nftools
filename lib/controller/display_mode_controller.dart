@@ -4,7 +4,6 @@ import 'package:nftools/api/utils.dart';
 import 'package:nftools/messages/display.pb.dart';
 import 'package:nftools/state/display_mode_state.dart';
 import 'package:nftools/api/display_api.dart' as $api;
-import 'package:nftools/utils/log.dart';
 
 class DisplayModeController extends GetxController {
   final state = DisplayModeState();
