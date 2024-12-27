@@ -202,16 +202,20 @@ List<GoRoute> _generateRoute(List<MenuData> datas) {
     result.add(GoRoute(
         path: value.url,
         pageBuilder: (context, state) {
+          // 计算页面动画
+          final current = MyRouterConfig.findRouterIndex(MyRouterConfig.currentUrl);
+          final last = MyRouterConfig.findRouterIndex(MyRouterConfig.lastUrl);
+          bool up2Down = last < current;
+          final begin = up2Down ? const Offset(0.0, -1.0): const Offset(0.0, 1.0);
           return CustomTransitionPage(
             key: state.pageKey,
             child: value.body,
+            transitionDuration: const Duration(milliseconds: 3000),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
-              const begin = Offset(0.0, 1.0);
               const end = Offset.zero;
-              const curve = Curves.ease;
               var tween =
-                  Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                  Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.easeIn));
               return SlideTransition(
                 position: animation.drive(tween),
                 child: child,
@@ -230,6 +234,7 @@ final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
   ShellRoute(
     navigatorKey: _shellNavigatorKey,
     builder: (context, state, child) {
+      MyRouterConfig.lastUrl = MyRouterConfig.currentUrl;
       MyRouterConfig.currentUrl = state.fullPath ?? '/';
       MyRouterConfig.themeContext = _shellNavigatorKey.currentContext;
       return MainPage(

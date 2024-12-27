@@ -23,8 +23,28 @@ class MyRouterConfig {
 
   // 当前路由
   static String currentUrl = "/";
+  static String lastUrl = "/";
   // 可用主题上下文
   static BuildContext? themeContext;
+
+  static Map<String, int> _routerIndex = {};
+
+  // 查找router对应的索引
+  static int findRouterIndex(String router) {
+    if (_routerIndex.isEmpty) {
+      int i = 0;
+      for (final value in menuDatas) {
+        _routerIndex[value.url] = i;
+        i+=1;
+      }
+      for (final value in footerDatas) {
+        _routerIndex[value.url] = i;
+        i+=1;
+      }
+    }
+    return _routerIndex[router]!;
+  }
+
 }
 
 class MenuData {
