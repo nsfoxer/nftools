@@ -206,7 +206,7 @@ List<GoRoute> _generateRoute(List<MenuData> datas) {
           final current = MyRouterConfig.findRouterIndex(MyRouterConfig.currentUrl);
           final last = MyRouterConfig.findRouterIndex(MyRouterConfig.lastUrl);
           bool up2Down = last < current;
-          final begin = up2Down ? const Offset(0.0, -1.0): const Offset(0.0, 1.0);
+          final begin = up2Down ? const Offset(0.0, 1.0): const Offset(0.0, -1.0);
           return CustomTransitionPage(
             key: state.pageKey,
             child: value.body,
@@ -381,7 +381,7 @@ class MainPage extends StatelessWidget {
 
 // 初始化系统托盘
 Future<void> initSystemTray() async {
-  String path = Platform.isWindows ? 'assets/seafox.ico' : 'assets/seafox.png';
+  String path = Platform.isWindows ? 'assets/nftools.ico' : 'assets/nftools.png';
 
   // We first init the systray menu
   await trayManager.setIcon(path);
