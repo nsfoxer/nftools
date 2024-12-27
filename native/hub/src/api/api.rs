@@ -288,12 +288,17 @@ mod macros {
                     .send_signal_to_dart(r);
                 }
                 Err(e) => {
-                    generate_error_response(
-                        $signal.message.id,
+                    let msg = if cfg!(debug_assertions) {
                         format!(
                             "处理请求错误{}-{}:{}",
                             $signal.message.service, $signal.message.func, e
-                        ),
+                        )
+                    } else {
+                        e.to_string()
+                    };
+                    generate_error_response(
+                        $signal.message.id,
+                        msg,
                         false
                     )
                     .send_signal_to_dart(Vec::with_capacity(0));

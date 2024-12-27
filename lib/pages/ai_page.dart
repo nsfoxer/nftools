@@ -15,37 +15,45 @@ class AiPage extends StatelessWidget {
 
   void _showIdList(BuildContext context) async {
     var typography = FluentTheme.of(context).typography;
-    var color = FluentTheme.of(context).activeColor;
     await showDialog<String>(
+      barrierDismissible: true,
         context: context,
         builder: (context) => GetBuilder<AiController>(builder: (logic) {
-          return ContentDialog(
-            title: Text(
-              "选择对话列表",
-              style: typography.subtitle,
-            ),
-            content: SizedBox(
-              child: ListView.builder(
-                  itemCount: logic.state.idList.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return Button(child: const Text("新建对话"), onPressed: () {
-                        logic.addQuestionId();
-                      });
-                    }
-                    final now = logic.state.idList[index-1];
-                    return ListTile.selectable(
-                      title:  now.$2.isEmpty ? const Text("暂无描述") : Text(now.$2),
-                      selected: now.$1 == logic.state.contentData.id,
-                      onSelectionChange: (v) {
-                        logic.selectQuestionId(now.$1);
-                      },
-                    );
-                  }),
-            ),
-          );
-        }));
+              return ContentDialog(
+                title: Text(
+                  "选择对话列表",
+                  style: typography.subtitle,
+                ),
+                content: LayoutBuilder(builder: (context, constraints) {
+                  return SizedBox(
+                    height: constraints.maxHeight * 0.75,
+                    child: ListView.builder(
+                        itemCount: logic.state.idList.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            return Button(
+                                child: const Text("新建对话"),
+                                onPressed: () {
+                                  logic.addQuestionId();
+                                });
+                          }
+                          final now = logic.state.idList[index - 1];
+                          return ListTile.selectable(
+                            title: now.$2.isEmpty
+                                ? const Text("暂无描述")
+                                : Text(now.$2),
+                            selected: now.$1 == logic.state.contentData.id,
+                            onSelectionChange: (v) {
+                              logic.selectQuestionId(now.$1);
+                            },
+                          );
+                        }),
+                  );
+                }),
+              );
+            }));
   }
+
   void _showKVSetting(BuildContext context) async {
     var typography = FluentTheme.of(context).typography;
     var color = FluentTheme.of(context).activeColor;
@@ -121,6 +129,7 @@ class AiPage extends StatelessWidget {
       header: PageHeader(
         title: const Text("BaiduAI"),
         commandBar: GetBuilder<AiController>(builder: (logic) {
+          final question = logic.state.contentData.description;
           return CommandBar(
             mainAxisAlignment: MainAxisAlignment.end,
             overflowItemAlignment: MainAxisAlignment.end,
@@ -132,8 +141,8 @@ class AiPage extends StatelessWidget {
                     _showKVSetting(context);
                   }),
               CommandBarButton(
-                  icon: const Icon(FluentIcons.refresh),
-                  label: const Text("刷新"),
+                  icon: const Icon($me.Icons.question_answer),
+                  label: Text(question.isEmpty ? "新增对话" :question),
                   onPressed: () {
                     _showIdList(context);
                   }),
@@ -143,6 +152,11 @@ class AiPage extends StatelessWidget {
       ),
       content: GetBuilder<AiController>(builder: (logic) {
         final contents = logic.state.contentData.contents;
+        if (logic.state.idList.isEmpty) {
+          return const Center(
+            child: Text("请先建立一个新的对话"),
+          );
+        }
         return Column(
           children: [
             Expanded(
@@ -160,8 +174,7 @@ class AiPage extends StatelessWidget {
                     } else {
                       return AssistantDisplay(
                           data: contents[index],
-                          isLoading: logic.state.isLoading &&
-                              index == 0);
+                          isLoading: logic.state.isLoading && index == 0);
                     }
                   }),
             ),
@@ -258,8 +271,7 @@ class AssistantDisplay extends StatelessWidget {
             H5Config(style: typography.bodyStrong ?? H5Config.darkConfig.style),
             H6Config(style: typography.body ?? H6Config.darkConfig.style),
             // PreConfig(textStyle: typography.body ?? PreConfig.darkConfig.textStyle, styleNotMatched: typography.body ?? PreConfig.darkConfig.textStyle),
-            PConfig(
-                textStyle: typography.body ?? PConfig.darkConfig.textStyle),
+            PConfig(textStyle: typography.body ?? PConfig.darkConfig.textStyle),
             CodeConfig(
                 style: typography.caption ?? CodeConfig.darkConfig.style),
             BlockquoteConfig.darkConfig,
@@ -272,8 +284,7 @@ class AssistantDisplay extends StatelessWidget {
             H5Config(style: typography.bodyStrong ?? H5Config.darkConfig.style),
             H6Config(style: typography.body ?? H6Config.darkConfig.style),
             // PreConfig(textStyle: typography.body ?? PreConfig.darkConfig.textStyle, styleNotMatched: typography.body ?? PreConfig.darkConfig.textStyle),
-            PConfig(
-                textStyle: typography.body ?? PConfig.darkConfig.textStyle),
+            PConfig(textStyle: typography.body ?? PConfig.darkConfig.textStyle),
             CodeConfig(
                 style: typography.caption ?? CodeConfig.darkConfig.style),
           ]);

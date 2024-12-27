@@ -29,7 +29,7 @@ class AiController extends GetxController {
       state.appIdController.text = r.apiKey;
       state.secretController.text = r.secret;
     } catch (e) {
-      info("未设置KV信息,请先设置");
+      return;
     }
     await _initQuestionIdList();
     update();
