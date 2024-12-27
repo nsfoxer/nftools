@@ -281,7 +281,7 @@ impl BaiduAiService {
             .iter()
             .map(|(k, v)| {
                 let desc = match v.get(0) {
-                    Some(r) => r.trim_start().split_at(8).0.to_string(),
+                    Some(r) => r.trim_start().chars().take(8).collect(),
                     None => "".to_string(),
                 };
                 QuestionMsg { id: *k, desc }
@@ -314,5 +314,14 @@ impl BaiduAiService {
             return Err(anyhow::anyhow!("不存在对应的对话id"));
         }
         Ok(())
+    }
+}
+
+mod test {
+    #[test]
+    fn string() {
+        let s = "本是同根生，相煎何太急";
+        let s = s.chars().take(38).collect::<String>();
+        eprintln!("{s}");
     }
 }
