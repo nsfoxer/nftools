@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import 'package:nftools/controller/MainPageController.dart';
+import 'package:nftools/controller/main_page_controller.dart';
 import 'package:nftools/controller/ai_controller.dart';
 import 'package:nftools/controller/display_controller.dart';
 import 'package:nftools/controller/display_mode_controller.dart';
