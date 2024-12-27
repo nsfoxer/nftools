@@ -82,6 +82,18 @@ impl BaiduAiService {
     }
 }
 
+impl Drop for BaiduAiService {
+    fn drop(&mut self) {
+        if self.app_id.is_some() {
+            let _ = self.gd.set_data(APP_ID.to_string(), &self.app_id.as_ref().unwrap());
+        }
+        if self.secret.is_some() {
+            let _ = self.gd.set_data(SECRET.to_string(), &self.secret.as_ref().unwrap());
+        }
+        let _ = self.gd.set_data(HISTORY.to_string(), &self.history);
+    }
+}
+
 impl ServiceName for BaiduAiService {
     fn get_service_name(&self) -> &'static str {
         BAIDU_AI
@@ -204,7 +216,6 @@ impl BaiduAiService {
             let msg = self.history.get_mut(&id).unwrap();
             msg.push(desc);
             msg.push(result);
-            let _ = self.gd.set_data(HISTORY.to_string(), &self.history);
         }
 
         Ok(())
@@ -256,8 +267,6 @@ impl BaiduAiService {
 
     /// 设置API Key与应用Secret Key
     async fn set_kv(&mut self, req: BaiduAiKeyReqMsg) -> Result<()> {
-        let _ = self.gd.set_data(APP_ID.to_string(), &req.api_key);
-        let _ = self.gd.set_data(SECRET.to_string(), &req.secret);
 
         self.app_id = Some(req.api_key);
         self.secret = Some(req.secret);
