@@ -38,10 +38,15 @@ class AiContentData {
   final int id;
 
   // 描述
-  final String description;
+  String description;
 
-  // 内容 奇数为user 偶数为assistant
+  // 倒序 第一条是assistant 第二条是为user
   final List<String> contents;
 
   AiContentData(this.id, this.description, this.contents);
+
+  @override
+  String toString() {
+    return 'AiContentData{id: $id, description: $description, contents: $contents}';
+  }
 }

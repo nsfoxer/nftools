@@ -1,7 +1,3 @@
-import 'dart:io';
-import 'dart:math';
-
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as $me;
 import 'package:flutter/services.dart';
@@ -17,6 +13,39 @@ import 'package:nftools/utils/utils.dart';
 class AiPage extends StatelessWidget {
   const AiPage({super.key});
 
+  void _showIdList(BuildContext context) async {
+    var typography = FluentTheme.of(context).typography;
+    var color = FluentTheme.of(context).activeColor;
+    await showDialog<String>(
+        context: context,
+        builder: (context) => GetBuilder<AiController>(builder: (logic) {
+          return ContentDialog(
+            title: Text(
+              "选择对话列表",
+              style: typography.subtitle,
+            ),
+            content: SizedBox(
+              child: ListView.builder(
+                  itemCount: logic.state.idList.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Button(child: const Text("新建对话"), onPressed: () {
+                        logic.addQuestionId();
+                      });
+                    }
+                    final now = logic.state.idList[index-1];
+                    return ListTile.selectable(
+                      title:  now.$2.isEmpty ? const Text("暂无描述") : Text(now.$2),
+                      selected: now.$1 == logic.state.contentData.id,
+                      onSelectionChange: (v) {
+                        logic.selectQuestionId(now.$1);
+                      },
+                    );
+                  }),
+            ),
+          );
+        }));
+  }
   void _showKVSetting(BuildContext context) async {
     var typography = FluentTheme.of(context).typography;
     var color = FluentTheme.of(context).activeColor;
@@ -105,7 +134,9 @@ class AiPage extends StatelessWidget {
               CommandBarButton(
                   icon: const Icon(FluentIcons.refresh),
                   label: const Text("刷新"),
-                  onPressed: () {}),
+                  onPressed: () {
+                    _showIdList(context);
+                  }),
             ],
           );
         }),
@@ -118,17 +149,19 @@ class AiPage extends StatelessWidget {
               flex: 8,
               child: ListView.builder(
                   controller: logic.state.scrollController,
+                  reverse: true,
+                  scrollDirection: Axis.vertical,
                   shrinkWrap: true,
                   itemCount: contents.length,
                   itemBuilder: (context, index) {
                     debugPrint("$index");
-                    if (index % 2 == 0) {
+                    if (index % 2 != 0) {
                       return UserDisplay(msg: contents[index]);
                     } else {
                       return AssistantDisplay(
                           data: contents[index],
                           isLoading: logic.state.isLoading &&
-                              index + 1 == contents.length);
+                              index == 0);
                     }
                   }),
             ),
