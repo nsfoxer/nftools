@@ -132,7 +132,7 @@ class AiController extends GetxController {
     }
   }
 
-  void addQuestionId() async {
+  Future<void> addQuestionId() async {
     state.questController.clear();
     int id;
     if (state.idList.isEmpty) {

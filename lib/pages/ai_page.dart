@@ -38,8 +38,11 @@ class AiPage extends StatelessWidget {
                                     horizontal: NFLayout.v1),
                                 child: Button(
                                     child: const Text("新建对话"),
-                                    onPressed: () {
-                                      logic.addQuestionId();
+                                    onPressed: () async {
+                                     await logic.addQuestionId();
+                                     if (context.mounted) {
+                                       context.pop();
+                                     }
                                     }));
                           }
                           final now = logic.state.idList[index - 1];
