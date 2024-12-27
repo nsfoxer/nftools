@@ -29,7 +29,6 @@ Future<BaiduAiKeyReqMsg> getKV() async {
 
 // set kv
 Future<void> setKV(String appId, String secret) async {
-  info("$appId   $secret");
   final data = BaiduAiKeyReqMsg(apiKey: appId, secret: secret);
   await sendRequest<BaiduAiKeyReqMsg>(_service, _set_kv, data);
 }

@@ -2,7 +2,6 @@ import 'package:easy_debounce/easy_debounce.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/api/ai.dart' as $api;
-import 'package:nftools/utils/log.dart';
 
 import '../state/ai_state.dart';
 
@@ -28,6 +27,9 @@ class AiController extends GetxController {
       final r = await $api.getKV();
       state.appIdController.text = r.apiKey;
       state.secretController.text = r.secret;
+      if (r.apiKey.isNotEmpty && r.secret.isNotEmpty) {
+        state.isLogin = true;
+      }
     } catch (e) {
       return;
     }
@@ -42,6 +44,8 @@ class AiController extends GetxController {
     } catch (e) {
       return false;
     }
+    state.isLogin = true;
+    update();
     return true;
   }
 
@@ -56,13 +60,16 @@ class AiController extends GetxController {
     state.isLoading = true;
     _quest(question);
     state.questController.clear();
-    _jumpBottom();
+    _jumpBottom(true);
     update();
   }
 
-  void _jumpBottom() {
+  void _jumpBottom(bool ignoreOffset) {
     EasyDebounce.debounce("baiduAI_question", const Duration(milliseconds: 50),
         () {
+      if (!ignoreOffset && state.scrollController.offset > 300) {
+        return;
+      }
       state.scrollController.animateTo(0.0,
           duration: const Duration(milliseconds: 300), curve: Curves.ease);
     });
@@ -72,7 +79,7 @@ class AiController extends GetxController {
     var stream = $api.quest(question, state.contentData.id);
     stream.listen((data) {
       state.contentData.contents.first += data.content;
-      _jumpBottom();
+      _jumpBottom(false);
       update();
     }, onDone: () {
       if (state.contentData.description.isEmpty) {
@@ -100,7 +107,7 @@ class AiController extends GetxController {
       return x.id.compareTo(y.id);
     });
     state.idList = result.map((x) {
-      return (x.id, _subDesc(x.desc));
+      return (x.id, x.desc);
     }).toList();
     if (state.idList.isEmpty) {
       state.contentData = AiContentData(0, "", []);
@@ -144,9 +151,19 @@ class AiController extends GetxController {
   }
 
   String _subDesc(String desc) {
-    if (desc.length > 15) {
-      return desc.substring(0, 15);
+    if (desc.length > 8) {
+      return desc.substring(0, 8);
     }
     return desc;
+  }
+
+  Future<void> deleteQuestionId(int id) async {
+    await $api.delQuestion(id);
+    if (id != state.contentData.id) {
+      state.idList.removeWhere((x) => x.$1 == id);
+    } else {
+      await _initQuestionIdList();
+    }
+    update();
   }
 }

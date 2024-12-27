@@ -219,6 +219,10 @@ impl BaiduAiService {
             let error = serde_json::from_str::<BaiduAiErrorRsp>(&info)?;
             if error.error_code == 336002 {
                 return Err(anyhow::anyhow!("token已失效,请手动刷新token"));
+            } else if error.error_code == 110 {
+                return Err(anyhow::anyhow!("token错误，请重新设置密钥"));
+            } else if error.error_msg.contains("limit") {
+                return Err(anyhow::anyhow!("接口调用量超限，请稍后重试"));
             }
             return Err(anyhow::anyhow!(error.error_msg));
         }

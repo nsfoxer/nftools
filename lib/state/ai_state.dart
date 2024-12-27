@@ -7,6 +7,9 @@ class AiState {
   // 当前对话数据
   AiContentData contentData = AiContentData(0, "", []);
 
+  // 是否已登录
+  bool isLogin = false;
+
   // 当前是否结束
   bool isLoading = false;
 
