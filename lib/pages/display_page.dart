@@ -123,11 +123,11 @@ class _Mode extends StatelessWidget {
   final String? picFile;
 
   const _Mode({
-    Key? key,
+    super.key,
     required this.display,
     required this.isSelect,
     this.picFile,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
