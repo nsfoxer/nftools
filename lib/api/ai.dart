@@ -11,6 +11,8 @@ const String _set_kv = "set_kv";
 const String _refresh = "refresh_token";
 const String _getQuestionList = "get_question_list";
 const String _getQuestion = "get_question";
+const String _addQuestion = "new_question";
+const String _delQuestion = "del_question";
 
 // ai 测试
 Stream<BaiduAiRspMsg> quest(String msg, int id) {
@@ -46,6 +48,18 @@ Future<List<QuestionMsg>> getQuestionList() async {
 
 // 获取指定问题的请求数据
 Future<List<String>> getQuestion(int id) async {
-  final data = await sendRequest<EmptyMessage>(_service, _getQuestion, null);
+  final data = await sendRequest(_service, _getQuestion, Uint32Message(value: id));
   return VecStringMessage.fromBuffer(data).values;
 }
+
+// 新增问题
+Future<void> addQuestion(int id) async {
+  await sendRequest(_service, _addQuestion, Uint32Message(value: id));
+}
+
+// 删除问题
+Future<void> delQuestion(int id) async {
+  await sendRequest(_service, _delQuestion, Uint32Message(value: id));
+}
+
+

@@ -31,6 +31,7 @@ class AiController extends GetxController {
     } catch (e) {
       info("未设置KV信息,请先设置");
     }
+    await _initQuestionIdList();
     update();
   }
 
@@ -50,8 +51,8 @@ class AiController extends GetxController {
       return;
     }
     final question = state.questController.text;
-    state.contentData.contents.add(question);
-    state.contentData.contents.add("");
+    state.contentData.contents.insert(0, question);
+    state.contentData.contents.insert(0, "");
     state.isLoading = true;
     _quest(question);
     state.questController.clear();
@@ -62,30 +63,90 @@ class AiController extends GetxController {
   void _jumpBottom() {
     EasyDebounce.debounce("baiduAI_question", const Duration(milliseconds: 50),
         () {
-      state.scrollController.animateTo(
-          state.scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.ease);
+      state.scrollController.animateTo(0.0,
+          duration: const Duration(milliseconds: 300), curve: Curves.ease);
     });
   }
 
   void _quest(String question) async {
     var stream = $api.quest(question, state.contentData.id);
     stream.listen((data) {
-      state.contentData.contents.last += data.content;
+      state.contentData.contents.first += data.content;
       _jumpBottom();
       update();
     }, onDone: () {
+      if (state.contentData.description.isEmpty) {
+        final desc = _subDesc(question);
+        state.contentData.description = desc;
+        state.idList.last = (state.contentData.id, desc);
+      }
       state.isLoading = false;
       update();
     }, onError: (e) {
       if (state.questController.text.isEmpty) {
         state.questController.text = question;
       }
-      state.contentData.contents.removeLast();
-      state.contentData.contents.removeLast();
+      state.contentData.contents.removeAt(0);
+      state.contentData.contents.removeAt(0);
       state.isLoading = false;
       update();
+    }, cancelOnError: true);
+  }
+
+  // 初始化问题列表
+  Future<void> _initQuestionIdList() async {
+    var result = await $api.getQuestionList();
+    result.sort((x, y) {
+      return x.id.compareTo(y.id);
     });
+    state.idList = result.map((x) {
+      return (x.id, _subDesc(x.desc));
+    }).toList();
+    if (state.idList.isEmpty) {
+      state.contentData = AiContentData(0, "", []);
+    } else {
+      await selectQuestionId(state.idList.last.$1, nUpdate: false);
+    }
+  }
+
+  Future<void> selectQuestionId(int id, {bool nUpdate = true}) async {
+    debugPrint("${state.idList}");
+    var contents = await $api.getQuestion(id);
+    contents = contents.reversed.toList();
+    debugPrint("$contents");
+    if (contents.isEmpty) {
+      state.contentData = AiContentData(id, "", []);
+    } else {
+      state.contentData = AiContentData(id, contents.last, contents);
+    }
+
+    if (nUpdate) {
+      update();
+    }
+  }
+
+  void addQuestionId() async {
+    state.questController.clear();
+    int id;
+    if (state.idList.isEmpty) {
+      id = 0;
+    } else if (state.contentData.contents.isNotEmpty) {
+      id = state.idList.last.$1 + 1;
+    } else if (state.idList.last.$2.isNotEmpty) {
+      id = state.idList.last.$1;
+    } else {
+      return;
+    }
+    await $api.addQuestion(id);
+    state.idList.add((id, ""));
+    state.contentData = AiContentData(id, "", []);
+    update();
+  }
+
+  String _subDesc(String desc) {
+    if (desc.length > 15) {
+      return desc.substring(0, 15);
+    }
+    return desc;
   }
 }

@@ -2,10 +2,7 @@ use crate::common::global_data::GlobalData;
 use crate::messages::ai::{BaiduAiKeyReqMsg, BaiduAiRspMsg, QuestionListMsg, QuestionMsg};
 use crate::messages::common::{Uint32Message, VecStringMessage};
 use crate::service::service::{Service, ServiceName, StreamService};
-use crate::{
-    async_func_nono, async_func_notype, async_func_typeno, async_stream_func_typeno, func_end,
-    func_notype, func_typetype,
-};
+use crate::{async_func_nono, async_func_notype, async_func_typeno, async_stream_func_typeno, func_end, func_notype, func_typeno, func_typetype};
 use ahash::AHashMap;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -114,6 +111,7 @@ impl Service for BaiduAiService {
         async_func_typeno!(self, func, req_data, set_kv, BaiduAiKeyReqMsg);
         func_notype!(self, func, get_question_list);
         func_typetype!(self, func, req_data, get_question, Uint32Message);
+        func_typeno!(self, func, req_data, new_question, Uint32Message, del_question, Uint32Message);
         func_end!(func)
     }
 }
@@ -127,7 +125,7 @@ impl BaiduAiService {
         tx: UnboundedSender<Result<Option<Vec<u8>>>>,
     ) -> Result<()> {
         if !self.history.contains_key(&req.id) {
-            self.history.insert(req.id, Vec::new());
+            return Err(anyhow::anyhow!("没有对应的对话id"));
         }
         let current_size = req.desc.len();
         if current_size > MAX_SIZE {
@@ -299,5 +297,20 @@ impl BaiduAiService {
             .ok_or(anyhow::anyhow!("无法找到对应id"))?;
         let result = result.into_iter().map(|x| x.to_string()).collect();
         Ok(VecStringMessage { values: result })
+    }
+
+    fn new_question(&mut self, req:Uint32Message) -> Result<()> {
+        if self.history.contains_key(&req.value) {
+            return Err(anyhow::anyhow!("已存在对应的对话id"));
+        }
+        self.history.insert(req.value, Vec::new());
+        Ok(())
+    }
+
+    fn del_question(&mut self, req: Uint32Message) -> Result<()> {
+        if self.history.remove(&req.value).is_none() {
+            return Err(anyhow::anyhow!("不存在对应的对话id"));
+        }
+        Ok(())
     }
 }
