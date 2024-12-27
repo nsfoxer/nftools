@@ -9,6 +9,7 @@ import 'package:nftools/controller/ai_controller.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf-widgets.dart';
 import 'package:nftools/utils/utils.dart';
+import 'package:url_launcher/link.dart';
 
 class AiPage extends StatelessWidget {
   const AiPage({super.key});
@@ -16,7 +17,7 @@ class AiPage extends StatelessWidget {
   void _showIdList(BuildContext context) async {
     var typography = FluentTheme.of(context).typography;
     await showDialog<String>(
-      barrierDismissible: true,
+        barrierDismissible: true,
         context: context,
         builder: (context) => GetBuilder<AiController>(builder: (logic) {
               return ContentDialog(
@@ -31,11 +32,15 @@ class AiPage extends StatelessWidget {
                         itemCount: logic.state.idList.length + 1,
                         itemBuilder: (context, index) {
                           if (index == 0) {
-                            return Button(
-                                child: const Text("新建对话"),
-                                onPressed: () {
-                                  logic.addQuestionId();
-                                });
+                            return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: NFLayout.v1,
+                                    horizontal: NFLayout.v1),
+                                child: Button(
+                                    child: const Text("新建对话"),
+                                    onPressed: () {
+                                      logic.addQuestionId();
+                                    }));
                           }
                           final now = logic.state.idList[index - 1];
                           return ListTile.selectable(
@@ -46,6 +51,10 @@ class AiPage extends StatelessWidget {
                             onSelectionChange: (v) {
                               logic.selectQuestionId(now.$1);
                             },
+                            trailing: FilledButton(
+                                child: Icon(FluentIcons.delete),
+                                onPressed: () =>
+                                    logic.deleteQuestionId(now.$1)),
                           );
                         }),
                   );
@@ -78,9 +87,6 @@ class AiPage extends StatelessWidget {
                             controller: logic.state.appIdController,
                             cursorColor: color,
                             keyboardType: TextInputType.text,
-                            validator: (v) {
-                              return null;
-                            },
                           ),
                         ),
                         InfoLabel(
@@ -88,9 +94,6 @@ class AiPage extends StatelessWidget {
                           child: PasswordFormBox(
                             controller: logic.state.secretController,
                             cursorColor: color,
-                            validator: (v) {
-                              return null;
-                            },
                           ),
                         ),
                       ],
@@ -142,7 +145,7 @@ class AiPage extends StatelessWidget {
                   }),
               CommandBarButton(
                   icon: const Icon($me.Icons.question_answer),
-                  label: Text(question.isEmpty ? "新增对话" :question),
+                  label: Text(question.isEmpty ? "新增对话" : question),
                   onPressed: () {
                     _showIdList(context);
                   }),
@@ -152,6 +155,20 @@ class AiPage extends StatelessWidget {
       ),
       content: GetBuilder<AiController>(builder: (logic) {
         final contents = logic.state.contentData.contents;
+        if (!logic.state.isLogin) {
+          return Center(
+            child: Link(
+              // from the url_launcher package
+              uri: Uri.parse('https://ai.baidu.com/ai-doc/REFERENCE/Lkru0zoz4'),
+              builder: (context, open) {
+                return HyperlinkButton(
+                  onPressed: open,
+                  child: const Text('请先输入Yi-34B-Chat密钥'),
+                );
+              },
+            ),
+          );
+        }
         if (logic.state.idList.isEmpty) {
           return const Center(
             child: Text("请先建立一个新的对话"),
@@ -161,22 +178,24 @@ class AiPage extends StatelessWidget {
           children: [
             Expanded(
               flex: 8,
-              child: ListView.builder(
-                  controller: logic.state.scrollController,
-                  reverse: true,
-                  scrollDirection: Axis.vertical,
-                  shrinkWrap: true,
-                  itemCount: contents.length,
-                  itemBuilder: (context, index) {
-                    debugPrint("$index");
-                    if (index % 2 != 0) {
-                      return UserDisplay(msg: contents[index]);
-                    } else {
-                      return AssistantDisplay(
-                          data: contents[index],
-                          isLoading: logic.state.isLoading && index == 0);
-                    }
-                  }),
+              child: Align(
+                  alignment: Alignment.topLeft,
+                  child: ListView.builder(
+                      controller: logic.state.scrollController,
+                      reverse: true,
+                      scrollDirection: Axis.vertical,
+                      shrinkWrap: true,
+                      itemCount: contents.length,
+                      itemBuilder: (context, index) {
+                        debugPrint("$index");
+                        if (index % 2 != 0) {
+                          return UserDisplay(msg: contents[index]);
+                        } else {
+                          return AssistantDisplay(
+                              data: contents[index],
+                              isLoading: logic.state.isLoading && index == 0);
+                        }
+                      })),
             ),
             Expanded(
                 flex: 2,
@@ -217,7 +236,9 @@ class AiPage extends StatelessWidget {
                                 : () {
                                     logic.quest();
                                   },
-                            child: const Text("提问")))
+                            child: const Tooltip(
+                                message: "(Ctrl+Enter)",
+                                child: Text("提问 "))))
                   ],
                 ))
           ],
