@@ -210,7 +210,7 @@ List<GoRoute> _generateRoute(List<MenuData> datas) {
           return CustomTransitionPage(
             key: state.pageKey,
             child: value.body,
-            transitionDuration: const Duration(milliseconds: 3000),
+            transitionDuration: const Duration(milliseconds: 300),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
               const end = Offset.zero;
