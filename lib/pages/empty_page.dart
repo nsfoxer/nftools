@@ -6,11 +6,12 @@ class EmptyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldPage.scrollable(
-      header: const PageHeader(
-        title: Text("暂未实现"),
+    var typography = FluentTheme.of(context).typography;
+    return Center(
+      child: Text(
+        "暂未开发",
+        style: typography.title,
       ),
-      children: [],
     );
   }
 }

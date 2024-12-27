@@ -117,10 +117,8 @@ class AiController extends GetxController {
   }
 
   Future<void> selectQuestionId(int id, {bool nUpdate = true}) async {
-    debugPrint("${state.idList}");
     var contents = await $api.getQuestion(id);
     contents = contents.reversed.toList();
-    debugPrint("$contents");
     if (contents.isEmpty) {
       state.contentData = AiContentData(id, "", []);
     } else {
