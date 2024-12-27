@@ -35,7 +35,7 @@ void _print(String message, InfoBarSeverity serverity) async {
       content: Text(message),
       severity: serverity,
       title: Text(serverity.name.toUpperCase()),
-      isLong: true,
+      isLong: message.length > 30,
       isIconVisible: true,
     );
   });
