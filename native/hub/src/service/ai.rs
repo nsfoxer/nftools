@@ -10,7 +10,6 @@ use bytes::Bytes;
 use futures_util::StreamExt;
 use prost::Message;
 use reqwest::Client;
-use rinf::debug_print;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::mpsc::UnboundedSender;
@@ -72,7 +71,6 @@ impl BaiduAiService {
     pub fn new(gd: Arc<GlobalData>) -> Self {
         let client = Client::new();
         let history = gd.get_data(HISTORY).unwrap_or(AHashMap::new());
-        debug_print!("{:?}", history);
         Self {
             client,
             token: None,
@@ -279,7 +277,7 @@ impl BaiduAiService {
             .iter()
             .map(|(k, v)| {
                 let desc = match v.get(0) {
-                    Some(r) => r.to_string(),
+                    Some(r) => r.trim_start().split_at(8).0.to_string(),
                     None => "".to_string(),
                 };
                 QuestionMsg { id: *k, desc }
