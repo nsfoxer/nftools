@@ -89,9 +89,9 @@ impl ApiService {
                     generate_error_response(
                         signal.message.id,
                         format!("未知服务 {}", signal.message.service),
-                        false
+                        false,
                     )
-                        .send_signal_to_dart(Vec::with_capacity(0));
+                    .send_signal_to_dart(Vec::with_capacity(0));
                 }
                 Some(service) => {
                     Self::handle_stream_service_for_service(service, signal);
@@ -113,21 +113,21 @@ impl ApiService {
             }
         };
     }
-    
+
     /// 流式服务处理
     fn handle_stream(&self, signal: DartSignal<BaseRequest>) {
         let Some(service) = self.stream_services.get(signal.message.service.as_str()) else {
             generate_error_response(
                 signal.message.id,
                 format!("未知服务 {}", signal.message.service),
-                true
+                true,
             )
             .send_signal_to_dart(Vec::with_capacity(0));
             return;
         };
-        
+
         let (tx, mut rx) = unbounded_channel::<anyhow::Result<Option<Vec<u8>>>>();
-        
+
         // 接受并发送响应流
         let id = signal.message.id;
         let msg_service = signal.message.service.clone();
@@ -141,42 +141,54 @@ impl ApiService {
                             msg: String::with_capacity(0),
                             is_stream: true,
                             is_end: false,
-                        }.send_signal_to_dart(r.unwrap_or(Vec::with_capacity(0)));
+                        }
+                        .send_signal_to_dart(r.unwrap_or(Vec::with_capacity(0)));
                     }
                     Err(r) => {
+                        let msg = if cfg!(debug_assertions) {
+                            format!("处理请求错误{}-{}:{}", msg_service, func, r)
+                        } else {
+                            r.to_string()
+                        };
                         BaseResponse {
                             id,
-                            msg: format!("请求处理错误:{}-{}-{}", msg_service, func, r),
+                            msg,
                             is_stream: true,
                             is_end: false,
                         }
-                       .send_signal_to_dart(Vec::with_capacity(0));
+                        .send_signal_to_dart(Vec::with_capacity(0));
                     }
                 }
             }
             // 管道关闭后，发送结束标识
             BaseResponse {
-                id, 
+                id,
                 msg: String::with_capacity(0),
-                is_stream:true,
+                is_stream: true,
                 is_end: true,
-            }.send_signal_to_dart(Vec::with_capacity(0));
+            }
+            .send_signal_to_dart(Vec::with_capacity(0));
         });
-        
+
         match service {
             StreamServiceEnum::StreamService(service) => {
                 Self::stream_service_handle(service.clone(), signal, tx);
             }
         }
     }
-    
-    fn stream_service_handle(service: Arc<Mutex<Box<dyn StreamService>>>,
-                             signal: DartSignal<BaseRequest>,
-                             tx: UnboundedSender<anyhow::Result<Option<Vec<u8>>>>) {
+
+    fn stream_service_handle(
+        service: Arc<Mutex<Box<dyn StreamService>>>,
+        signal: DartSignal<BaseRequest>,
+        tx: UnboundedSender<anyhow::Result<Option<Vec<u8>>>>,
+    ) {
         tokio::spawn(async move {
             let mut service = service.lock().await;
             let tx_clone = tx.clone();
-            if let Err(e) = service.handle_stream(&signal.message.func, signal.binary, tx).await {
+            if let Err(e) = service
+                .handle_stream(&signal.message.func, signal.binary, tx)
+                .await
+            {
                 tx_clone.send(Err(e)).unwrap();
             }
         });
@@ -243,7 +255,7 @@ impl ApiService {
             .await?
             .unwrap_or(Vec::with_capacity(0)))
     }
-    
+
     async fn _handle_stream_service(
         service: Arc<Mutex<Box<dyn StreamService>>>,
         func: &str,
@@ -256,8 +268,11 @@ impl ApiService {
             .unwrap_or(Vec::with_capacity(0)))
     }
 
-    fn handle_stream_service_for_service(service: &StreamServiceEnum, signal: DartSignal<BaseRequest>) {
-        match service { 
+    fn handle_stream_service_for_service(
+        service: &StreamServiceEnum,
+        signal: DartSignal<BaseRequest>,
+    ) {
+        match service {
             StreamServiceEnum::StreamService(service) => {
                 let service = service.clone();
                 tokio::spawn(async move {
@@ -270,7 +285,12 @@ impl ApiService {
 
 /// 生成错误响应
 fn generate_error_response(id: u64, error: String, is_stream: bool) -> BaseResponse {
-    BaseResponse { id, msg: error, is_stream, is_end: true, }
+    BaseResponse {
+        id,
+        msg: error,
+        is_stream,
+        is_end: true,
+    }
 }
 
 mod macros {
@@ -296,15 +316,10 @@ mod macros {
                     } else {
                         e.to_string()
                     };
-                    generate_error_response(
-                        $signal.message.id,
-                        msg,
-                        false
-                    )
-                    .send_signal_to_dart(Vec::with_capacity(0));
+                    generate_error_response($signal.message.id, msg, false)
+                        .send_signal_to_dart(Vec::with_capacity(0));
                 }
             }
         };
     }
 }
-
