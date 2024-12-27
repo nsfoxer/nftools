@@ -1,6 +1,13 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/router/router.dart';
 
+const Map<InfoBarSeverity, String> _infoNameMap = {
+  InfoBarSeverity.info: "通知",
+  InfoBarSeverity.success: "成功",
+  InfoBarSeverity.warning: "警告",
+  InfoBarSeverity.error: "错误",
+};
+
 /// info log
 void info(String message) {
   _print(message, InfoBarSeverity.info);
@@ -22,10 +29,14 @@ void _print(String message, InfoBarSeverity serverity) async {
   if (context == null) {
     return;
   }
-  await displayInfoBar(context, builder: (context, close) {
+  await displayInfoBar(context, duration: const Duration(seconds: 3),
+      builder: (context, close) {
     return InfoBar(
       content: Text(message),
-      severity: serverity, title: Text(serverity.name.toUpperCase()),
+      severity: serverity,
+      title: Text(serverity.name.toUpperCase()),
+      isLong: true,
+      isIconVisible: true,
     );
   });
 }

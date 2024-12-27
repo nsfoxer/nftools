@@ -138,17 +138,19 @@ class AiPage extends StatelessWidget {
             overflowItemAlignment: MainAxisAlignment.end,
             primaryItems: [
               CommandBarButton(
-                  icon: const Icon(FluentIcons.account_management),
-                  label: const Text("密钥管理"),
+                  icon: const Icon($me.Icons.key),
+                  label: const Text("密钥"),
                   onPressed: () {
                     _showKVSetting(context);
                   }),
               CommandBarButton(
                   icon: const Icon($me.Icons.question_answer),
                   label: Text(question.isEmpty ? "新增对话" : question),
-                  onPressed: () {
-                    _showIdList(context);
-                  }),
+                  onPressed: logic.state.isLoading
+                      ? null
+                      : () {
+                          _showIdList(context);
+                        }),
             ],
           );
         }),
@@ -230,15 +232,19 @@ class AiPage extends StatelessWidget {
                     Positioned(
                         right: 10,
                         bottom: 10,
-                        child: Button(
-                            onPressed: logic.state.isLoading
-                                ? null
-                                : () {
-                                    logic.quest();
-                                  },
-                            child: const Tooltip(
-                                message: "(Ctrl+Enter)",
-                                child: Text("提问 "))))
+                        child: logic.state.isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: ProgressRing(),
+                              )
+                            : Button(
+                                onPressed: () {
+                                  logic.quest();
+                                },
+                                child: const Tooltip(
+                                    message: "(Ctrl+Enter)",
+                                    child: Text("提问"))))
                   ],
                 ))
           ],
@@ -322,8 +328,11 @@ class AssistantDisplay extends StatelessWidget {
         Expanded(
             flex: 8,
             child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: NFLayout.v3,
+                padding: const EdgeInsets.fromLTRB(
+                  NFLayout.v3,
+                  0,
+                  NFLayout.v3 * 4,
+                  NFLayout.v3,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
