@@ -14,11 +14,10 @@ class AiController extends GetxController {
     super.onReady();
   }
 
-  // @override
-  // void onClose() {
-  //   // state.dispose();
-  //   super.dispose();
-  // }
+  @override
+  void onClose() {
+    state.dispose();
+  }
 
   void _init() async {
     // get_kv
