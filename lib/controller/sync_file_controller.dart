@@ -17,7 +17,6 @@ class SyncFileController extends GetxController {
   @override
   void onClose() {
     state.dispose();
-    super.dispose();
   }
 
   // 初始化数据
