@@ -13,7 +13,6 @@ class GlobalControllerBindings implements Bindings {
     Get.lazyPut<MainPageController>(() => MainPageController(), fenix: true);
     Get.lazyPut<DisplayController>(() => DisplayController(), fenix: true);
     Get.lazyPut<DisplayModeController>(() => DisplayModeController(), fenix: true);
-    Get.lazyPut<SyncFileController>(() => SyncFileController(), fenix: true);
     Get.lazyPut<SystemModeController>(() => SystemModeController(), fenix: true);
     Get.put<SystemInfoController>(SystemInfoController(), permanent: true);
     Get.put<SyncFileController>(SyncFileController(), permanent: true);

@@ -37,6 +37,9 @@ class _DisplayLight extends StatelessWidget {
 
       List<Widget> displays = [];
       for (var item in state.displayLight.entries) {
+        if (item.value == -1) {
+          continue;
+        }
         displays.add(SizedBox(
             height: 25,
             child: Row(

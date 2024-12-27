@@ -6,13 +6,9 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var typography = FluentTheme.of(context).typography;
-    return ScaffoldPage(
-      header: const PageHeader(
+    return const ScaffoldPage(
+      header: PageHeader(
         title: Text("主页"),
-      ),
-      content: Center(
-        child: Text("nftools", style: typography.title,),
       ),
     );
   }

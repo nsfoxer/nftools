@@ -35,7 +35,7 @@ class DisplayController extends GetxController {
         () async {
       var light = value;
       $api.setLight(DisplayInfo(screen: screen, value: light)).catchError((e) {
-        state.displayLight[screen] = light;
+        state.displayLight[screen] = -1;
         update();
       });
     });
