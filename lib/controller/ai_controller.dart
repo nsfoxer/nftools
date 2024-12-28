@@ -50,10 +50,11 @@ class AiController extends GetxController {
 
   // 请求一次提问
   void quest() {
-    if (state.questController.text.isEmpty) {
+    final question = state.questController.text.trim();
+    state.questController.text = question;
+    if (question.isEmpty) {
       return;
     }
-    final question = state.questController.text;
     state.contentData.contents.insert(0, question);
     state.contentData.contents.insert(0, "");
     state.isLoading = true;
