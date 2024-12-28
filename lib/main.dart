@@ -149,7 +149,7 @@ class _MainAppState extends State<MainApp>
     final Map<String, Color> swatch = {
       "normal": primaryColor,
     };
-    var fonts = Platform.isWindows ? "微软雅黑" : "Source Han Sans CN";
+    var fonts = "oppo_sans";
 
     var m = FluentThemeData(
         brightness: Brightness.light,

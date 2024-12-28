@@ -143,7 +143,7 @@ class AiPage extends StatelessWidget {
               CommandBarButton(
                   icon: const Icon($me.Icons.key),
                   label: const Text("密钥"),
-                  onPressed: () {
+                  onPressed: logic.state.isLoading ? null : () {
                     _showKVSetting(context);
                   }),
               CommandBarButton(
@@ -324,7 +324,7 @@ class AssistantDisplay extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Image(
-          image: AssetImage("assets/baidu.ico"),
+          image: AssetImage("assets/img/baidu.ico"),
           width: 25,
           height: 25,
         ),
@@ -364,7 +364,9 @@ class UserDisplay extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        NFCardContent(color: res, child: Text(msg)),
+        NFCardContent(color: res, child:
+          SelectableText(msg)
+        ),
       ],
     );
   }
