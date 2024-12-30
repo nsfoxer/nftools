@@ -39,3 +39,7 @@ Future<bool> confirmDialog(
 bool isDark(BuildContext context) {
   return View.of(context).platformDispatcher.platformBrightness.isDark;
 }
+
+Color primaryColor(BuildContext context) {
+  return FluentTheme.of(context).accentColor.normal;
+}
