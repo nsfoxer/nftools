@@ -19,7 +19,7 @@ class SyncFilePage extends StatelessWidget {
 
   void _showAccountSetting(BuildContext context) async {
     var typography = FluentTheme.of(context).typography;
-    var color = FluentTheme.of(context).activeColor;
+    var color = primaryColor(context);
     await showDialog<String>(
         context: context,
         builder: (context) => GetBuilder<SyncFileController>(builder: (logic) {
@@ -131,7 +131,7 @@ class SyncFilePage extends StatelessWidget {
 
   void _showAddSyncDir(BuildContext context) async {
     var typography = FluentTheme.of(context).typography;
-    var color = FluentTheme.of(context).activeColor;
+    var color = primaryColor(context);
     await showDialog(
         context: context,
         builder: (context) => GetBuilder<SyncFileController>(builder: (logic) {

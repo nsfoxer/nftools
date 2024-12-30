@@ -68,7 +68,7 @@ class AiPage extends StatelessWidget {
 
   void _showKVSetting(BuildContext context) async {
     final typography = FluentTheme.of(context).typography;
-    final color = FluentTheme.of(context).activeColor;
+    final color = primaryColor(context);
     await showDialog<String>(
         context: context,
         builder: (context) => GetBuilder<AiController>(builder: (logic) {
@@ -131,7 +131,7 @@ class AiPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final res = FluentTheme.of(context).resources;
-    final color = FluentTheme.of(context).activeColor;
+    final color = primaryColor(context);
     return ScaffoldPage(
       header: PageHeader(
         title: const Text("BaiduAI"),
