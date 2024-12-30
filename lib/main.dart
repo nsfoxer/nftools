@@ -381,7 +381,7 @@ class MainPage extends StatelessWidget {
 
 // 初始化系统托盘
 Future<void> initSystemTray() async {
-  String path = Platform.isWindows ? 'assets/nftools.ico' : 'assets/nftools.png';
+  String path = Platform.isWindows ? 'assets/img/nftools.ico' : 'assets/img/nftools.png';
 
   // We first init the systray menu
   await trayManager.setIcon(path);
