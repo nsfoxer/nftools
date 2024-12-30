@@ -67,8 +67,8 @@ class AiPage extends StatelessWidget {
   }
 
   void _showKVSetting(BuildContext context) async {
-    var typography = FluentTheme.of(context).typography;
-    var color = FluentTheme.of(context).activeColor;
+    final typography = FluentTheme.of(context).typography;
+    final color = FluentTheme.of(context).activeColor;
     await showDialog<String>(
         context: context,
         builder: (context) => GetBuilder<AiController>(builder: (logic) {
@@ -131,6 +131,7 @@ class AiPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final res = FluentTheme.of(context).resources;
+    final color = FluentTheme.of(context).activeColor;
     return ScaffoldPage(
       header: PageHeader(
         title: const Text("BaiduAI"),
@@ -192,7 +193,6 @@ class AiPage extends StatelessWidget {
                       shrinkWrap: true,
                       itemCount: contents.length,
                       itemBuilder: (context, index) {
-                        debugPrint("$index");
                         if (index % 2 != 0) {
                           return UserDisplay(msg: contents[index]);
                         } else {
@@ -226,10 +226,8 @@ class AiPage extends StatelessWidget {
                             enableSuggestions: false,
                             minLines: null,
                             maxLines: null,
+                            cursorColor: color,
                             controller: logic.state.questController,
-                            onSubmitted: (msg) {
-                              info(msg);
-                            },
                           ),
                         )),
                     Positioned(
