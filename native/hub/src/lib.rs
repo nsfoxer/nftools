@@ -8,8 +8,10 @@ mod messages;
 mod service;
 
 use crate::api::api::ApiService;
+use crate::common::utils::notify;
 use crate::common::*;
 use crate::messages::base::BaseRequest;
+use crate::service::ai::BaiduAiService;
 use crate::service::display::display_os::{DisplayLight, DisplayMode};
 use crate::service::syncfile::SyncFileService;
 use crate::service::system_info::SystemInfoService;
@@ -17,11 +19,9 @@ use crate::service::utils::UtilsService;
 use common::global_data::GlobalData;
 use log::error;
 use std::path::PathBuf;
-use std::sync::{Arc};
+use std::sync::Arc;
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use tokio;
-use crate::common::utils::notify;
-use crate::service::ai::BaiduAiService;
 
 rinf::write_interface!();
 
@@ -32,7 +32,6 @@ async fn main() {
 async fn init_service(gd: Arc<GlobalData>) -> ApiService {
     let mut api = ApiService::new();
     api.add_imm_service(Box::new(UtilsService::new()));
-
 
     #[cfg(target_os = "windows")]
     {
@@ -52,7 +51,7 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
             Err(e) => error!("display mode服务创建失败。原因:{e}"),
         }
     }
-    match SyncFileService::new(gd.clone()) {
+    match SyncFileService::new(gd.clone()).await {
         Ok(s) => {
             api.add_service(Box::new(s));
         }
@@ -61,20 +60,27 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
         }
     }
     api.add_service(Box::new(SystemInfoService::new().await));
-    api.add_stream_service(Box::new(BaiduAiService::new(gd.clone())));
+    api.add_stream_service(Box::new(BaiduAiService::new(gd.clone()).await));
 
     api
 }
 
 async fn base_request() -> Result<()> {
     let path = lock().ok();
-    let global_data = GlobalData::new(path).expect("Global data initialized");
+    let global_data = GlobalData::new().await.expect("Global data initialized");
     let gd = Arc::new(global_data);
     let api = init_service(gd.clone()).await;
 
     let mut receiver = BaseRequest::get_dart_signal_receiver()?;
     while let Some(signal) = receiver.recv().await {
         api.handle(signal);
+    }
+
+    // 尝试删除lock
+    if let Some(path) = path {
+        tokio::fs::remove_file(path)
+            .await
+            .unwrap_or_else(|e| eprintln!("{}", e));
     }
 
     Ok(())
@@ -127,8 +133,8 @@ fn lock() -> anyhow::Result<PathBuf> {
     }
     let pid = std::process::id();
     let name = match process.process(Pid::from_u32(pid)) {
-        None => {""}
-        Some(p) => {p.name().to_str().unwrap_or_default()}
+        None => "",
+        Some(p) => p.name().to_str().unwrap_or_default(),
     };
     path.push(format!("{name}_^_^_{pid}.lock"));
     let _ = std::fs::File::create(&path)?;

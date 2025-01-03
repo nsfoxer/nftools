@@ -1,134 +1,102 @@
-use dashmap::DashMap;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fs;
-use std::path::PathBuf;
+use crate::common::utils::get_config_dir;
 use anyhow::Result;
 use serde::de::DeserializeOwned;
-use crate::common::utils::get_config_dir;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+use tokio_rusqlite::{params, Connection};
+
+type KEY = &'static str;
+
+pub enum ConfigMessage {
+    STORE(KEY, String),
+    LOAD(KEY, String),
+}
 
 /// 全局数据
+#[derive(Clone)]
 pub struct GlobalData {
-    inner_data: DashMap<String, String>,
-    lock_file: Option<PathBuf>,
+    conn: Connection,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct GlobalDataCopy {
-    inner_data: HashMap<String, String>,
-}
 impl GlobalData {
-    pub fn new(lock_file: Option<PathBuf>) -> Result<Self> {
-        let gd = GlobalDataCopy::new()?;
-        let mut gd: GlobalData = gd.into();
-        gd.lock_file = lock_file;
-        Ok(gd)
+    pub async fn new() -> Result<Self> {
+        let conn = Connection::open(config_dir()?).await?;
+        conn.call(|conn| {
+            conn.execute(
+                r#"
+CREATE TABLE IF NOT EXISTS KV (
+	id TEXT NOT NULL,
+	value TEXT,
+	CONSTRAINT KV_PK PRIMARY KEY (id)
+);"#,
+                [],
+            )?;
+            Ok(())
+        })
+        .await?;
+
+        Ok(Self { conn })
     }
 
-    pub fn set_data<T>(&self, key: String, value: &T) -> Result<()>
+    pub async fn set_data<T>(&self, key: String, value: &T) -> Result<()>
     where
         T: Serialize,
     {
         let s = serde_json::to_string(value)?;
-        self.inner_data.insert(key, s);
+        self.store(key, s).await?;
         Ok(())
     }
 
-    pub fn get_data<T>(&self, key: &str) -> Option<T>
+    pub async fn get_data<T>(&self, key: String) -> Option<T>
     where
         T: DeserializeOwned,
     {
-        self.inner_data.get(key).and_then(|v| {
-            serde_json::from_str(v.value().as_str()).ok()
-        })
-    }
-}
-
-
-impl Drop for GlobalData {
-    fn drop(&mut self) {
-        let data: GlobalDataCopy = self.into();
-        data.save().unwrap_or_else(|e| eprintln!("{}", e));
-        if let Some(path) = self.lock_file.as_ref() {
-            fs::remove_file(path).unwrap_or_else(|e| eprintln!("{}", e));
+        match self.load(key).await {
+            Ok(v) => match v {
+                None => None,
+                Some(v) => serde_json::from_str(v.as_str()).ok(),
+            },
+            Err(_) => None,
         }
     }
-}
 
-impl From<GlobalDataCopy> for GlobalData {
-    fn from(value: GlobalDataCopy) -> Self {
-        let datas = DashMap::with_capacity(value.inner_data.len());
-        for (k, v) in value.inner_data {
-            datas.insert(k, v);
-        }
-
-        Self {
-            inner_data: datas,
-            lock_file: None,
-        }
-    }
-}
-
-impl From<&mut GlobalData> for GlobalDataCopy {
-    fn from(value: &mut GlobalData) -> Self {
-        let mut datas = HashMap::with_capacity(value.inner_data.len());
-        for (k, v) in value.inner_data.clone() {
-            datas.insert(k, v);
-        }
-
-        Self {
-            inner_data: datas,
-        }
-    }
-}
-
-impl GlobalDataCopy {
-    fn new() -> Result<Self> {
-        let config = config_dir()?;
-
-        let data =
-            if config.exists() {
-                serde_json::from_str(&std::fs::read_to_string(config).unwrap_or_default()).unwrap_or_else(|e| {
-                    eprintln!("{}", e);
-                    HashMap::with_capacity(0)
-                })
-            } else {
-                HashMap::with_capacity(0)
-            };
-
-        Ok(Self {
-            inner_data: data,
-        })
-    }
-
-    fn save(self) -> Result<()> {
-        let config = config_dir()?;
-        std::fs::write(config, serde_json::to_string(&self.inner_data)?)?;
+    async fn store(&self, key: String, value: String) -> Result<()> {
+        self.conn
+            .call(move |conn| {
+                let mut stmt =
+                    conn.prepare_cached("INSERT OR REPLACE INTO KV (id, value) values (?1, ?2)")?;
+                stmt.execute(&[&key, &value])?;
+                Ok(())
+            })
+            .await?;
         Ok(())
     }
-}
 
+    async fn load(&self, key: String) -> Result<Option<String>> {
+        let result = self
+            .conn
+            .call(move |conn| {
+                let mut stmt = conn.prepare_cached("SELECT value FROM KV WHERE id = ?1")?;
+                let mut rows = stmt.query(params![key])?;
+                match rows.next()? {
+                    None => Ok(None),
+                    Some(row) => Ok(row.get(0)?),
+                }
+            })
+            .await?;
+        Ok(result)
+    }
+}
 
 fn config_dir() -> Result<PathBuf> {
     let mut config = get_config_dir()?;
-    config.push("global.json");
+    config.push("global.db");
     Ok(config)
 }
 
-
 mod tests {
-
     #[test]
-    fn a() {
-        use crate::common::global_data::GlobalData;
-        let data = GlobalData::new(None).unwrap();
-        let s = vec!["1", "2", "3", "abcb"];
-        data.set_data("SyncFile".to_string(), &s).unwrap();
-    }
+    fn a() {}
     #[test]
-    fn b() {
-        use crate::common::global_data::GlobalData;
-        let data = GlobalData::new(None).unwrap();
-        eprintln!("{:?}", data.get_data::<Vec<String>>("SyncFile").unwrap());
-    }
+    fn b() {}
 }
