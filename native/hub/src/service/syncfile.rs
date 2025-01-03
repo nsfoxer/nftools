@@ -106,10 +106,11 @@ impl Service for SyncFileService {
 }
 
 impl SyncFileService {
-    pub fn new(global_data: Arc<GlobalData>) -> Result<Self> {
-        let account = global_data.get_data(ACCOUNT_CACHE);
+    pub async fn new(global_data: Arc<GlobalData>) -> Result<Self> {
+        let account = global_data.get_data(ACCOUNT_CACHE.to_string()).await;
         let file_sync = global_data
-            .get_data(&format!("{}-{}", SYNC_FILE_PREFIX, get_machine_id()?))
+            .get_data(format!("{}-{}", SYNC_FILE_PREFIX, get_machine_id()?))
+            .await
             .unwrap_or_default();
         let r = Self {
             global_data,
@@ -156,6 +157,7 @@ impl SyncFileService {
             url: account.url,
         };
         self.account_info = Some(account);
+        self.global_data.set_data(ACCOUNT_CACHE.to_string(), &self.account_info).await?;
         self.has_account().await
     }
 
@@ -356,6 +358,7 @@ impl SyncFileService {
             modify: 0,
             tag: sync.tag
         };
+        self.global_data.set_data(format!("{}-{}", SYNC_FILE_PREFIX, get_machine_id()?), &self.file_sync).await?;
         Ok(result)
     }
 
@@ -700,199 +703,5 @@ impl SyncFileService {
         }
 
         Ok(())
-    }
-}
-
-impl Drop for SyncFileService {
-    fn drop(&mut self) {
-        if let Ok(id) = get_machine_id() {
-            if let Err(e) = self
-                .global_data
-                .set_data(format!("{}-{}", SYNC_FILE_PREFIX, id), &self.file_sync)
-            {
-                error!("{}", e);
-            }
-        }
-
-        if let Err(e) = self
-            .global_data
-            .set_data(ACCOUNT_CACHE.to_string(), &self.account_info)
-        {
-            error!("{}", e);
-        }
-    }
-}
-
-#[allow(unused_imports)]
-mod test {
-    use crate::common::global_data::GlobalData;
-    use crate::messages::common::StringMessage;
-    use crate::messages::syncfile::FileStatusEnum;
-    use crate::service::syncfile::{
-        AccountInfo, LocalFileMetadata, RemoteFileMedata, SyncFileService,
-    };
-    use ahash::AHashMap;
-    use std::path::{Path, PathBuf};
-    use std::sync::Arc;
-    use tokio::fs;
-    use tokio::fs::File;
-
-    #[tokio::test]
-    async fn webdav() {
-        // let gd = Arc::new(GlobalData::new().unwrap());
-        // let sync_file = SyncFile::new(gd);
-        let account = AccountInfo {
-            url: "https://dav.jianguoyun.com/dav/".to_string(),
-            user: "1261805497@qq.com".to_string(),
-            passwd: "a22xnw294yj5h9d3".to_string(),
-        };
-        let client = SyncFileService::connect(&account).await.unwrap();
-        // client.mkcol("/nftools/aaaa").await.unwrap();
-        // client
-        //     .put(
-        //         "/nftools/aaaa/c.txt",
-        //         "/home/nsfoxer/桌面/test/目录2/文本文件.txt",
-        //     )
-        //     .await
-        //     .unwrap();
-        // let map = SyncFileService::get_remote_dirs(&account).await.unwrap();
-        // eprintln!("{:?}", map);
-        let l_metadata = SyncFileService::get_newest_file(r#"/home/nsfoxer/桌面/test/"#)
-            .await
-            .unwrap();
-        let s = serde_json::to_string(&l_metadata).unwrap();
-        eprintln!("{}", s);
-    }
-
-    #[test]
-    fn diff_local_remote() {
-        let mut files = AHashMap::new();
-        files.insert("1.txt".to_string(), 1);
-        files.insert("2.txt".to_string(), 2);
-        files.insert("3.txt".to_string(), 3);
-        let l_metadata = LocalFileMetadata {
-            tag: "".to_string(),
-            last_time: 10,
-            files,
-        };
-
-        let mut files = AHashMap::new();
-        files.insert("1.txt".to_string(), 1);
-        files.insert("2.txt".to_string(), 2);
-        files.insert("3.txt".to_string(), 3);
-        let mut r_metadata = RemoteFileMedata {
-            tag: "".to_string(),
-            last_time: 10,
-            files,
-        };
-
-        // 测试本地比远端新
-        r_metadata.last_time -= 1;
-        r_metadata.files.remove("1.txt");
-        let r = SyncFileService::diff_local_remote_file(&l_metadata, &r_metadata);
-        assert_eq!(FileStatusEnum::Upload, r.0);
-
-        // 测试本地比远端旧
-        r_metadata.last_time += 2;
-        r_metadata.files.remove("1.txt");
-        let r = SyncFileService::diff_local_remote_file(&l_metadata, &r_metadata);
-        assert_eq!(FileStatusEnum::Download, r.0);
-
-        // 测试本地比远端一样
-        r_metadata.last_time -= 1;
-        r_metadata.files.insert("1.txt".to_string(), 10);
-        r_metadata.files.insert("2.txt".to_string(), 1);
-        let r = SyncFileService::diff_local_remote_file(&l_metadata, &r_metadata);
-        eprintln!("{:?}", r);
-        assert_eq!(FileStatusEnum::Synced, r.0);
-    }
-
-    #[test]
-    fn path() {
-        let path = PathBuf::from("/home/nsfoxer/src/nftools/native/hub/src/service/syncfile.rs");
-        for c in path.components() {
-            eprintln!("{}", c.as_os_str().to_str().unwrap());
-        }
-    }
-
-    #[tokio::test]
-    async fn add_file() {
-        let gd = Arc::new(GlobalData::new(None/* std::option::Option<PathBuf> */).unwrap());
-        let mut sync_file = SyncFileService::new(gd).unwrap();
-        let account = AccountInfo {
-            url: "https://dav.jianguoyun.com/dav/".to_string(),
-            user: "1261805497@qq.com".to_string(),
-            passwd: "a22xnw294yj5h9d3".to_string(),
-        };
-        sync_file.account_info = Some(account);
-        sync_file.has_account().await;
-        let local_dir = r"/home/nsfoxer/桌面/test/".to_string();
-        // let local_dir = r"C:\Users\12618\Desktop\tmp\test\".to_string();
-        // let medata = SyncFileService::get_newest_file(&local_dir).await.unwrap();
-        // eprintln!("{medata:?}");
-        // 新增本地目录测试
-        // let message = StringMessage { value: local_dir.clone(), };
-        // sync_file.add_local_file(message).await.unwrap();
-
-        // 获取远端所有metadata测试
-        // let r = SyncFileService::get_remote_dirs(sync_file.account_info.as_ref().unwrap()).await;
-        // eprintln!("{:?}", r);
-
-        // 列出远端与本地区别测试
-        // let r = sync_file.list_files().await.unwrap();
-        // eprintln!("{:?}", r);
-
-        // 文件同步测试
-        let message = StringMessage {
-            value: "2139cebc8d1f0c493b45517af0c99fea5cc81de8096b71520e039c815b2f3572/".to_string(),
-        };
-        let r = sync_file.sync_dir(message).await.unwrap();
-        eprintln!("{r:?}");
-
-        // 删除远端测试
-        // sync_file
-        //     .del_remote_dir(StringMessage {
-        //         value: "fc4910493945108d6c1015b5d69d5fceeddada052281437c28a73000c13bf518/"
-        //             .to_string(),
-        //     })
-        //     .await
-        //     .unwrap();
-    }
-
-    #[test]
-    fn path2() {
-        let mut path = PathBuf::from("/");
-        path.pop();
-        for c in path.components() {
-            eprintln!("{}", c.as_os_str().to_str().unwrap());
-        }
-    }
-
-    #[tokio::test]
-    async fn sort() {
-        let mut paths = [
-            "目录2/文本文件.txt",
-            "目录2/",
-            "HTML 文件.html",
-            "空文件夹/",
-            "空文件夹/新建文件夹/",
-            "a/",
-            "a/b",
-            "a/c.txt",
-        ];
-        paths.sort();
-        eprintln!("{:?}", paths);
-        File::open(r"C:\Users\12618\Desktop\tmp\test2\目录2\add-folderss")
-            .await
-            .unwrap();
-    }
-
-    #[tokio::test]
-    async fn dir() {
-        let mut entries = fs::read_dir("/home/nsfoxer/桌面/test/空文件夹/新建文件夹/")
-            .await
-            .unwrap();
-        let entry = entries.next_entry().await.unwrap();
-        eprintln!("{entry:?}");
     }
 }

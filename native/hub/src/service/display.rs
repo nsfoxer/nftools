@@ -178,7 +178,8 @@ pub mod display_os {
         pub async fn new(global_data: Arc<GlobalData>) -> Self {
             let hklm = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
             let system_mode = global_data
-                .get_data(MARK)
+                .get_data(MARK.to_string())
+                .await
                 .unwrap_or(SystemModeData::default());
 
             let mut this = Self {
@@ -202,7 +203,7 @@ pub mod display_os {
                 enabled: mode.enabled,
                 keep_screen: mode.keep_screen,
             };
-            self.global_data.set_data(MARK.to_string(), &mode)?;
+            self.global_data.set_data(MARK.to_string(), &mode).await?;
             self.system_mode = mode;
             self.block_system().await;
             Ok(())
@@ -631,7 +632,7 @@ pub mod display_os {
 
         /// 设置系统休眠模式
         async fn set_system_mode(&mut self, mode: SystemModeMsg) -> Result<()> {
-            self.global_data.set_data(MARK.to_string(), &mode.enabled)?;
+            self.global_data.set_data(MARK, &mode.enabled)?;
             if mode.enabled {
                 self.inhabit().await?;
             } else {

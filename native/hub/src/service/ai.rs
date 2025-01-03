@@ -68,29 +68,17 @@ pub struct BaiduAiService {
 }
 
 impl BaiduAiService {
-    pub fn new(gd: Arc<GlobalData>) -> Self {
+    pub async fn new(gd: Arc<GlobalData>) -> Self {
         let client = Client::new();
-        let history = gd.get_data(HISTORY).unwrap_or(AHashMap::new());
+        let history = gd.get_data(HISTORY.to_string()).await.unwrap_or(AHashMap::new());
         Self {
             client,
             token: None,
-            app_id: gd.get_data(APP_ID),
-            secret: gd.get_data(SECRET),
+            app_id: gd.get_data(APP_ID.to_string()).await,
+            secret: gd.get_data(SECRET.to_string()).await,
             gd,
             history,
         }
-    }
-}
-
-impl Drop for BaiduAiService {
-    fn drop(&mut self) {
-        if self.app_id.is_some() {
-            let _ = self.gd.set_data(APP_ID.to_string(), &self.app_id.as_ref().unwrap());
-        }
-        if self.secret.is_some() {
-            let _ = self.gd.set_data(SECRET.to_string(), &self.secret.as_ref().unwrap());
-        }
-        let _ = self.gd.set_data(HISTORY.to_string(), &self.history);
     }
 }
 
@@ -217,7 +205,7 @@ impl BaiduAiService {
             msg.push(desc);
             msg.push(result);
         }
-
+        self.gd.set_data(HISTORY.to_string(), &self.history).await?;
         Ok(())
     }
     fn parser_rsp(info: reqwest::Result<Bytes>) -> Result<Option<BaiduAiRspMsg>> {
@@ -271,6 +259,8 @@ impl BaiduAiService {
         self.app_id = Some(req.api_key);
         self.secret = Some(req.secret);
         self.refresh_token().await?;
+        self.gd.set_data(APP_ID.to_string(), &self.app_id.as_ref().unwrap()).await?;
+        self.gd.set_data(SECRET.to_string(), &self.secret.as_ref().unwrap()).await?;
         Ok(())
     }
 

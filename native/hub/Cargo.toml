@@ -41,6 +41,7 @@ reqwest = { version = "0.12.9", features = ["stream", "json"] }
 futures-util = "0.3.31"
 futures = "0.3.31"
 bytes = "1.9.0"
+tokio-rusqlite = { version = "0.6.0", features = ["bundled"] }
 
 # Uncomment below to target the web.
 # tokio_with_wasm = { version = "0.6.0", features = ["sync", "rt"] }
