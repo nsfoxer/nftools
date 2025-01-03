@@ -59,7 +59,7 @@ const HISTORY: &str = "BaiduAiService:HISTORY";
 
 pub struct BaiduAiService {
     client: Client,
-    gd: Arc<GlobalData>,
+    gd: GlobalData,
     token: Option<String>,
     app_id: Option<String>,
     secret: Option<String>,
@@ -68,7 +68,7 @@ pub struct BaiduAiService {
 }
 
 impl BaiduAiService {
-    pub async fn new(gd: Arc<GlobalData>) -> Self {
+    pub async fn new(gd: GlobalData) -> Self {
         let client = Client::new();
         let history = gd.get_data(HISTORY.to_string()).await.unwrap_or(AHashMap::new());
         Self {

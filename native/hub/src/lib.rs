@@ -29,7 +29,7 @@ async fn main() {
     tokio::spawn(base_request());
 }
 
-async fn init_service(gd: Arc<GlobalData>) -> ApiService {
+async fn init_service(gd: GlobalData) -> ApiService {
     let mut api = ApiService::new();
     api.add_imm_service(Box::new(UtilsService::new()));
 
@@ -68,7 +68,7 @@ async fn init_service(gd: Arc<GlobalData>) -> ApiService {
 async fn base_request() -> Result<()> {
     let path = lock().ok();
     let global_data = GlobalData::new().await.expect("Global data initialized");
-    let gd = Arc::new(global_data);
+    let gd = global_data;
     let api = init_service(gd.clone()).await;
 
     let mut receiver = BaseRequest::get_dart_signal_receiver()?;

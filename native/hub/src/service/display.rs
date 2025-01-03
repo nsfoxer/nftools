@@ -93,7 +93,7 @@ pub mod display_os {
     /// 显示壁纸
     pub struct DisplayMode {
         theme_reg: RegKey,
-        global_data: Arc<GlobalData>,
+        global_data: GlobalData,
         system_mode: SystemModeData,
     }
     
@@ -175,7 +175,7 @@ pub mod display_os {
     }
 
     impl DisplayMode {
-        pub async fn new(global_data: Arc<GlobalData>) -> Self {
+        pub async fn new(global_data: GlobalData) -> Self {
             let hklm = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
             let system_mode = global_data
                 .get_data(MARK.to_string())
