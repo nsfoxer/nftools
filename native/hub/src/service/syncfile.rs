@@ -57,7 +57,7 @@ type LocalFileMetadata = RemoteFileMedata;
 /// 文件同步服务
 pub struct SyncFileService {
     // 全局数据存储
-    global_data: Arc<GlobalData>,
+    global_data: GlobalData,
     // 账号信息
     account_info: Option<AccountInfo>,
     // 本地文件与远端文件地址映射关系
@@ -106,7 +106,7 @@ impl Service for SyncFileService {
 }
 
 impl SyncFileService {
-    pub async fn new(global_data: Arc<GlobalData>) -> Result<Self> {
+    pub async fn new(global_data: GlobalData) -> Result<Self> {
         let account = global_data.get_data(ACCOUNT_CACHE.to_string()).await;
         let file_sync = global_data
             .get_data(format!("{}-{}", SYNC_FILE_PREFIX, get_machine_id()?))
