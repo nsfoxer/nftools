@@ -20,6 +20,7 @@ use common::global_data::GlobalData;
 use log::error;
 use std::path::PathBuf;
 use std::sync::Arc;
+use anyhow::anyhow;
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use tokio;
 
@@ -88,6 +89,9 @@ async fn base_request() -> Result<()> {
 
 /// 加锁成功，则返回lg，否则，返回Err
 fn lock() -> anyhow::Result<PathBuf> {
+    if cfg!(debug_assertions) {
+        return Err(anyhow!("测试环境不开启lock file"));
+    }
     let process = System::new_with_specifics(
         RefreshKind::new().with_processes(ProcessRefreshKind::everything()),
     );
