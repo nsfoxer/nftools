@@ -52,7 +52,6 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp>
     with WindowListener, TrayListener, WidgetsBindingObserver {
-  late final AppLifecycleListener _listener;
   Color primaryColor = Colors.blue;
 
   @override
@@ -61,14 +60,6 @@ class _MainAppState extends State<MainApp>
     // 添加window——manager监听器
     windowManager.addListener(this);
     trayManager.addListener(this);
-    // 等待后端服务退出
-    _listener = AppLifecycleListener(
-      onExitRequested: () async {
-        await $sys_info_api.save();
-        finalizeRust(); // Shut down the `tokio` Rust runtime.
-        return AppExitResponse.exit;
-      },
-    );
     WidgetsBinding.instance.addObserver(this);
     _init();
     _initColor(false);
@@ -122,12 +113,19 @@ class _MainAppState extends State<MainApp>
     super.onTrayIconRightMouseDown();
   }
 
+  void _appExit() async {
+    // 等待后端服务退出
+    await $sys_info_api.save();
+    finalizeRust(); // Shut down the `tokio` Rust runtime.
+    await windowManager.destroy();
+  }
+
   @override
   void onTrayMenuItemClick(MenuItem menuItem) {
     if (menuItem.key == 'display') {
       _displayApp();
     } else if (menuItem.key == 'exit') {
-      windowManager.destroy();
+      _appExit();
     }
   }
 
@@ -135,7 +133,6 @@ class _MainAppState extends State<MainApp>
   void dispose() {
     windowManager.removeListener(this);
     trayManager.removeListener(this);
-    _listener.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
