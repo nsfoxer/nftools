@@ -7,12 +7,12 @@ use std::ops::Sub;
 use std::time::{Duration, SystemTime};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tokio::fs::File;
-use tokio::io::AsyncReadExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::common::utils::{get_cache_dir, second_timestamp};
 use crate::messages::system_info::{ChartInfo, ChartInfoReq, ChartInfoRsp, SystemInfoCache};
 use crate::service::service::{Service, ServiceName};
-use crate::{func_end, func_notype, func_typetype};
+use crate::{async_func_nono, func_end, func_notype, func_typetype};
 
 // 缓存文件
 const CACHE_FILE: &str = "system_info.cache";
@@ -53,6 +53,7 @@ impl Service for SystemInfoService {
             get_mem_datas,
             ChartInfoReq
         );
+        async_func_nono!(self, func, close);
         func_end!(func)
     }
 }
@@ -161,15 +162,13 @@ impl SystemInfoService {
                 .collect(),
         })
     }
-}
-
-impl Drop for SystemInfoService {
-    fn drop(&mut self) {
+    
+    async fn close(&mut self) -> Result<()> {
         let mut path = match get_cache_dir() {
             Ok(r) => r,
             Err(e) => {
                 error!("保存system_info数据失败{e}");
-                return;
+                return Ok(());
             }
         };
         path.push(CACHE_FILE);
@@ -188,10 +187,12 @@ impl Drop for SystemInfoService {
 
         let buf = cache.encode_to_vec();
         if let Ok(buf) = lzma::compress(&buf, 9) {
-            if let Ok(mut file) = std::fs::File::create(path) {
-                let _ = file.write_all(&buf);
+            if let Ok(mut file) = File::create(path).await {
+                file.write_all(&buf[..]).await?;
             }
-        }
+        } 
+        
+        Ok(())
     }
 }
 
