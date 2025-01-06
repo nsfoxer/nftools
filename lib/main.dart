@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -197,27 +196,24 @@ class _MainAppState extends State<MainApp>
 
 List<GoRoute> _generateRoute(List<MenuData> datas) {
   List<GoRoute> result = [];
+  final tween1 = Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeIn));
+  final tween2 = Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeIn));
   for (var value in datas) {
     result.add(GoRoute(
         path: value.url,
         pageBuilder: (context, state) {
           // 计算页面动画
-          final current = MyRouterConfig.findRouterIndex(MyRouterConfig.currentUrl);
-          final last = MyRouterConfig.findRouterIndex(MyRouterConfig.lastUrl);
-          bool up2Down = last < current;
-          final begin = up2Down ? const Offset(0.0, 1.0): const Offset(0.0, -1.0);
           return CustomTransitionPage(
             key: state.pageKey,
             child: value.body,
-            transitionDuration: const Duration(milliseconds: 300),
+            transitionDuration: const Duration(milliseconds: 400),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
-              const end = Offset.zero;
-              var tween =
-                  Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.easeIn));
-              return SlideTransition(
-                position: animation.drive(tween),
-                child: child,
+              return FadeTransition(
+                opacity: animation.drive(tween1),
+                child: FadeTransition(opacity: secondaryAnimation.drive(tween2),
+                  child: child,
+                ),
               );
             },
           );
