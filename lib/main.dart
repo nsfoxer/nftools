@@ -76,7 +76,9 @@ class _MainAppState extends State<MainApp>
       return;
     }
     // linux后端需要等待才能得到正确的值，否则会是上次的值
-    final duration = Platform.isLinux ? const Duration(seconds: 6): const Duration(seconds: 2);
+    final duration = Platform.isLinux
+        ? const Duration(seconds: 6)
+        : const Duration(seconds: 2);
     await Future.delayed(duration);
 
     setState(() {});
@@ -94,7 +96,7 @@ class _MainAppState extends State<MainApp>
   void onWindowClose() {
     windowManager.hide();
   }
-  
+
   @override
   void onWindowFocus() {
     setState(() {});
@@ -196,8 +198,10 @@ class _MainAppState extends State<MainApp>
 
 List<GoRoute> _generateRoute(List<MenuData> datas) {
   List<GoRoute> result = [];
-  final tween1 = Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeIn));
-  final tween2 = Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeIn));
+  final tween1 = Tween(begin: const Offset(0.0, 0.2), end: const Offset(0.0, 0.0))
+      .chain(CurveTween(curve: Curves.easeIn));
+  final tween2 =
+      Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeIn));
   for (var value in datas) {
     result.add(GoRoute(
         path: value.url,
@@ -209,9 +213,10 @@ List<GoRoute> _generateRoute(List<MenuData> datas) {
             transitionDuration: const Duration(milliseconds: 400),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation.drive(tween1),
-                child: FadeTransition(opacity: secondaryAnimation.drive(tween2),
+              return SlideTransition(
+                position: animation.drive(tween1),
+                child: FadeTransition(
+                  opacity: secondaryAnimation.drive(tween2),
                   child: child,
                 ),
               );
@@ -376,7 +381,8 @@ class MainPage extends StatelessWidget {
 
 // 初始化系统托盘
 Future<void> initSystemTray() async {
-  String path = Platform.isWindows ? 'assets/img/nftools.ico' : 'assets/img/nftools.png';
+  String path =
+      Platform.isWindows ? 'assets/img/nftools.ico' : 'assets/img/nftools.png';
 
   // We first init the systray menu
   await trayManager.setIcon(path);
