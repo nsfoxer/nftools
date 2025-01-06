@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/api/display_api.dart';
+import 'package:nftools/api/system_info.dart' as $sys_info_api;
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/global_controller.dart';
 import 'package:nftools/messages/generated.dart';
@@ -63,6 +64,7 @@ class _MainAppState extends State<MainApp>
     // 等待后端服务退出
     _listener = AppLifecycleListener(
       onExitRequested: () async {
+        await $sys_info_api.save();
         finalizeRust(); // Shut down the `tokio` Rust runtime.
         return AppExitResponse.exit;
       },
