@@ -2,7 +2,6 @@ use anyhow::{anyhow, Result};
 use fast_inv_sqrt::InvSqrt64;
 use log::error;
 use prost::Message;
-use std::io::Write;
 use std::ops::Sub;
 use std::time::{Duration, SystemTime};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};

@@ -5,13 +5,6 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio_rusqlite::{params, Connection};
 
-type KEY = &'static str;
-
-pub enum ConfigMessage {
-    STORE(KEY, String),
-    LOAD(KEY, String),
-}
-
 /// 全局数据
 #[derive(Clone)]
 pub struct GlobalData {
