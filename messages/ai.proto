@@ -24,3 +24,12 @@ message QuestionMsg {
 	// 简要描述
 	string desc = 2;
 }
+
+message AiModelMsg {
+	ModelEnum modelEnum = 1;
+}
+
+enum ModelEnum {
+	Baidu = 0;
+	Spark = 1;
+}
