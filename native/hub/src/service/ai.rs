@@ -1,24 +1,49 @@
 use crate::common::global_data::GlobalData;
-use crate::messages::ai::{BaiduAiKeyReqMsg, BaiduAiRspMsg, QuestionListMsg, QuestionMsg};
+use crate::messages::ai::{AiModelMsg, BaiduAiKeyReqMsg, BaiduAiRspMsg, ModelEnum, QuestionListMsg, QuestionMsg};
 use crate::messages::common::{Uint32Message, VecStringMessage};
 use crate::service::service::{Service, ServiceName, StreamService};
-use crate::{async_func_nono, async_func_notype, async_func_typeno, async_stream_func_typeno, func_end, func_notype, func_typeno, func_typetype};
+use crate::{
+    async_func_nono, async_func_notype, async_func_typeno, async_stream_func_typeno, func_end,
+    func_notype, func_typeno, func_typetype,
+};
 use ahash::AHashMap;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures_util::StreamExt;
 use prost::Message;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::cmp::PartialEq;
 use tokio::sync::mpsc::UnboundedSender;
 
 #[derive(Deserialize)]
 struct BaiduAiRsp {
-    is_end: bool,
-    is_truncated: bool,
     result: String,
+}
+
+#[derive(Deserialize)]
+struct SparkAiRsp {
+    choices: Vec<InnerSparkAiRsp>,
+}
+
+#[derive(Deserialize)]
+struct InnerSparkAiRsp {
+    delta: InnerInnerSparkAiRsp,
+}
+
+#[derive(Deserialize)]
+struct InnerInnerSparkAiRsp {
+    content: String,
+}
+#[derive(Deserialize)]
+struct SparkAiErrorRsp {
+    error: InnerSparkAiErrorRsp,
+}
+
+#[derive(Deserialize)]
+struct InnerSparkAiErrorRsp {
+    message: String,
 }
 
 #[derive(Deserialize)]
@@ -27,8 +52,11 @@ struct BaiduAiErrorRsp {
     error_msg: String,
 }
 
+const SPARK_LITE_MODEL: &str = "lite";
+
 #[derive(Serialize)]
 struct BaiduAiRequest {
+    model: Option<&'static str>,
     messages: Vec<InnerMessage>,
     stream: bool,
 }
@@ -52,10 +80,19 @@ enum RoleEnum {
     Assistant,
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
+enum AiModelEnum {
+    Baidu,
+    Spark,
+}
+
 const BAIDU_AI: &str = "BaiduAiService";
 const APP_ID: &str = "BaiduAiService:APP_ID";
 const SECRET: &str = "BaiduAiService:SECRET";
 const HISTORY: &str = "BaiduAiService:HISTORY";
+const AUTH_TOKEN: &str = "SparkAiService:AUTH_TOKEN";
+const MODEL: &str = "AiService:MODEL";
+const SPARK_HISTORY: &str = "SparkAiService:HISTORY";
 
 pub struct BaiduAiService {
     client: Client,
@@ -63,21 +100,37 @@ pub struct BaiduAiService {
     token: Option<String>,
     app_id: Option<String>,
     secret: Option<String>,
-    // 所有的历史数据
+    // baidu所有的历史数据
     history: AHashMap<u32, Vec<String>>,
+    // spark
+    auth_token: Option<String>,
+    model: AiModelEnum,
 }
 
 impl BaiduAiService {
     pub async fn new(gd: GlobalData) -> Self {
         let client = Client::new();
-        let history = gd.get_data(HISTORY.to_string()).await.unwrap_or(AHashMap::new());
+        let model = gd
+            .get_data(MODEL.to_string())
+            .await
+            .unwrap_or(AiModelEnum::Baidu);
+        let history = match model {
+            AiModelEnum::Baidu => HISTORY,
+            AiModelEnum::Spark => SPARK_HISTORY,
+        };
+        let history = gd
+            .get_data(history.to_string())
+            .await
+            .unwrap_or(AHashMap::new());
         Self {
             client,
             token: None,
             app_id: gd.get_data(APP_ID.to_string()).await,
             secret: gd.get_data(SECRET.to_string()).await,
+            auth_token: gd.get_data(AUTH_TOKEN.to_string()).await,
             gd,
             history,
+            model,
         }
     }
 }
@@ -106,10 +159,18 @@ impl Service for BaiduAiService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         async_func_notype!(self, func, get_kv);
         async_func_nono!(self, func, refresh_token);
-        async_func_typeno!(self, func, req_data, set_kv, BaiduAiKeyReqMsg);
-        func_notype!(self, func, get_question_list);
+        async_func_typeno!(self, func, req_data, set_kv, BaiduAiKeyReqMsg, set_model, AiModelMsg);
+        func_notype!(self, func, get_question_list, get_model);
         func_typetype!(self, func, req_data, get_question, Uint32Message);
-        func_typeno!(self, func, req_data, new_question, Uint32Message, del_question, Uint32Message);
+        func_typeno!(
+            self,
+            func,
+            req_data,
+            new_question,
+            Uint32Message,
+            del_question,
+            Uint32Message
+        );
         func_end!(func)
     }
 }
@@ -124,6 +185,9 @@ impl BaiduAiService {
     ) -> Result<()> {
         if !self.history.contains_key(&req.id) {
             return Err(anyhow::anyhow!("没有对应的对话id"));
+        }
+        if self.model == AiModelEnum::Spark && self.auth_token.is_none() {
+            return Err(anyhow::anyhow!("请先设置spark的token"));
         }
         let current_size = req.desc.len();
         if current_size > MAX_SIZE {
@@ -171,19 +235,32 @@ impl BaiduAiService {
         let id = req.id;
         let desc = req.desc;
         let req = BaiduAiRequest {
+            model: if self.model == AiModelEnum::Spark {
+                Some(SPARK_LITE_MODEL)
+            } else {
+                None
+            },
             stream: true,
             messages: msg,
         };
-        if self.token.is_none() {
-            self.refresh_token().await?;
-        }
-        let mut stream = self.client
+        let reqeust_builder = if self.model == AiModelEnum::Baidu {
+            if self.token.is_none() {
+                self.refresh_token().await?;
+            }
+            self.client
                 .post(&format!( "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/yi_34b_chat?access_token={}", self.token.as_ref().unwrap()))
-                .json(&req).send().await?.bytes_stream();
+        } else {
+            self.client
+                .post("https://spark-api-open.xf-yun.com/v1/chat/completions")
+                .header("Content-Type", "application/json")
+                .header("Authorization", self.token.as_ref().unwrap())
+        };
+
+        let mut stream = reqeust_builder.json(&req).send().await?.bytes_stream();
 
         let mut result = String::new();
         while let Some(info) = stream.next().await {
-            let data = match Self::parser_rsp(info) {
+            let data = match Self::parser_rsp(info, self.model.clone()) {
                 Ok(data) => {
                     if data.is_none() {
                         continue;
@@ -208,13 +285,20 @@ impl BaiduAiService {
         self.gd.set_data(HISTORY.to_string(), &self.history).await?;
         Ok(())
     }
-    fn parser_rsp(info: reqwest::Result<Bytes>) -> Result<Option<BaiduAiRspMsg>> {
+    fn parser_rsp(
+        info: reqwest::Result<Bytes>,
+        model: AiModelEnum,
+    ) -> Result<Option<BaiduAiRspMsg>> {
         let info = info?;
         let info = String::from_utf8_lossy(info.as_ref());
         if info.trim().is_empty() {
             return Ok(None);
         }
         if !info.starts_with("data:") {
+            if model == AiModelEnum::Spark {
+                let error = serde_json::from_str::<SparkAiErrorRsp>(&info)?;
+                return Err(anyhow!(error.error.message));
+            }
             let error = serde_json::from_str::<BaiduAiErrorRsp>(&info)?;
             if error.error_code == 336002 {
                 return Err(anyhow::anyhow!("token已失效,请手动刷新token"));
@@ -225,16 +309,28 @@ impl BaiduAiService {
             }
             return Err(anyhow::anyhow!(error.error_msg));
         }
-        let rsp: BaiduAiRsp = serde_json::from_str(info.trim_start_matches("data:"))?;
-        Ok(Some(BaiduAiRspMsg {
-            content: rsp.result,
-        }))
+        if model == AiModelEnum::Spark {
+            let rsp: SparkAiRsp = serde_json::from_str(info.trim_start_matches("data:"))?;
+            let mut sb = String::new();
+            for rsp in rsp.choices {
+                sb.push_str(&rsp.delta.content);
+            }
+            Ok(Some(BaiduAiRspMsg { content: sb }))
+        } else {
+            let rsp: BaiduAiRsp = serde_json::from_str(info.trim_start_matches("data:"))?;
+            Ok(Some(BaiduAiRspMsg {
+                content: rsp.result,
+            }))
+        }
     }
 }
 
 impl BaiduAiService {
     /// 刷新token
     async fn refresh_token(&mut self) -> Result<()> {
+        if self.model == AiModelEnum::Spark {
+            return Err(anyhow::anyhow!("spark模型不支持token刷新"));
+        }
         let app_id = self.app_id.as_ref().ok_or(anyhow::anyhow!("appid未设置"))?;
         let secret = self
             .secret
@@ -255,22 +351,74 @@ impl BaiduAiService {
 
     /// 设置API Key与应用Secret Key
     async fn set_kv(&mut self, req: BaiduAiKeyReqMsg) -> Result<()> {
+        if self.model == AiModelEnum::Spark {
+            self.auth_token = Some(req.api_key);
+            return Ok(());
+        }
 
         self.app_id = Some(req.api_key);
         self.secret = Some(req.secret);
         self.refresh_token().await?;
-        self.gd.set_data(APP_ID.to_string(), &self.app_id.as_ref().unwrap()).await?;
-        self.gd.set_data(SECRET.to_string(), &self.secret.as_ref().unwrap()).await?;
+        self.gd
+            .set_data(APP_ID.to_string(), &self.app_id.as_ref().unwrap())
+            .await?;
+        self.gd
+            .set_data(SECRET.to_string(), &self.secret.as_ref().unwrap())
+            .await?;
         Ok(())
     }
 
     /// 获取key和secret
     async fn get_kv(&mut self) -> Result<BaiduAiKeyReqMsg> {
+        if self.model == AiModelEnum::Spark {
+            if self.auth_token.is_none() {
+                return Err(anyhow!("需先设置appid"));
+            }
+            return Ok(BaiduAiKeyReqMsg {
+                api_key: self.auth_token.as_ref().unwrap().clone(),
+                secret: "".to_string(),
+            });
+        }
         self.refresh_token().await?;
         Ok(BaiduAiKeyReqMsg {
             api_key: self.app_id.as_ref().unwrap().clone(),
             secret: self.secret.as_ref().unwrap().clone(),
         })
+    }
+
+    fn get_model(&self) -> Result<AiModelMsg> {
+        let model = match self.model {
+            AiModelEnum::Baidu =>  ModelEnum::Baidu,
+            AiModelEnum::Spark => ModelEnum::Spark,
+        };
+        Ok(AiModelMsg{model_enum: i32::from(model) })
+    }
+
+    async fn set_model(&mut self, model: AiModelMsg) -> Result<()> {
+        let model = match ModelEnum::try_from(model.model_enum) {
+            Err(_e) => {
+                return Err(anyhow::anyhow!("无法获取model"));
+            }
+            Ok(v) => {v}
+        };
+        let model = match model{
+            ModelEnum::Baidu => AiModelEnum::Baidu,
+            ModelEnum::Spark => AiModelEnum::Spark,
+        };
+        if model == self.model {
+            return Ok(());
+        }
+        self.model = model;
+        let history = match self.model {
+            AiModelEnum::Baidu => HISTORY,
+            AiModelEnum::Spark => SPARK_HISTORY,
+        };
+        self.history = self
+            .gd
+            .get_data(history.to_string())
+            .await
+            .unwrap_or(AHashMap::new());
+        Ok(())
     }
 
     /// 获取所有的历史数据列表
@@ -300,7 +448,7 @@ impl BaiduAiService {
         Ok(VecStringMessage { values: result })
     }
 
-    fn new_question(&mut self, req:Uint32Message) -> Result<()> {
+    fn new_question(&mut self, req: Uint32Message) -> Result<()> {
         if self.history.contains_key(&req.value) {
             return Err(anyhow::anyhow!("已存在对应的对话id"));
         }
