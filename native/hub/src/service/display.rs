@@ -449,7 +449,7 @@ pub mod display_os {
     /// 显示壁纸
     pub struct DisplayMode {
         // 持久化存储
-        global_data: Arc<GlobalData>,
+        global_data: GlobalData,
         theme_mode_path: String,
         proxy: Proxy<'static, Arc<SyncConnection>>,
         // 电源管理
@@ -489,7 +489,7 @@ pub mod display_os {
     }
 
     impl DisplayMode {
-        pub async fn new(global_data: Arc<GlobalData>) -> Result<Self> {
+        pub async fn new(global_data: GlobalData) -> Result<Self> {
             // 1. 获取主题颜色
             let mut xdg = BaseDirectories::new()?.get_config_home();
             xdg.push("kdedefaults");
@@ -517,7 +517,7 @@ pub mod display_os {
             );
 
             // 加载是否休眠设置
-            let enabled: bool = global_data.get_data(MARK).unwrap_or_default();
+            let enabled: bool = global_data.get_data(MARK.to_string()).await.unwrap_or_default();
             let mut this = Self {
                 theme_mode_path: xdg.to_str().unwrap().to_string(),
                 global_data,
@@ -632,7 +632,7 @@ pub mod display_os {
 
         /// 设置系统休眠模式
         async fn set_system_mode(&mut self, mode: SystemModeMsg) -> Result<()> {
-            self.global_data.set_data(MARK, &mode.enabled)?;
+            self.global_data.set_data(MARK.to_string(), &mode.enabled).await?;
             if mode.enabled {
                 self.inhabit().await?;
             } else {
