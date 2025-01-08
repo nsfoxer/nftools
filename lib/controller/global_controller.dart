@@ -16,6 +16,6 @@ class GlobalControllerBindings implements Bindings {
     Get.lazyPut<SystemModeController>(() => SystemModeController(), fenix: true);
     Get.put<SystemInfoController>(SystemInfoController(), permanent: true);
     Get.put<SyncFileController>(SyncFileController(), permanent: true);
-    Get.lazyPut<AiController>(() => AiController(), fenix: true);
+    Get.put<AiController>(AiController(), permanent: true);
   }
 }
