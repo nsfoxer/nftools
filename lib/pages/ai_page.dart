@@ -315,11 +315,11 @@ class AssistantDisplay extends StatelessWidget {
                 "加载中... ",
                 style: typography.body,
               ),
-              NFRotationWidget(
-                  child: Icon(
-                $me.Icons.hourglass_bottom,
-                size: typography.body?.fontSize,
-              )),
+              // NFRotationWidget(
+              //     child: Icon(
+              //   $me.Icons.hourglass_bottom,
+              //   size: typography.body?.fontSize,
+              // )),
             ],
           )
         : Container();

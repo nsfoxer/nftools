@@ -77,6 +77,9 @@ class AiController extends GetxController {
   void _jumpBottom(bool ignoreOffset) {
     EasyDebounce.debounce("baiduAI_question", const Duration(milliseconds: 50),
         () {
+      if (state.scrollController.positions.isEmpty) {
+        return;
+      }
       if (!ignoreOffset && state.scrollController.offset > 300) {
         return;
       }
