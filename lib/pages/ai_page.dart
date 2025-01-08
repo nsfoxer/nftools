@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as $me;
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:markdown_widget/markdown_widget.dart';
@@ -75,7 +76,7 @@ class AiPage extends StatelessWidget {
     await showDialog<String>(
         context: context,
         builder: (context) => GetBuilder<AiController>(builder: (logic) {
-          final bool isBaidu = logic.state.modelEnum == ModelEnum.Baidu;
+              final bool isBaidu = logic.state.modelEnum == ModelEnum.Baidu;
               return ContentDialog(
                 title: Text(
                   "密钥管理",
@@ -96,14 +97,15 @@ class AiPage extends StatelessWidget {
                             keyboardType: TextInputType.text,
                           ),
                         ),
-                        isBaidu ?
-                        InfoLabel(
-                          label: "SECRET",
-                          child: PasswordFormBox(
-                            controller: logic.state.secretController,
-                            cursorColor: color,
-                          ),
-                        ): Container(),
+                        isBaidu
+                            ? InfoLabel(
+                                label: "SECRET",
+                                child: PasswordFormBox(
+                                  controller: logic.state.secretController,
+                                  cursorColor: color,
+                                ),
+                              )
+                            : Container(),
                       ],
                     ),
                   ),
@@ -139,7 +141,7 @@ class AiPage extends StatelessWidget {
     final color = primaryColor(context);
     return ScaffoldPage(
       header: PageHeader(
-        title: const Text("BaiduAI"),
+        title: const Text("AI"),
         commandBar: GetBuilder<AiController>(builder: (logic) {
           final question = logic.state.contentData.description;
           return CommandBar(
@@ -149,9 +151,11 @@ class AiPage extends StatelessWidget {
               CommandBarButton(
                   icon: const Icon($me.Icons.key),
                   label: const Text("密钥"),
-                  onPressed: logic.state.isLoading ? null : () {
-                    _showKVSetting(context);
-                  }),
+                  onPressed: logic.state.isLoading
+                      ? null
+                      : () {
+                          _showKVSetting(context);
+                        }),
               CommandBarButton(
                   icon: const Icon($me.Icons.question_answer),
                   label: Text(question.isEmpty ? "新增对话" : question),
@@ -160,28 +164,36 @@ class AiPage extends StatelessWidget {
                       : () {
                           _showIdList(context);
                         }),
-              CommandBarButton(icon: const Icon($me.Icons.model_training),
+              CommandBarButton(
+                icon: const Icon($me.Icons.model_training),
                 label: Text(logic.state.modelEnum.toString()),
-                onPressed: logic.state.isLoading ? null : (){
-                  logic.changeModel();
-                },
+                onPressed: logic.state.isLoading
+                    ? null
+                    : () {
+                        logic.changeModel();
+                      },
               ),
             ],
           );
         }),
       ),
       content: GetBuilder<AiController>(builder: (logic) {
+        final bool isBaidu = logic.state.modelEnum == ModelEnum.Baidu;
         final contents = logic.state.contentData.contents;
         if (!logic.state.isLogin) {
-          final bool isBaidu = logic.state.modelEnum == ModelEnum.Baidu;
           return Center(
             child: Link(
               // from the url_launcher package
-              uri: isBaidu ? Uri.parse('https://ai.baidu.com/ai-doc/REFERENCE/Lkru0zoz4') : Uri.parse("https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html"),
+              uri: isBaidu
+                  ? Uri.parse('https://ai.baidu.com/ai-doc/REFERENCE/Lkru0zoz4')
+                  : Uri.parse(
+                      "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html"),
               builder: (context, open) {
                 return HyperlinkButton(
                   onPressed: open,
-                  child: isBaidu ? const Text('请先输入Yi-34B-Chat密钥'): const Text("请先输入spark密钥"),
+                  child: isBaidu
+                      ? const Text('请先输入Yi-34B-Chat密钥')
+                      : const Text("请先输入spark密钥"),
                 );
               },
             ),
@@ -209,6 +221,7 @@ class AiPage extends StatelessWidget {
                           return UserDisplay(msg: contents[index]);
                         } else {
                           return AssistantDisplay(
+                              isBaidu: isBaidu,
                               data: contents[index],
                               isLoading: logic.state.isLoading && index == 0);
                         }
@@ -274,14 +287,23 @@ class _SubmitIntent extends Intent {
   const _SubmitIntent(this.logic);
 }
 
+final _sparkLogo = SvgPicture.asset(
+  "assets/img/spark.svg",
+  width: 25,
+  height: 25,
+);
+
 // 回复展示
 class AssistantDisplay extends StatelessWidget {
   final String data;
   final bool isLoading;
+  final bool isBaidu;
 
   const AssistantDisplay(
-      {super.key, required this.data, required this.isLoading});
-
+      {super.key,
+      required this.data,
+      required this.isLoading,
+      required this.isBaidu});
   @override
   Widget build(BuildContext context) {
     Typography typography = FluentTheme.of(context).typography;
@@ -333,11 +355,13 @@ class AssistantDisplay extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Image(
-          image: AssetImage("assets/img/baidu.ico"),
-          width: 25,
-          height: 25,
-        ),
+        isBaidu
+            ? const Image(
+                image: AssetImage("assets/img/baidu.ico"),
+                width: 25,
+                height: 25,
+              )
+            : _sparkLogo,
         Expanded(
             flex: 8,
             child: Padding(

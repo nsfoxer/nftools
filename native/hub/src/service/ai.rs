@@ -1,5 +1,7 @@
 use crate::common::global_data::GlobalData;
-use crate::messages::ai::{AiModelMsg, BaiduAiKeyReqMsg, BaiduAiRspMsg, ModelEnum, QuestionListMsg, QuestionMsg};
+use crate::messages::ai::{
+    AiModelMsg, BaiduAiKeyReqMsg, BaiduAiRspMsg, ModelEnum, QuestionListMsg, QuestionMsg,
+};
 use crate::messages::common::{Uint32Message, VecStringMessage};
 use crate::service::service::{Service, ServiceName, StreamService};
 use crate::{
@@ -13,6 +15,7 @@ use bytes::Bytes;
 use futures_util::StreamExt;
 use prost::Message;
 use reqwest::Client;
+use rinf::debug_print;
 use serde::{Deserialize, Serialize};
 use std::cmp::PartialEq;
 use tokio::sync::mpsc::UnboundedSender;
@@ -24,7 +27,9 @@ struct BaiduAiRsp {
 
 #[derive(Deserialize)]
 struct SparkAiRsp {
-    choices: Vec<InnerSparkAiRsp>,
+    code: usize,
+    choices: Option<Vec<InnerSparkAiRsp>>,
+    message: String,
 }
 
 #[derive(Deserialize)]
@@ -38,11 +43,6 @@ struct InnerInnerSparkAiRsp {
 }
 #[derive(Deserialize)]
 struct SparkAiErrorRsp {
-    error: InnerSparkAiErrorRsp,
-}
-
-#[derive(Deserialize)]
-struct InnerSparkAiErrorRsp {
     message: String,
 }
 
@@ -80,7 +80,7 @@ enum RoleEnum {
     Assistant,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Copy)]
 enum AiModelEnum {
     Baidu,
     Spark,
@@ -159,7 +159,15 @@ impl Service for BaiduAiService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         async_func_notype!(self, func, get_kv);
         async_func_nono!(self, func, refresh_token);
-        async_func_typeno!(self, func, req_data, set_kv, BaiduAiKeyReqMsg, set_model, AiModelMsg);
+        async_func_typeno!(
+            self,
+            func,
+            req_data,
+            set_kv,
+            BaiduAiKeyReqMsg,
+            set_model,
+            AiModelMsg
+        );
         func_notype!(self, func, get_question_list, get_model);
         func_typetype!(self, func, req_data, get_question, Uint32Message);
         func_typeno!(
@@ -243,7 +251,7 @@ impl BaiduAiService {
             stream: true,
             messages: msg,
         };
-        let reqeust_builder = if self.model == AiModelEnum::Baidu {
+        let request_builder = if self.model == AiModelEnum::Baidu {
             if self.token.is_none() {
                 self.refresh_token().await?;
             }
@@ -253,12 +261,13 @@ impl BaiduAiService {
             self.client
                 .post("https://spark-api-open.xf-yun.com/v1/chat/completions")
                 .header("Content-Type", "application/json")
-                .header("Authorization", self.token.as_ref().unwrap())
+                .header("Authorization", self.auth_token.as_ref().unwrap())
         };
 
-        let mut stream = reqeust_builder.json(&req).send().await?.bytes_stream();
+        let mut stream = request_builder.json(&req).send().await?.bytes_stream();
 
         let mut result = String::new();
+        let mut is_error = false;
         while let Some(info) = stream.next().await {
             let data = match Self::parser_rsp(info, self.model.clone()) {
                 Ok(data) => {
@@ -269,7 +278,10 @@ impl BaiduAiService {
                     result.push_str(data.content.as_str());
                     Ok(Some(data.encode_to_vec()))
                 }
-                Err(e) => Err(e),
+                Err(e) => {
+                    is_error = true;
+                    Err(e)
+                }
             };
             if let Err(e) = tx.send(data) {
                 panic!("发送通道已关闭: {}", e);
@@ -277,13 +289,21 @@ impl BaiduAiService {
         }
 
         // 保存历史数据
+        if is_error {
+            // 发生错误不保存信息
+            return Ok(());
+        }
         if !result.is_empty() {
             let msg = self.history.get_mut(&id).unwrap();
             msg.push(desc);
             msg.push(result);
         }
-        let KEY = if self.model == AiModelEnum::Baidu {HISTORY} else {SPARK_HISTORY};
-        self.gd.set_data(KEY.to_string(), &self.history).await?;
+        let key = if self.model == AiModelEnum::Baidu {
+            HISTORY
+        } else {
+            SPARK_HISTORY
+        };
+        self.gd.set_data(key.to_string(), &self.history).await?;
         Ok(())
     }
     fn parser_rsp(
@@ -298,7 +318,7 @@ impl BaiduAiService {
         if !info.starts_with("data:") {
             if model == AiModelEnum::Spark {
                 let error = serde_json::from_str::<SparkAiErrorRsp>(&info)?;
-                return Err(anyhow!(error.error.message));
+                return Err(anyhow!(error.message));
             }
             let error = serde_json::from_str::<BaiduAiErrorRsp>(&info)?;
             if error.error_code == 336002 {
@@ -311,12 +331,24 @@ impl BaiduAiService {
             return Err(anyhow::anyhow!(error.error_msg));
         }
         if model == AiModelEnum::Spark {
-            let rsp: SparkAiRsp = serde_json::from_str(info.trim_start_matches("data:"))?;
-            let mut sb = String::new();
-            for rsp in rsp.choices {
-                sb.push_str(&rsp.delta.content);
+            if info.trim() == "data: [DONE]" || info.trim().is_empty() {
+                return Ok(None);
             }
-            Ok(Some(BaiduAiRspMsg { content: sb }))
+            debug_print!("{}", info);
+            let rsp: SparkAiRsp = serde_json::from_str(
+                info.trim()
+                    .trim_start_matches("data:")
+                    .trim_end_matches("data: [DONE]"),
+            )?;
+            if rsp.code == 0 && rsp.choices.is_some() {
+                let mut sb = String::new();
+                for rsp in rsp.choices.unwrap() {
+                    sb.push_str(&rsp.delta.content);
+                }
+                Ok(Some(BaiduAiRspMsg { content: sb }))
+            } else {
+                Err(anyhow::anyhow!(rsp.message))
+            }
         } else {
             let rsp: BaiduAiRsp = serde_json::from_str(info.trim_start_matches("data:"))?;
             Ok(Some(BaiduAiRspMsg {
@@ -354,6 +386,9 @@ impl BaiduAiService {
     async fn set_kv(&mut self, req: BaiduAiKeyReqMsg) -> Result<()> {
         if self.model == AiModelEnum::Spark {
             self.auth_token = Some(req.api_key);
+            self.gd
+                .set_data(AUTH_TOKEN.to_string(), &self.auth_token.as_ref().unwrap())
+                .await?;
             return Ok(());
         }
 
@@ -389,10 +424,12 @@ impl BaiduAiService {
 
     fn get_model(&self) -> Result<AiModelMsg> {
         let model = match self.model {
-            AiModelEnum::Baidu =>  ModelEnum::Baidu,
+            AiModelEnum::Baidu => ModelEnum::Baidu,
             AiModelEnum::Spark => ModelEnum::Spark,
         };
-        Ok(AiModelMsg{model_enum: i32::from(model) })
+        Ok(AiModelMsg {
+            model_enum: i32::from(model),
+        })
     }
 
     async fn set_model(&mut self, model: AiModelMsg) -> Result<()> {
@@ -400,9 +437,9 @@ impl BaiduAiService {
             Err(_e) => {
                 return Err(anyhow::anyhow!("无法获取model"));
             }
-            Ok(v) => {v}
+            Ok(v) => v,
         };
-        let model = match model{
+        let model = match model {
             ModelEnum::Baidu => AiModelEnum::Baidu,
             ModelEnum::Spark => AiModelEnum::Spark,
         };
