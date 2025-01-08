@@ -12,6 +12,8 @@ const String _getQuestionList = "get_question_list";
 const String _getQuestion = "get_question";
 const String _addQuestion = "new_question";
 const String _delQuestion = "del_question";
+const String _getModel = "get_model";
+const String _setModel = "set_model";
 
 // ai 测试
 Stream<BaiduAiRspMsg> quest(String msg, int id) {
@@ -60,4 +62,14 @@ Future<void> delQuestion(int id) async {
   await sendRequest(_service, _delQuestion, Uint32Message(value: id));
 }
 
+// 获取当前model
+Future<ModelEnum> getModel() async {
+  final data = await sendRequest<EmptyMessage>(_service, _getModel, null);
+  return AiModelMsg.fromBuffer(data).modelEnum;
+}
+
+// 设置当前model
+Future<void> setModel(ModelEnum modelEnum) async {
+  await sendRequest(_service, _setModel, AiModelMsg(modelEnum: modelEnum));
+}
 
