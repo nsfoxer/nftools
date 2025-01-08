@@ -282,7 +282,8 @@ impl BaiduAiService {
             msg.push(desc);
             msg.push(result);
         }
-        self.gd.set_data(HISTORY.to_string(), &self.history).await?;
+        let KEY = if self.model == AiModelEnum::Baidu {HISTORY} else {SPARK_HISTORY};
+        self.gd.set_data(KEY.to_string(), &self.history).await?;
         Ok(())
     }
     fn parser_rsp(

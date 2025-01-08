@@ -2,6 +2,7 @@ import 'package:easy_debounce/easy_debounce.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/api/ai.dart' as $api;
+import 'package:nftools/messages/ai.pb.dart';
 
 import '../state/ai_state.dart';
 
@@ -19,21 +20,30 @@ class AiController extends GetxController {
     state.dispose();
   }
 
-  void _init() async {
+  void _init({bool forceUpdate = false}) async {
     // get_kv
     try {
+      final model = await $api.getModel();
+      state.modelEnum = model;
       // 获取KV信息
       final r = await $api.getKV();
       state.appIdController.text = r.apiKey;
       state.secretController.text = r.secret;
-      if (r.apiKey.isNotEmpty && r.secret.isNotEmpty) {
+      if (state.modelEnum == ModelEnum.Baidu && r.apiKey.isNotEmpty && r.secret.isNotEmpty) {
+        state.isLogin = true;
+      }
+      if (state.modelEnum == ModelEnum.Spark && r.apiKey.isNotEmpty) {
         state.isLogin = true;
       }
     } catch (e) {
+      if (forceUpdate) {
+        update();
+      }
       return;
     }
     await _initQuestionIdList();
     update();
+    return;
   }
 
   // 设置KV
@@ -163,5 +173,18 @@ class AiController extends GetxController {
       await _initQuestionIdList();
     }
     update();
+  }
+
+  Future<void> changeModel() async {
+    final ModelEnum model;
+    if (state.modelEnum == ModelEnum.Baidu) {
+      model = ModelEnum.Spark;
+    } else {
+      model = ModelEnum.Baidu;
+    }
+    state.reInit();
+    state.modelEnum = model;
+    await $api.setModel(model);
+    _init(forceUpdate: true);
   }
 }

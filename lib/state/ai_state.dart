@@ -1,4 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:nftools/messages/ai.pb.dart';
 
 class AiState {
   // 对话列表controller
@@ -28,11 +29,26 @@ class AiState {
   // passwd控制器
   TextEditingController secretController = TextEditingController();
 
+  ModelEnum modelEnum = ModelEnum.Baidu;
+
   void dispose() {
     appIdController.dispose();
     secretController.dispose();
     questController.dispose();
     scrollController.dispose();
+  }
+
+  void reInit() {
+    contentData = AiContentData(0, "", []);
+    isLogin = false;
+    isLoading = false;
+    idList = [];
+    appIdController.clear();
+    secretController.clear();
+    if (scrollController.positions.isNotEmpty) {
+      scrollController.jumpTo(0.0);
+    }
+    modelEnum = ModelEnum.Baidu;
   }
 }
 
