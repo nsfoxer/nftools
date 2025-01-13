@@ -70,17 +70,15 @@ class _MainAppState extends State<MainApp>
   }
 
   void _initColor(bool wait) async {
-    primaryColor = await getSystemColor();
-    setState(() {});
-    if (!wait) {
-      return;
+    if (wait) {
+      // linux后端需要等待才能得到正确的值，否则会是上次的值
+      final duration = Platform.isLinux
+          ? const Duration(seconds: 6)
+          : const Duration(seconds: 2);
+      await Future.delayed(duration);
     }
-    // linux后端需要等待才能得到正确的值，否则会是上次的值
-    final duration = Platform.isLinux
-        ? const Duration(seconds: 6)
-        : const Duration(seconds: 2);
-    await Future.delayed(duration);
 
+    primaryColor = await getSystemColor();
     setState(() {});
   }
 
@@ -198,8 +196,9 @@ class _MainAppState extends State<MainApp>
 
 List<GoRoute> _generateRoute(List<MenuData> datas) {
   List<GoRoute> result = [];
-  final tween1 = Tween(begin: const Offset(0.0, 0.2), end: const Offset(0.0, 0.0))
-      .chain(CurveTween(curve: Curves.easeIn));
+  final tween1 =
+      Tween(begin: const Offset(0.0, 0.2), end: const Offset(0.0, 0.0))
+          .chain(CurveTween(curve: Curves.easeIn));
   final tween2 =
       Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeIn));
   for (var value in datas) {
@@ -332,7 +331,6 @@ class MainPage extends StatelessWidget {
                     ),
                     onPressed: () {
                       windowManager.minimize();
-                      context.go("/");
                     }),
                 // 最大化按钮
                 IconButton(

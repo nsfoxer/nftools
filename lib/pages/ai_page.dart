@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' as $me;
 import 'package:flutter/services.dart';
@@ -240,7 +238,9 @@ class AiPage extends StatelessWidget {
                           actions: {
                             _SubmitIntent: CallbackAction<_SubmitIntent>(
                                 onInvoke: (_SubmitIntent intent) {
-                              intent.logic.quest();
+                              if (!logic.state.isLoading) {
+                                intent.logic.quest();
+                              }
                               return null;
                             })
                           },
@@ -304,6 +304,7 @@ class AssistantDisplay extends StatelessWidget {
       required this.data,
       required this.isLoading,
       required this.isBaidu});
+
   @override
   Widget build(BuildContext context) {
     Typography typography = FluentTheme.of(context).typography;

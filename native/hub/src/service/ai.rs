@@ -263,6 +263,8 @@ impl BaiduAiService {
                 .header("Content-Type", "application/json")
                 .header("Authorization", self.auth_token.as_ref().unwrap())
         };
+        // 60秒超时
+        let request_builder =  request_builder.timeout(std::time::Duration::from_millis(60000));
 
         let mut stream = request_builder.json(&req).send().await?.bytes_stream();
 

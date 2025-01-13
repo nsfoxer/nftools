@@ -42,7 +42,7 @@ Future<void> setMode(DisplayMode mode) async {
 Future<Color> getSystemColor() async {
   var data = await sendRequest<EmptyMessage>(_service2, _getSystemColor, null);
   var result = Uint32Message.fromBuffer(data);
-  return Color(result.value).lighten();
+  return Color(result.value).withAlpha(255).lighten();
 }
 
 Future<GetWallpaperRsp> getWallpaper() async {
