@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:nftools/pages/display_page.dart';
 import 'package:nftools/pages/empty_page.dart';
 import 'package:nftools/pages/home_page.dart';
+import 'package:nftools/pages/settings/page/settings_page.dart';
 import 'package:nftools/pages/sync_file_page.dart';
 import 'package:nftools/pages/system_info.dart';
 
@@ -18,7 +19,7 @@ class MyRouterConfig {
   ];
 
   static List<MenuData> footerDatas = [
-    const MenuData("/settings", Icons.settings, "设置", EmptyPage()),
+    const MenuData("/settings", Icons.settings, "设置", SettingsPage()),
   ];
 
   // 当前路由
