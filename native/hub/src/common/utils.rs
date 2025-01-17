@@ -1,4 +1,5 @@
 use std::fs::create_dir_all;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use dirs::{cache_dir, config_dir};
@@ -67,4 +68,9 @@ pub fn notify(body: &str) -> Result<()> {
         .body(body)
         .show()?;
     Ok(())
+}
+
+/// 获取当前版本号
+pub fn version() -> String {
+    format!("v{}", env!("CARGO_PKG_VERSION"))
 }
