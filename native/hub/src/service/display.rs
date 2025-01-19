@@ -316,6 +316,7 @@ pub mod display_os {
     use tokio_stream::wrappers::ReadDirStream;
     use tokio_stream::StreamExt;
     use xdg::BaseDirectories;
+    use crate::dbus::screensaver::OrgFreedesktopScreenSaver;
 
     // DRM位置
     const DRM_PATH: &str = "/sys/class/drm/";
@@ -445,7 +446,8 @@ pub mod display_os {
         }
     }
 
-    const MARK: &str = "displayMode:powerManage:linux";
+    const POWER_MARK: &str = "displayMode:powerManage:linux";
+    const SCREENSAVER_MARK: &str = "displayMode:screensaverManage:linux";
     /// 显示壁纸
     pub struct DisplayMode {
         // 持久化存储
@@ -454,7 +456,12 @@ pub mod display_os {
         proxy: Proxy<'static, Arc<SyncConnection>>,
         // 电源管理
         power_manage_proxy: Proxy<'static, Arc<SyncConnection>>,
+        // 阻止锁屏
+        screen_saver_manage_proxy: Proxy<'static, Arc<SyncConnection>>,
+        // 电源id
         power_id: Option<u32>,
+        // 锁屏id
+        screen_saver_id: Option<u32>,
     }
     
     impl ServiceName for DisplayMode {
@@ -513,17 +520,26 @@ pub mod display_os {
                 "org.freedesktop.PowerManagement.Inhibit",
                 "/org/freedesktop/PowerManagement/Inhibit",
                 Duration::from_secs(2),
+                conn.clone(),
+            );
+
+            let screen_saver_manage_proxy = Proxy::new(
+                "org.freedesktop.ScreenSaver",
+                "/org/freedesktop/ScreenSaver",
+                Duration::from_secs(2),
                 conn,
             );
 
             // 加载是否休眠设置
-            let enabled: bool = global_data.get_data(MARK.to_string()).await.unwrap_or_default();
+            let enabled: bool = global_data.get_data(POWER_MARK.to_string()).await.unwrap_or_default();
             let mut this = Self {
                 theme_mode_path: xdg.to_str().unwrap().to_string(),
                 global_data,
                 proxy,
                 power_manage_proxy,
+                screen_saver_manage_proxy,
                 power_id: None,
+                screen_saver_id: None
             };
             if enabled {
                 // 忽略执行错误
@@ -605,7 +621,7 @@ pub mod display_os {
             })
         }
 
-        // 读取指定文件夹下第一个图片格式文件
+        /// 读取指定文件夹下第一个图片格式文件
         async fn read_first_pic(path_buf: &PathBuf) -> Result<String> {
             let dir = read_dir(path_buf).await?;
             let mut entries = ReadDirStream::new(dir);
@@ -622,25 +638,32 @@ pub mod display_os {
 
         /// 获取休眠模式
         fn get_system_mode(&self) -> Result<SystemModeMsg> {
-            let enabled = self.power_id.is_some();
+            let enabled = self.power_id.is_some() || self.screen_saver_id.is_some();
             Ok(SystemModeMsg {
                 enabled,
                 // linux下不实现屏幕保持
-                keep_screen: false,
+                keep_screen: self.screen_saver_id.is_some(),
             })
         }
 
         /// 设置系统休眠模式
         async fn set_system_mode(&mut self, mode: SystemModeMsg) -> Result<()> {
-            self.global_data.set_data(MARK.to_string(), &mode.enabled).await?;
-            if mode.enabled {
+            self.global_data.set_data(POWER_MARK.to_string(), &mode.enabled).await?;
+            self.global_data.set_data(SCREENSAVER_MARK.to_string(), &mode.keep_screen).await?;
+            if mode.enabled && !mode.keep_screen {
+                self.un_inhibit_screen_saver().await?;
+                self.inhabit().await?;
+            } else if mode.enabled && mode.keep_screen {
+                self.inhibit_screen_saver().await?;
                 self.inhabit().await?;
             } else {
+                self.un_inhibit_screen_saver().await?;
                 self.un_inhabit().await?;
             }
 
             Ok(())
         }
+
     }
 
     impl DisplayMode {
@@ -651,9 +674,8 @@ pub mod display_os {
                 return Ok(());
             }
 
-            let v = self
-                .power_manage_proxy
-                .inhibit(APP_NAME, "程序设置为保持休眠")
+            let v = OrgFreedesktopPowerManagementInhibit::inhibit(&self
+                .power_manage_proxy, APP_NAME, "程序设置为保持休眠")
                 .await?;
             self.power_id = Some(v);
             Ok(())
@@ -661,8 +683,26 @@ pub mod display_os {
         // 取消禁止系统休眠
         async fn un_inhabit(&mut self) -> Result<()> {
             if let Some(id) = self.power_id {
-                self.power_manage_proxy.un_inhibit(id).await?;
+                OrgFreedesktopPowerManagementInhibit::un_inhibit(&self.power_manage_proxy, id).await?;
                 self.power_id = None;
+            }
+            Ok(())
+        }
+        // 启用禁止锁屏
+        async fn inhibit_screen_saver(&mut self) -> Result<()> {
+            if self.screen_saver_id.is_some() {
+                // 已经启用了，不需要执行操作
+                return Ok(());
+            }
+            let v = OrgFreedesktopScreenSaver::inhibit(&self.screen_saver_manage_proxy, APP_NAME, "程序设置为禁止锁屏").await?;
+            self.screen_saver_id = Some(v);
+            Ok(())
+        }
+        // 取消禁止锁屏
+        async fn un_inhibit_screen_saver(&mut self) -> Result<()> {
+            if let Some(id) = self.screen_saver_id {
+                OrgFreedesktopScreenSaver::un_inhibit(&self.screen_saver_manage_proxy, id).await?;
+                self.screen_saver_id = None;
             }
             Ok(())
         }
