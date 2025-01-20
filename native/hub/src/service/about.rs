@@ -103,6 +103,7 @@ impl AboutService {
         while let Some(content) = bytes_stream.next().await {
             file.write_all(&content?).await?;
         }
+        drop(file);
 
         // 安装
         let _ = Command::new(&path).spawn()?;
