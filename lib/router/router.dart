@@ -28,7 +28,7 @@ class MyRouterConfig {
   // 可用主题上下文
   static BuildContext? themeContext;
 
-  static Map<String, int> _routerIndex = {};
+  static final Map<String, int> _routerIndex = {};
 
   // 查找router对应的索引
   static int findRouterIndex(String router) {

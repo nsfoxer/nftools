@@ -318,51 +318,64 @@ class MainPage extends StatelessWidget {
                   child: Text(Constants.appName),
                 ))),
         actions: Container(
-            margin: const EdgeInsets.all(5),
-            child: Center(
-                child: Row(
+            margin: const EdgeInsets.fromLTRB(5, 0, 0, 5),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 // 最小化按钮
-                IconButton(
-                    icon: Icon(
-                      FluentIcons.chrome_minimize,
-                      size: typography.caption?.fontSize,
-                    ),
-                    onPressed: () {
-                      windowManager.minimize();
-                    }),
+                SizedBox(
+                    height: 30,
+                    width: 45,
+                    child: IconButton(
+                        iconButtonMode: IconButtonMode.small,
+                        icon: Icon(
+                          FluentIcons.chrome_minimize,
+                          size: typography.caption?.fontSize,
+                        ),
+                        onPressed: () {
+                          windowManager.minimize();
+                        })),
                 // 最大化按钮
-                IconButton(
-                    icon: Icon(
-                      FluentIcons.chrome_restore,
-                      size: typography.caption?.fontSize,
-                    ),
-                    onPressed: () async {
-                      if (await windowManager.isMaximized()) {
-                        windowManager.unmaximize();
-                      } else {
-                        windowManager.maximize();
-                      }
-                    }),
+                SizedBox(
+                    height: 30,
+                    width: 45,
+                    child: IconButton(
+                        iconButtonMode: IconButtonMode.small,
+                        icon: Icon(
+                          FluentIcons.chrome_restore,
+                          size: typography.caption?.fontSize,
+                        ),
+                        onPressed: () async {
+                          if (await windowManager.isMaximized()) {
+                            windowManager.unmaximize();
+                          } else {
+                            windowManager.maximize();
+                          }
+                        })),
                 // 关闭窗口按钮
-                IconButton(
-                    icon: Icon(
-                      FluentIcons.chrome_close,
-                      size: typography.caption?.fontSize,
-                    ),
-                    style: ButtonStyle(
-                        backgroundColor: WidgetStateColor.resolveWith((state) {
-                      if (state.contains(WidgetState.hovered)) {
-                        return const Color.fromARGB(255, 192, 43, 28);
-                      }
-                      return bg ?? Colors.transparent;
-                    })),
-                    onPressed: () {
-                      windowManager.hide();
-                    }),
+                SizedBox(
+                    height: 30,
+                    width: 45,
+                    child: IconButton(
+                        iconButtonMode: IconButtonMode.small,
+                        icon: Icon(
+                          FluentIcons.chrome_close,
+                          size: typography.caption?.fontSize,
+                        ),
+                        style: ButtonStyle(backgroundColor:
+                            WidgetStateColor.resolveWith((state) {
+                          if (state.contains(WidgetState.hovered)) {
+                            return const Color.fromARGB(255, 192, 43, 28);
+                          }
+                          return bg ?? Colors.transparent;
+                        })),
+                        onPressed: () {
+                          windowManager.hide();
+                        })),
               ],
-            ))),
+            )),
       ),
       pane: NavigationPane(
         selected: _calculateIndex(context),
