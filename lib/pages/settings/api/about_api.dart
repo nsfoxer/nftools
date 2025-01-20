@@ -6,6 +6,7 @@ const String _service = "AboutService";
 const String _version = "version";
 const String _newestVersion = "check_updates";
 const String _history = "get_history";
+const String _installBNewest = "install_newest";
 
 // 获取当前版本号
 Future<String> version() async {
@@ -23,4 +24,9 @@ Future<String> newestVersion() async {
 Future<VersionHistoryListMsg> getHistory() async {
   final data = await sendRequest<EmptyMessage>(_service, _history, null);
   return VersionHistoryListMsg.fromBuffer(data);
+}
+
+// 下载并安装最新版
+Future<void> installNewest() async {
+  await sendRequest<EmptyMessage>(_service, _installBNewest, null);
 }

@@ -18,4 +18,18 @@ class AboutController extends GetxController {
     state.history = (await $api.getHistory()).versions;
     update();
   }
+
+  void installNewest() async{
+    if (state.isInstalling) {
+      return;
+    }
+    state.isInstalling = true;
+    update();
+    try {
+      await $api.installNewest();
+    } finally{
+      state.isInstalling = false;
+      update();
+    }
+  }
 }
