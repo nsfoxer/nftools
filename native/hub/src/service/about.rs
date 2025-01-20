@@ -91,8 +91,7 @@ impl AboutService {
         // 下载
         let mut path = get_cache_dir()?;
         path.push("installed-nftools.exe");
-        let client = reqwest::Client::builder().danger_accept_invalid_certs(true).build()?;
-        let rsp = client.get(&self.version_info.as_ref().unwrap().package_server).send().await?;
+        let rsp = reqwest::get(&self.version_info.as_ref().unwrap().package_server).await?;
         if !rsp.status().is_success() {
             return Err(anyhow::anyhow!(
                 "下载文件失败。响应码:{}",
