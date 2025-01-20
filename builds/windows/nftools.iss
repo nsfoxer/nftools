@@ -2,9 +2,9 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "nftools"
-#define MyAppVersion "0.1"
+#define MyAppVersion "0.1.0"
 #define MyAppPublisher "nsfoxer"
-#define MyAppURL "https://www.cnblogs.com/nsfoxer/"
+#define MyAppURL "https://gitee.com/muwuren/nftools/releases/download/v0.1.0/nftools.exe"
 #define MyAppExeName "nftools.exe"
 
 [Setup]
