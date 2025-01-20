@@ -1,12 +1,18 @@
-use crate::common::utils::version;
+use crate::common::utils::{get_cache_dir, version};
 use crate::messages::common::StringMessage;
 use crate::service::service::{Service, ServiceName};
+use std::time::Duration;
 
-use prost::Message;
-use anyhow::Result;
-use serde::Deserialize;
-use crate::{async_func_notype, func_end, func_notype};
 use crate::messages::about::{VersionHistoryListMsg, VersionHistoryMsg};
+use crate::{async_func_nono, async_func_notype, func_end, func_notype};
+use anyhow::Result;
+use futures_util::StreamExt;
+use prost::Message;
+use serde::Deserialize;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
+use tokio::process::Command;
+use tokio::time::sleep;
 
 #[derive(Debug, Deserialize)]
 struct VersionInfo {
@@ -40,9 +46,10 @@ impl ServiceName for AboutService {
 #[async_trait::async_trait]
 impl Service for AboutService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
-       async_func_notype!(self, func, check_updates, get_history);
-       func_notype!(self, func, version);
-       func_end!(func)
+        async_func_notype!(self, func, check_updates, get_history);
+        func_notype!(self, func, version);
+        async_func_nono!(self, func, install_newest);
+        func_end!(func)
     }
 }
 
@@ -63,13 +70,46 @@ impl AboutService {
     async fn get_history(&mut self) -> Result<VersionHistoryListMsg> {
         self.get_version_info(false).await?;
         let version_info = self.version_info.as_ref().unwrap();
-        let result = version_info.history.iter().map(|x| VersionHistoryMsg{
-            version: x.version.clone(),
-            record: x.record.clone(),
-        }).collect();
-        Ok(VersionHistoryListMsg{
-            versions: result
-        })
+        let result = version_info
+            .history
+            .iter()
+            .map(|x| VersionHistoryMsg {
+                version: x.version.clone(),
+                record: x.record.clone(),
+            })
+            .collect();
+        Ok(VersionHistoryListMsg { versions: result })
+    }
+
+    /// 下载和安装最新版
+    async fn install_newest(&mut self) -> Result<()> {
+        self.get_version_info(false).await?;
+        if !cfg!(target_os = "windows") {
+            return Err(anyhow::anyhow!("目前仅支持windows安装"));
+        }
+
+        // 下载
+        let mut path = get_cache_dir()?;
+        path.push("installed-nftools.exe");
+        let client = reqwest::Client::builder().danger_accept_invalid_certs(true).build()?;
+        let rsp = client.get(&self.version_info.as_ref().unwrap().package_server).send().await?;
+        if !rsp.status().is_success() {
+            return Err(anyhow::anyhow!(
+                "下载文件失败。响应码:{}",
+                rsp.status().as_u16()
+            ));
+        }
+        let mut file = File::create(&path).await?;
+        let mut bytes_stream = rsp.bytes_stream();
+        while let Some(content) = bytes_stream.next().await {
+            file.write_all(&content?).await?;
+        }
+
+        // 安装
+        let _ = Command::new(&path).spawn()?;
+        sleep(Duration::from_secs(3)).await;
+        // kill me
+        std::process::exit(0);
     }
 }
 
@@ -86,5 +126,28 @@ impl AboutService {
             self.version_info = Some(r);
         }
         Ok(())
+    }
+}
+
+mod test{
+    use futures_util::StreamExt;
+    use tokio::fs::File;
+    use tokio::io::AsyncWriteExt;
+    use crate::common::utils::get_cache_dir;
+
+    #[tokio::test]
+    async fn download() {
+        let mut path = get_cache_dir().unwrap();
+        path.push("installed-nftools.exe");
+        let client = reqwest::Client::builder().danger_accept_invalid_certs(true).build().unwrap();
+        let rsp = client.get("https://36.50.226.35:27572/nftools/win/nftools.exe").send().await.unwrap();
+        if !rsp.status().is_success() {
+            panic!("{:?}", rsp.status().as_u16());
+        }
+        let mut file = File::create(&path).await.unwrap();
+        let mut bytes_stream = rsp.bytes_stream();
+        while let Some(content) = bytes_stream.next().await {
+            file.write_all(&content.unwrap()).await.unwrap();
+        }
     }
 }
