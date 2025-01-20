@@ -1,5 +1,5 @@
 {
-  "package_server": "https://36.50.226.35:27572/nftools/win/nftools.exe",
+  "package_server": "https://gitee.com/muwuren/nftools/releases/download/v0.1.0/nftools.exe",
   "version": "v0.1.0",
   "history": [
     {
