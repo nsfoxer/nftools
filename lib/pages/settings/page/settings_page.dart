@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
+import 'package:nftools/common/constants.dart';
+import 'package:nftools/common/style.dart';
 import 'package:nftools/pages/settings/controller/about_controller.dart';
-import 'package:nftools/utils/log.dart';
 import 'package:url_launcher/link.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -38,15 +37,18 @@ class _AboutPage extends StatelessWidget {
     Typography typography = FluentTheme.of(context).typography;
     return GetBuilder<AboutController>(builder: (logic) {
       return Expander(
-          leading: const Icon(FluentIcons.info12),
-          header: InfoLabel(
-              label: "nftools",
-              child: Text(
-                "当前版本： ${logic.state.version}",
-                style: typography.caption,
-              )),
+          leading: const Row(
+            spacing: NFLayout.v2,
+            children: [
+              Icon(FluentIcons.info12),
+              Text(Constants.appName),
+            ],
+          ),
+          header: Text(
+            "版本: ${logic.state.version}",
+          ),
           trailing: () {
-            if (logic.state.version != logic.state.newestVersion) {
+            if (logic.state.version == logic.state.newestVersion) {
               return null;
             }
             if (logic.state.isInstalling) {
@@ -87,7 +89,15 @@ class _AboutPage extends StatelessWidget {
                     child: const Text("https://gitee.com/muwuren/nftools"),
                   );
                 },
-              )
+              ),
+              const Text("更新记录"),
+              Padding(
+                padding: const EdgeInsets.all(NFLayout.v1),
+                child: Text(
+                  logic.state.record,
+                  style: typography.caption,
+                ),
+              ),
             ],
           ));
     });

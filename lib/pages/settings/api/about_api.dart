@@ -1,11 +1,10 @@
 import 'package:nftools/api/api.dart';
-import 'package:nftools/messages/about.pb.dart';
 import 'package:nftools/messages/common.pb.dart';
 
 const String _service = "AboutService";
 const String _version = "version";
 const String _newestVersion = "check_updates";
-const String _history = "get_history";
+const String _record = "record";
 const String _installBNewest = "install_newest";
 
 // 获取当前版本号
@@ -21,9 +20,9 @@ Future<String> newestVersion() async {
 }
 
 // 获取历史记录
-Future<VersionHistoryListMsg> getHistory() async {
-  final data = await sendRequest<EmptyMessage>(_service, _history, null);
-  return VersionHistoryListMsg.fromBuffer(data);
+Future<String> getRecord() async {
+  final data = await sendRequest<EmptyMessage>(_service, _record, null);
+  return StringMessage.fromBuffer(data).value;
 }
 
 // 下载并安装最新版
