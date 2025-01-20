@@ -3,7 +3,6 @@ use crate::messages::common::StringMessage;
 use crate::service::service::{Service, ServiceName};
 use std::time::Duration;
 
-use crate::messages::about::{VersionHistoryListMsg, VersionHistoryMsg};
 use crate::{async_func_nono, async_func_notype, func_end, func_notype};
 use anyhow::Result;
 use futures_util::StreamExt;
@@ -20,12 +19,7 @@ struct VersionInfo {
     version: String,
     // 最新包下载地址
     package_server: String,
-    // 历史记录
-    history: Vec<VersionHistory>,
-}
-#[derive(Debug, Deserialize)]
-struct VersionHistory {
-    version: String,
+    // 当前版本的更新记录
     record: String,
 }
 
@@ -46,7 +40,7 @@ impl ServiceName for AboutService {
 #[async_trait::async_trait]
 impl Service for AboutService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        async_func_notype!(self, func, check_updates, get_history);
+        async_func_notype!(self, func, check_updates, record);
         func_notype!(self, func, version);
         async_func_nono!(self, func, install_newest);
         func_end!(func)
@@ -66,19 +60,12 @@ impl AboutService {
         Ok(StringMessage { value: version })
     }
 
-    /// 获取历史记录信息
-    async fn get_history(&mut self) -> Result<VersionHistoryListMsg> {
+    /// 获取更新信息
+    async fn record(&mut self) -> Result<StringMessage> {
         self.get_version_info(false).await?;
         let version_info = self.version_info.as_ref().unwrap();
-        let result = version_info
-            .history
-            .iter()
-            .map(|x| VersionHistoryMsg {
-                version: x.version.clone(),
-                record: x.record.clone(),
-            })
-            .collect();
-        Ok(VersionHistoryListMsg { versions: result })
+        
+        Ok(StringMessage { value: version_info.record.clone() })
     }
 
     /// 下载和安装最新版

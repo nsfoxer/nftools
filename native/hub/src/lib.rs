@@ -19,7 +19,6 @@ use crate::service::utils::UtilsService;
 use common::global_data::GlobalData;
 use log::error;
 use std::path::PathBuf;
-use std::sync::Arc;
 use anyhow::anyhow;
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use tokio;

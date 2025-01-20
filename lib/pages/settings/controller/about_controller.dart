@@ -13,9 +13,8 @@ class AboutController extends GetxController {
 
   void _init() async {
     state.version = await $api.version();
-    update();
     state.newestVersion = await $api.newestVersion();
-    state.history = (await $api.getHistory()).versions;
+    state.record = await $api.getRecord();
     update();
   }
 
