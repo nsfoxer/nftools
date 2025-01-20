@@ -1,10 +1,11 @@
 use crate::common::utils::version;
 use crate::messages::common::StringMessage;
 use crate::service::service::{Service, ServiceName};
-use ahash::AHashMap;
 
+use prost::Message;
 use anyhow::Result;
 use serde::Deserialize;
+use crate::{async_func_notype, func_end, func_notype};
 use crate::messages::about::{VersionHistoryListMsg, VersionHistoryMsg};
 
 #[derive(Debug, Deserialize)]
@@ -23,7 +24,7 @@ struct VersionHistory {
 }
 
 /// 关于 服务
-struct AboutService {
+pub struct AboutService {
     version_info: Option<VersionInfo>,
 }
 
@@ -39,7 +40,9 @@ impl ServiceName for AboutService {
 #[async_trait::async_trait]
 impl Service for AboutService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        todo!()
+       async_func_notype!(self, func, check_updates, get_history);
+       func_notype!(self, func, version);
+       func_end!(func)
     }
 }
 
@@ -56,6 +59,7 @@ impl AboutService {
         Ok(StringMessage { value: version })
     }
 
+    /// 获取历史记录信息
     async fn get_history(&mut self) -> Result<VersionHistoryListMsg> {
         self.get_version_info(false).await?;
         let version_info = self.version_info.as_ref().unwrap();
