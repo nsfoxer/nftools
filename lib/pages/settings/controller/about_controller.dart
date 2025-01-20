@@ -1,0 +1,21 @@
+import 'package:get/get_state_manager/src/simple/get_controllers.dart';
+import 'package:nftools/pages/settings/api/about_api.dart' as $api;
+import 'package:nftools/pages/settings/state/about_state.dart';
+
+class AboutController extends GetxController {
+  final state = AboutState();
+
+  @override
+  void onReady() {
+    _init();
+    super.onReady();
+  }
+
+  void _init() async {
+    state.version = await $api.version();
+    update();
+    state.newestVersion = await $api.newestVersion();
+    state.history = (await $api.getHistory()).versions;
+    update();
+  }
+}
