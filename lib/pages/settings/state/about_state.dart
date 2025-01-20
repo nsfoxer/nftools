@@ -4,4 +4,5 @@ class AboutState {
   String version = "";
   String newestVersion = "";
   List<VersionHistoryMsg> history = [];
+  bool isInstalling = false;
 }
