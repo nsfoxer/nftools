@@ -13,16 +13,17 @@ use crate::common::*;
 use crate::messages::base::BaseRequest;
 use crate::service::ai::BaiduAiService;
 use crate::service::display::display_os::{DisplayLight, DisplayMode};
+use crate::service::settings::about::AboutService;
+use crate::service::settings::autostart::AutoStartService;
 use crate::service::syncfile::SyncFileService;
 use crate::service::system_info::SystemInfoService;
 use crate::service::utils::UtilsService;
+use anyhow::anyhow;
 use common::global_data::GlobalData;
 use log::error;
 use std::path::PathBuf;
-use anyhow::anyhow;
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use tokio;
-use crate::service::about::AboutService;
 
 rinf::write_interface!();
 
@@ -60,6 +61,11 @@ async fn init_service(gd: GlobalData) -> ApiService {
             error!("sync file服务创建失败：原因:{e}");
         }
     }
+    match AutoStartService::new() {
+        Ok(service) => api.add_imm_service(Box::new(service)),
+        Err(e) => error!("autostart服务创建失败 原因:{}", e),
+    };
+
     api.add_service(Box::new(SystemInfoService::new().await));
     api.add_service(Box::new(AboutService::new()));
     api.add_stream_service(Box::new(BaiduAiService::new(gd.clone()).await));
