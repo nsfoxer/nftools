@@ -18,7 +18,44 @@ class AboutController extends GetxController {
     update();
   }
 
-  void installNewest() async{
+  // 比较当前版本号与最新版本号
+  // 如果相等，则返回 0; 如果有更新版本，则返回 -1; 如果当前版本更大，则返回1
+  int compareVersion() {
+    if (state.version.isEmpty || state.newestVersion.isEmpty) {
+      return 0;
+    }
+    return _compareVersions(state.version, state.newestVersion);
+  }
+
+  int _compareVersions(String version1, String version2) {
+    List<int> v1 = _parseVersion(version1);
+    List<int> v2 = _parseVersion(version2);
+
+    for (int i = 0; i < 3; i++) {
+      if (v1[i] > v2[i]) {
+        return 1;
+      } else if (v1[i] < v2[i]) {
+        return -1;
+      }
+    }
+    return 0;
+  }
+
+  List<int> _parseVersion(String version) {
+    version = version.substring(1);
+    List<String> parts = version.split('.');
+    List<int> result = [];
+    for (int i = 0; i < 3; i++) {
+      if (i < parts.length) {
+        result.add(int.tryParse(parts[i]) ?? 0);
+      } else {
+        result.add(0);
+      }
+    }
+    return result;
+  }
+
+  void installNewest() async {
     if (state.isInstalling) {
       return;
     }
@@ -26,7 +63,7 @@ class AboutController extends GetxController {
     update();
     try {
       await $api.installNewest();
-    } finally{
+    } finally {
       state.isInstalling = false;
       update();
     }

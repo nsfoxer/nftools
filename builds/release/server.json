@@ -1,5 +1,5 @@
 {
   "package_server": "https://gitee.com/muwuren/nftools/releases/download/v0.1.0/nftools.exe",
-  "version": "v0.1.0",
+  "version": "v0.1.1",
   "record": "- 基础功能搭建\n\t- 文件同步（webdav）\n\t- 系统外观调整\n\t- 系统监控\n\t- AI对话：百度AI + 星火AI\n- 实现版本更新检查"
 }

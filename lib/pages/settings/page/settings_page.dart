@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:nftools/common/constants.dart';
@@ -57,7 +55,8 @@ class _AboutPage extends StatelessWidget {
             "版本: ${logic.state.version}",
           ),
           trailing: () {
-            if (logic.state.version == logic.state.newestVersion) {
+            final compare = logic.compareVersion();
+            if (compare == 0) {
               return null;
             }
             if (logic.state.isInstalling) {
@@ -67,16 +66,17 @@ class _AboutPage extends StatelessWidget {
               );
             }
             return FilledButton(
+                onPressed: compare < 0
+                    ? () {
+                        logic.installNewest();
+                      }
+                    : null,
                 child: Text(
-                  "最新版本: ${logic.state.newestVersion}",
+                  "最新版本 ${logic.state.newestVersion}",
                   style: typography.body,
-                ),
-                onPressed: () {
-                  logic.installNewest();
-                });
+                ));
           }(),
           content: Column(
-            // mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text("作者"),
@@ -116,7 +116,6 @@ class _AboutPage extends StatelessWidget {
 class _AutoStartPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    Typography typography = FluentTheme.of(context).typography;
     return GetBuilder<AutoStartController>(builder: (logic) {
       return NFPanelWidget(
         leading: const Row(
