@@ -1,8 +1,12 @@
+import 'dart:math';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/pages/settings/controller/about_controller.dart';
+import 'package:nftools/pages/settings/controller/auto_start_controller.dart';
+import 'package:nftools/utils/nf_widgets.dart';
 import 'package:url_launcher/link.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -20,6 +24,11 @@ class SettingsPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                "行为",
+                style: typography.subtitle,
+              ),
+              _AutoStartPage(),
               Text(
                 "关于",
                 style: typography.subtitle,
@@ -100,6 +109,31 @@ class _AboutPage extends StatelessWidget {
               ),
             ],
           ));
+    });
+  }
+}
+
+class _AutoStartPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    Typography typography = FluentTheme.of(context).typography;
+    return GetBuilder<AutoStartController>(builder: (logic) {
+      return NFPanelWidget(
+        leading: const Row(
+          spacing: NFLayout.v2,
+          children: [
+            Icon(FluentIcons.power_button),
+            Text(
+              "开机自启",
+            )
+          ],
+        ),
+        trailing: ToggleSwitch(
+            checked: logic.state.isAutoStart,
+            onChanged: (v) {
+              logic.toggleAutostart(v);
+            }),
+      );
     });
   }
 }
