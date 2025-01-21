@@ -1,5 +1,5 @@
+use std::env;
 use std::fs::create_dir_all;
-use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use dirs::{cache_dir, config_dir};
@@ -73,4 +73,9 @@ pub fn notify(body: &str) -> Result<()> {
 /// 获取当前版本号
 pub fn version() -> String {
     format!("v{}", env!("CARGO_PKG_VERSION"))
+}
+
+/// 获取当前执行程序的执行路径
+pub fn location_path() -> Result<PathBuf> {
+    Ok(env::current_exe()?)
 }

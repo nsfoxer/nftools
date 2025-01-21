@@ -4,4 +4,4 @@ pub mod syncfile;
 pub mod system_info;
 pub mod utils;
 pub mod ai;
-pub mod about;
+pub mod settings;
