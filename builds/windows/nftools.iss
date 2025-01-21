@@ -2,9 +2,9 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "nftools"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.1.1"
 #define MyAppPublisher "nsfoxer"
-#define MyAppURL "https://gitee.com/muwuren/nftools/releases/download/v0.1.0/nftools.exe"
+#define MyAppURL "https://gitee.com/muwuren/nftools/"
 #define MyAppExeName "nftools.exe"
 
 [Setup]
@@ -27,11 +27,13 @@ ArchitecturesAllowed=x64compatible
 ; meaning it should use the native 64-bit Program Files directory and
 ; the 64-bit view of the registry.
 ArchitecturesInstallIn64BitMode=x64compatible
-DisableProgramGroupPage=yes
+DisableProgramGroupPage=no
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
-OutputDir=C:\Users\12618\Desktop\tmp\nftools-build
-OutputBaseFilename=nftools
+PrivilegesRequiredOverridesAllowed=dialog
+OutputDir=C:\Users\12618\Desktop\src\foxer\code\nftools\builds\windows
+OutputBaseFilename=nftools-install
+SetupIconFile=C:\Users\12618\Desktop\src\foxer\code\nftools\assets\img\nftools.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -45,9 +47,9 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "C:\Users\12618\Desktop\src\foxer\code\nftools\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\12618\Desktop\src\foxer\code\nftools\build\windows\x64\runner\Release\nftools.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\12618\Desktop\src\foxer\code\nftools\build\windows\x64\runner\Release\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\12618\Desktop\src\foxer\code\nftools\build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\12618\Desktop\src\foxer\code\nftools\build\windows\x64\runner\Release\*.dll"; DestDir: "{app}"; Flags: ignoreversion
+
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
