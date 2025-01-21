@@ -120,3 +120,30 @@ class _NFRotationWidgetState extends State<NFRotationWidget>
     );
   }
 }
+
+class NFPanelWidget extends StatelessWidget {
+  final Widget? leading;
+  final Widget? trailing;
+
+  const NFPanelWidget({super.key, this.leading, this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> children = [];
+    children.add(Padding(
+        padding: const EdgeInsets.symmetric(vertical: NFLayout.v2, horizontal: NFLayout.v1), child: leading ?? Container()));
+    children.add(Padding(
+        padding: const EdgeInsets.all(NFLayout.v3), child: trailing ?? Container()));
+    return Container(
+        padding: const EdgeInsets.all(NFLayout.v1),
+        decoration: BoxDecoration(
+            // border:
+            //     Border.all(color: FluentTheme.of(context).cardColor, width: 1),
+            borderRadius: BorderRadius.circular(6.0),
+            color: FluentTheme.of(context).cardColor),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: children,
+        ));
+  }
+}
