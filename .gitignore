@@ -48,3 +48,5 @@ target/
 
 # Generated messages
 */**/messages/
+
+**/*.exe
