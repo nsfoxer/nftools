@@ -11,7 +11,6 @@ use ahash::{AHashMap, AHashSet};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use filetime::FileTime;
-use log::error;
 use prost::Message;
 use reqwest_dav::list_cmd::ListEntity;
 use reqwest_dav::re_exports::reqwest::Body;
@@ -20,7 +19,6 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::ops::Add;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::fs;
 use tokio::fs::{create_dir_all, metadata, File};
@@ -79,7 +77,6 @@ impl ServiceName for SyncFileService {
 
 #[async_trait]
 impl Service for SyncFileService {
-
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         async_func_notype!(self, func, has_account, list_dirs);
         async_func_typetype!(
@@ -102,6 +99,13 @@ impl Service for SyncFileService {
         func_notype!(self, func, get_account);
 
         func_end!(func)
+    }
+
+    /// 关闭服务时保存数据
+    async fn close(&mut self) -> Result<()> {
+        self.global_data.set_data(ACCOUNT_CACHE.to_string(), &self.account_info).await?;
+        self.global_data.set_data(format!("{}-{}", SYNC_FILE_PREFIX, get_machine_id()?), &self.file_sync).await?;
+        Ok(())
     }
 }
 
@@ -157,7 +161,6 @@ impl SyncFileService {
             url: account.url,
         };
         self.account_info = Some(account);
-        self.global_data.set_data(ACCOUNT_CACHE.to_string(), &self.account_info).await?;
         self.has_account().await
     }
 
@@ -358,7 +361,6 @@ impl SyncFileService {
             modify: 0,
             tag: sync.tag
         };
-        self.global_data.set_data(format!("{}-{}", SYNC_FILE_PREFIX, get_machine_id()?), &self.file_sync).await?;
         Ok(result)
     }
 

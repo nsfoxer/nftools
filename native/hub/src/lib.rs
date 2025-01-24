@@ -81,6 +81,11 @@ async fn base_request() -> Result<()> {
 
     let mut receiver = BaseRequest::get_dart_signal_receiver()?;
     while let Some(signal) = receiver.recv().await {
+        if signal.message.service == "BaseService" && signal.message.func == "close" {
+            api.close(signal).await;
+            log::info!("服务已全部停止");
+            break;
+        }
         api.handle(signal);
     }
 
