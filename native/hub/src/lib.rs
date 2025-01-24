@@ -80,9 +80,10 @@ async fn base_request() -> Result<()> {
     let api = init_service(gd.clone()).await;
 
     let mut receiver = BaseRequest::get_dart_signal_receiver()?;
+    let mut close_signal = None;
     while let Some(signal) = receiver.recv().await {
         if signal.message.service == "BaseService" && signal.message.func == "close" {
-            api.close(signal).await;
+            close_signal = Some(api.close(signal).await);
             log::info!("服务已全部停止");
             break;
         }
@@ -94,6 +95,11 @@ async fn base_request() -> Result<()> {
         tokio::fs::remove_file(path)
             .await
             .unwrap_or_else(|e| eprintln!("{}", e));
+    }
+
+    // 回应关闭信息
+    if let Some(close_signal) = close_signal {
+        close_signal.send_signal_to_dart(Vec::with_capacity(0));
     }
 
     Ok(())

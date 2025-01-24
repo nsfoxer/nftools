@@ -115,7 +115,6 @@ class _MainAppState extends State<MainApp>
 
   void _appExit() async {
     // 等待后端服务退出
-    await $sys_info_api.save();
     await $base_api.closeRust();
     finalizeRust(); // Shut down the `tokio` Rust runtime.
     debugPrint("flutter stop");
