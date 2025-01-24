@@ -2,9 +2,11 @@ use crate::messages::base::{BaseRequest, BaseResponse};
 use crate::service::service::{ImmService, LazyService, Service, StreamService};
 use crate::service_handle;
 use ahash::AHashMap;
+use log::error;
 use rinf::DartSignal;
 use std::ops::DerefMut;
 use std::sync::Arc;
+use futures_util::SinkExt;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::Mutex;
 
@@ -112,6 +114,63 @@ impl ApiService {
                 Self::imm_service_handle(service.clone(), signal);
             }
         };
+    }
+
+    pub async fn close(self, signal: DartSignal<BaseRequest>) {
+        let mut handles = Vec::new();
+        // 关闭所有服务
+        for (desc,service) in self.services {
+           let handle =  match service {
+                ServiceEnum::LazyService(service) => {
+                    tokio::spawn(async move{
+                        let mut s = service.lock().await;
+                        if !s.1 {
+                            if let Err(e) = s.0.close().await {
+                                error!("关闭服务{}失败 {}", desc, e);
+                            }
+                        }
+                    })
+                }
+                ServiceEnum::Service(service) => {
+                    tokio::spawn(async move {
+                        let mut s = service.lock().await;
+                        if let Err(e) = s.close().await {
+                            error!("关闭服务{}失败 {}", desc, e);
+                        }
+                    })
+                }
+                ServiceEnum::ImmService(service) => {
+                    tokio::spawn(async move {
+                        if let Err(e) = service.close().await {
+                            error!("关闭服务{}失败 {}", desc, e);
+                        }
+                    })
+                }
+            };
+            handles.push(handle);
+        }
+        for (desc,service) in self.stream_services {
+            let handle = match service {
+                StreamServiceEnum::StreamService(service) => {
+                    tokio::spawn(async move {
+                        if let Err(e) = service.lock().await.close().await {
+                            error!("关闭服务{}失败 {}", desc, e);
+                        }
+                    })
+                }
+            };
+            handles.push(handle);
+        }
+
+        // 等待任务全部结束
+        futures::future::join_all(handles).await;
+        // 发送完成信息
+        BaseResponse{
+            id: signal.message.id,
+            msg: String::with_capacity(0),
+            is_stream: false,
+            is_end: false,
+        }.send_signal_to_dart(Vec::with_capacity(0));
     }
 
     /// 流式服务处理

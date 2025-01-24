@@ -11,7 +11,12 @@ pub trait ServiceName {
 /// 服务
 #[async_trait]
 pub trait Service: Send + ServiceName {
+    /// 处理服务
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>>;
+    /// 关闭服务 有退出保存数据需求在这里处理
+    async fn close(&mut self) -> Result<()> {
+        Ok(())
+    }
 }
 
 /// 惰性初始化服务
@@ -26,6 +31,10 @@ pub trait LazyService: Service {
 pub trait ImmService: Send + Sync + ServiceName {
     /// 实际处理
     async fn handle(&self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>>;
+    /// 关闭服务 有退出保存数据需求在这里处理
+    async fn close(&self) -> Result<()> {
+        Ok(())
+    }
 }
 
 /// stream响应服务,同时需要支持service
