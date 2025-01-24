@@ -1,5 +1,5 @@
 {
-  "package_server": "https://gitee.com/muwuren/nftools/releases/download/v0.1.1/nftools-install.exe",
-  "version": "v0.1.1",
-  "record": "- 添加开机自启功能设置\n- 优化windows安装包安装设置"
+  "package_server": "https://gitee.com/muwuren/nftools/releases/download/v0.1.2/nftools-install.exe",
+  "version": "v0.1.2",
+  "record": "- 新增程序退出时的保存机制"
 }

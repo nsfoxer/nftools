@@ -9,7 +9,6 @@ const String _getCpu = "get_cpu";
 const String _getRam = "get_ram";
 const String _getCpuDatas = "get_cpu_datas";
 const String _getRamDatas = "get_mem_datas";
-const String _close = "close";
 
 
 Future<ChartInfo> getCpu() async {
@@ -32,8 +31,4 @@ Future<ChartInfoRsp> getRams(DateTime startTime, DateTime endTime) async {
   final req = ChartInfoReq(startTime: startTime.millisecondsSinceEpoch ~/ 1000, endTime: endTime.millisecondsSinceEpoch ~/ 1000);
   var r = await sendRequest(_service, _getRamDatas, req);
   return ChartInfoRsp.fromBuffer(r);
-}
-
-Future<void> save() async {
-   await sendRequest<EmptyMessage>(_service, _close, null);
 }
