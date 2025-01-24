@@ -116,7 +116,7 @@ impl ApiService {
         };
     }
 
-    pub async fn close(self, signal: DartSignal<BaseRequest>) {
+    pub async fn close(self, signal: DartSignal<BaseRequest>) -> BaseResponse{
         let mut handles = Vec::new();
         // 关闭所有服务
         for (desc, service) in self.services {
@@ -163,7 +163,6 @@ impl ApiService {
             is_stream: false,
             is_end: false,
         }
-        .send_signal_to_dart(Vec::with_capacity(0));
     }
 
     /// 流式服务处理
