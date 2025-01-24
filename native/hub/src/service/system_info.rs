@@ -55,6 +55,38 @@ impl Service for SystemInfoService {
         async_func_nono!(self, func, close);
         func_end!(func)
     }
+
+    async fn close(&mut self) -> Result<()> {
+        let mut path = match get_cache_dir() {
+            Ok(r) => r,
+            Err(e) => {
+                error!("保存system_info数据失败{e}");
+                return Ok(());
+            }
+        };
+        path.push(CACHE_FILE);
+
+        // 优化数据
+        optimize_data(&mut self.cpu_datas, true);
+        optimize_data(&mut self.mem_datas, true);
+        let cache = SystemInfoCache {
+            mem_datas: Some(ChartInfoRsp {
+                infos: self.mem_datas.clone(),
+            }),
+            cpu_datas: Some(ChartInfoRsp {
+                infos: self.cpu_datas.clone(),
+            }),
+        };
+
+        let buf = cache.encode_to_vec();
+        if let Ok(buf) = lzma::compress(&buf, 9) {
+            if let Ok(mut file) = File::create(path).await {
+                file.write_all(&buf[..]).await?;
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl SystemInfoService {
@@ -160,38 +192,6 @@ impl SystemInfoService {
                 .cloned()
                 .collect(),
         })
-    }
-    
-    async fn close(&mut self) -> Result<()> {
-        let mut path = match get_cache_dir() {
-            Ok(r) => r,
-            Err(e) => {
-                error!("保存system_info数据失败{e}");
-                return Ok(());
-            }
-        };
-        path.push(CACHE_FILE);
-
-        // 优化数据
-        optimize_data(&mut self.cpu_datas, true);
-        optimize_data(&mut self.mem_datas, true);
-        let cache = SystemInfoCache {
-            mem_datas: Some(ChartInfoRsp {
-                infos: self.mem_datas.clone(),
-            }),
-            cpu_datas: Some(ChartInfoRsp {
-                infos: self.cpu_datas.clone(),
-            }),
-        };
-
-        let buf = cache.encode_to_vec();
-        if let Ok(buf) = lzma::compress(&buf, 9) {
-            if let Ok(mut file) = File::create(path).await {
-                file.write_all(&buf[..]).await?;
-            }
-        } 
-        
-        Ok(())
     }
 }
 
@@ -430,10 +430,18 @@ mod test {
     async fn print_datas() {
         let system_info = SystemInfoService::new().await;
         eprintln!("cpu history datas ========= ");
-        eprintln!("len = {}, start = {:?}, end = {:?}", system_info.cpu_datas.len()
-                  , system_info.cpu_datas.first().unwrap(), system_info.cpu_datas.last().unwrap());
+        eprintln!(
+            "len = {}, start = {:?}, end = {:?}",
+            system_info.cpu_datas.len(),
+            system_info.cpu_datas.first().unwrap(),
+            system_info.cpu_datas.last().unwrap()
+        );
         eprintln!("mem history datas ========= ");
-        eprintln!("len = {}, start = {:?}, end = {:?}", system_info.mem_datas.len()
-                  , system_info.mem_datas.first().unwrap(), system_info.mem_datas.last().unwrap());
+        eprintln!(
+            "len = {}, start = {:?}, end = {:?}",
+            system_info.mem_datas.len(),
+            system_info.mem_datas.first().unwrap(),
+            system_info.mem_datas.last().unwrap()
+        );
     }
 }
