@@ -53,6 +53,18 @@ class SyncFileController extends GetxController {
     return result;
   }
 
+  void refreshList() async {
+
+    state.isLoading = true;
+    update();
+    try {
+      await _init();
+    } finally {
+      state.isLoading = false;
+      update();
+    }
+  }
+
   // 列出所有文件夹
   void listFiles() async {
     var result = await $api.listDirs();

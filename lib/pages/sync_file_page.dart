@@ -7,6 +7,7 @@ import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/common/style.dart';
+import 'package:nftools/controller/common_controller.dart';
 import 'package:nftools/controller/sync_file_controller.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf_widgets.dart';

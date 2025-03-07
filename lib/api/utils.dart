@@ -7,6 +7,7 @@ import 'api.dart';
 const String _service = "Utils";
 const String _compressLocalPic = "compress_local_img";
 const String _notify = "notify";
+const String _networkStatus = "network_status";
 
 // 压缩本地图片
 Future<String> compressLocalFile(String localFile, int width, int height) async {
@@ -18,4 +19,11 @@ Future<String> compressLocalFile(String localFile, int width, int height) async 
 // 桌面通知
 void notify(String msg) {
   sendRequest(_service, _notify, StringMessage(value: msg));
+}
+
+// 网络状态
+Future<bool> networkStatus() async {
+  var data = await sendRequest<EmptyMessage>
+    (_service, _networkStatus, null);
+  return BoolMessage.fromBuffer(data).value;
 }
