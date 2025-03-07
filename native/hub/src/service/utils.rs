@@ -1,4 +1,4 @@
-use crate::messages::common::StringMessage;
+use crate::messages::common::{BoolMessage, StringMessage};
 use crate::service::service::{ImmService, ServiceName};
 use prost::Message;
 use std::ffi::OsStr;
@@ -7,7 +7,7 @@ use std::time::UNIX_EPOCH;
 
 use crate::common::utils::{get_cache_dir, sha256};
 use crate::messages::utils::CompressLocalPicMsg;
-use crate::{async_func_typetype, func_end, func_typeno};
+use crate::{async_func_notype, async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
 use tokio::fs;
 
@@ -31,6 +31,7 @@ impl ImmService for UtilsService {
             compress_local_img,
             CompressLocalPicMsg
         );
+        async_func_notype!(self, func, network_status);
         func_typeno!(self, func, req_data, notify, StringMessage);
         func_end!(func)
     }
@@ -97,6 +98,15 @@ impl UtilsService {
     /// 桌面通知
     fn notify(&self, body: StringMessage) -> Result<()> {
         crate::common::utils::notify(body.value.as_str())
+    }
+    
+    async fn network_status(&self) -> Result<BoolMessage> {
+        let client = reqwest::Client::new();
+        let response = client.get("https://www.baidu.com").send().await;
+        
+        Ok(BoolMessage{
+            value: response.is_ok(),
+        })
     }
 }
 
