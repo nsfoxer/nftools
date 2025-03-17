@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 import 'package:nftools/api/syncfile.dart' as $api;
 import 'package:nftools/messages/syncfile.pb.dart';
@@ -7,12 +9,13 @@ import 'package:nftools/utils/log.dart';
 class SyncFileController extends GetxController {
   final state = SyncFileState();
 
+  Timer? _timer;
+
   @override
   void onReady() {
     _init();
     super.onReady();
   }
-
 
   @override
   void onClose() {
@@ -60,7 +63,7 @@ class SyncFileController extends GetxController {
   }
 
   // 列出所有文件夹
-  void listFiles() async {
+  Future<void> listFiles() async {
     var result = await $api.listDirs();
     state.fileList = result.files;
     update();
@@ -166,5 +169,37 @@ class SyncFileController extends GetxController {
       return 1;
     }
     return (rowCount ~/ state.pageController.currentRowIndex) + 1;
+  }
+
+  // 设置定时器
+  void setTimer(int? v) {
+    if (v == null) {
+      return;
+    }
+    state.timer = v;
+    if (_timer != null) {
+      _timer!.cancel();
+    }
+
+    if (v > 0) {
+      _timer = Timer.periodic(Duration(minutes: v), (timer) async {
+        info("开始同步");
+        state.isLoading = true;
+        update();
+        await listFiles();
+        for (var value in state.fileList) {
+          if (value.localDir.isEmpty ||
+              value.remoteDir.isEmpty ||
+              value.status == FileStatusEnum.SYNCED) {
+            continue;
+          }
+          await syncDir(value.remoteDir);
+        }
+        state.isLoading = false;
+        update();
+        info("同步完成");
+      });
+    }
+    update();
   }
 }
