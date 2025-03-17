@@ -7,8 +7,8 @@ class GlobalData {
   // 网络状态
   static bool isConnected = false;
 
-  static void initGlobalData() {
-    isConnected = $api.networkStatus();
+  static void initGlobalData() async {
+    isConnected = await $api.networkStatus();
 
     Timer.periodic(const Duration(seconds: 30), (timer) async {
       isConnected = await $api.networkStatus();
