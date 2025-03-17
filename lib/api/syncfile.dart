@@ -14,6 +14,8 @@ const String _syncDir = "sync_dir";
 const String _deleteLocalDir = "del_local_dir";
 const String _addLocalDir = "add_local_file";
 const String _deleteRemoteDir = "del_remote_dir";
+const String _setTimer = "set_timer";
+const String _getTimer = "get_timer";
 
 Future<ListFileMsg> listDirs() async {
   var data = await sendRequest<EmptyMessage>(_service, _listDirs, null);
@@ -78,4 +80,16 @@ Future<FileMsg> addLocalDir(String localDir, String remoteId) async {
 
 Future<void> deleteRemoteDir(String remoteId) async {
   await sendRequest(_service, _deleteRemoteDir, StringMessage(value: remoteId));
+}
+
+// 设置定时同步值
+void setTimer(int timer) async {
+  await sendRequest(_service, _setTimer, Uint32Message(value: timer));
+}
+
+// 获取定时同步值
+Future<int> getTimer() async {
+  var data = await sendRequest<EmptyMessage>(_service, _getTimer, null);
+  var result = Uint32Message.fromBuffer(data);
+  return result.value;
 }

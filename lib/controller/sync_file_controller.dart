@@ -185,6 +185,8 @@ class SyncFileController extends GetxController {
       _timer!.cancel();
     }
 
+    $api.setTimer(v);
+
     if (v > 0) {
       _timer = Timer.periodic(Duration(minutes: v), (timer) async {
         if (!state.isLogin) {

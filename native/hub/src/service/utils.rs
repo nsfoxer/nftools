@@ -99,7 +99,8 @@ impl UtilsService {
     fn notify(&self, body: StringMessage) -> Result<()> {
         crate::common::utils::notify(body.value.as_str())
     }
-    
+
+    /// 检查网络状态
     async fn network_status(&self) -> Result<BoolMessage> {
         let client = reqwest::Client::new();
         let response = client.get("https://www.baidu.com").send().await;
