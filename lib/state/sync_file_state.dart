@@ -3,6 +3,9 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/messages/syncfile.pb.dart';
 
 class SyncFileState {
+  // 是否登录成功
+  bool isLogin = false;
+
   // 是否正在加载
   bool isLoading = true;
   // 所有文件列表

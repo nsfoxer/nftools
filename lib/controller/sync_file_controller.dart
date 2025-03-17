@@ -30,6 +30,7 @@ class SyncFileController extends GetxController {
       } else {
         var result = await $api.listDirs();
         state.fileList = result.files;
+        state.isLogin = true;
       }
       var accountInfo = await $api.getAccount();
       state.urlController.text = accountInfo.url;
@@ -52,6 +53,9 @@ class SyncFileController extends GetxController {
       result = await $api.setAccount(account);
     } on Exception catch (_) {
       result = false;
+    }
+    if (result) {
+      state.isLogin = true;
     }
     return result;
   }
@@ -183,6 +187,9 @@ class SyncFileController extends GetxController {
 
     if (v > 0) {
       _timer = Timer.periodic(Duration(minutes: v), (timer) async {
+        if (!state.isLogin) {
+          return;
+        }
         info("开始同步");
         state.isLoading = true;
         update();
