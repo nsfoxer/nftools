@@ -102,21 +102,24 @@ class SyncFilePage extends StatelessWidget {
                 )),
                 actions: [
                   FilledButton(
-                      onPressed: logic.state.accountInfoLock ? null :  () async {
-                        if (!logic.state.formKey.currentState!.validate()) {
-                          return;
-                        }
-                        if (await logic.submitAccount()) {
-                          logic.state.accountInfoLock = true;
-                          info("登录成功");
-                          logic.listFiles();
-                          if (context.mounted) {
-                            context.pop();
-                          }
-                        } else {
-                          error("登录失败");
-                        }
-                      },
+                      onPressed: logic.state.accountInfoLock
+                          ? null
+                          : () async {
+                              if (!logic.state.formKey.currentState!
+                                  .validate()) {
+                                return;
+                              }
+                              if (await logic.submitAccount()) {
+                                logic.state.accountInfoLock = true;
+                                info("登录成功");
+                                logic.listFiles();
+                                if (context.mounted) {
+                                  context.pop();
+                                }
+                              } else {
+                                error("登录失败");
+                              }
+                            },
                       child: const Text("提交")),
                   Button(
                       child: const Text("取消"),
@@ -205,6 +208,34 @@ class SyncFilePage extends StatelessWidget {
             }));
   }
 
+  void _showSelectTimer(BuildContext context) async {
+    var typography = FluentTheme.of(context).typography;
+    await showDialog(
+        barrierDismissible: true,
+        context: context,
+        builder: (context) => GetBuilder<SyncFileController>(builder: (logic) {
+              return ContentDialog(
+                  title: Text("自动同步间隔", style: typography.subtitle),
+                  content: SizedBox(
+                    child: Column(
+                      spacing: NFLayout.v2,
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [0, 5, 10, 30, 60]
+                          .map((item) => RadioButton(
+                              content: Text(item == 0 ? "不启用" : "$item min"),
+                              checked: logic.state.timer == item,
+                              onChanged: (v) {
+                                if (v) {
+                                  logic.setTimer(item);
+                                }
+                              }))
+                          .toList(),
+                    ),
+                  ));
+            }));
+  }
+
   @override
   Widget build(BuildContext context) {
     var typography = FluentTheme.of(context).typography;
@@ -214,15 +245,16 @@ class SyncFilePage extends StatelessWidget {
         child: PaginatedDataTable2(
           controller: logic.state.pageController,
           hidePaginator: true,
-          empty: const Column(
+          empty: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 FluentIcons.cloud_flow,
                 size: 60,
+                color: typography.body?.color,
               ),
               NFLayout.vlineh1,
-              Text("无数据")
+              const Text("无数据")
             ],
           ),
           rowsPerPage: 7,
@@ -258,13 +290,13 @@ class SyncFilePage extends StatelessWidget {
             primaryItems: [
               CommandBarButton(
                   icon: const Icon(FluentIcons.account_management),
-                  label: const Text("账户管理"),
+                  label: const Text("账户"),
                   onPressed: () {
                     _showAccountSetting(context);
                   }),
               CommandBarButton(
                 icon: const Icon(FluentIcons.fabric_folder),
-                label: const Text("新增文件夹"),
+                label: const Text("新增"),
                 onPressed: () {
                   _showAddSyncDir(context);
                 },
@@ -272,9 +304,20 @@ class SyncFilePage extends StatelessWidget {
               CommandBarButton(
                   icon: const Icon(FluentIcons.refresh),
                   label: const Text("刷新"),
-                  onPressed: () {
-                    logic.refreshList();
-                  }),
+                  onPressed: logic.state.isLoading
+                      ? null
+                      : () {
+                          logic.refreshList();
+                        }),
+              CommandBarButton(
+                icon: const Icon(FluentIcons.timer),
+                label: logic.state.timer == 0
+                    ? const Text("不启用")
+                    : Text("${logic.state.timer}min"),
+                onPressed: () {
+                  _showSelectTimer(context);
+                },
+              )
             ],
           );
         }),
@@ -425,8 +468,10 @@ class SourceData extends $me.DataTableSource {
           style: typography.caption,
         );
       }()),
-      $me.DataCell(
-          Text("${file.new_4}        ${file.del}        ${file.modify}", style: typography.caption,)),
+      $me.DataCell(Text(
+        "${file.new_4}        ${file.del}        ${file.modify}",
+        style: typography.caption,
+      )),
     ]);
   }
 

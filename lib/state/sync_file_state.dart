@@ -29,6 +29,7 @@ class SyncFileState {
 
   PaginatorController pageController = PaginatorController();
 
+  int timer = 0;
 
   void dispose() {
     urlController.dispose();
