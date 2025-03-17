@@ -18,6 +18,10 @@ const String _deleteRemoteDir = "del_remote_dir";
 Future<ListFileMsg> listDirs() async {
   var data = await sendRequest<EmptyMessage>(_service, _listDirs, null);
   var result = ListFileMsg.fromBuffer(data);
+  result.files.sort((a, b) {
+    return (a.localDir + a.remoteDir)
+        .compareTo(b.localDir + b.remoteDir);
+  });
   return result;
 }
 
