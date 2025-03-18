@@ -1,8 +1,7 @@
 use crate::messages::base::{BaseRequest, BaseResponse};
 use crate::service::service::{ImmService, LazyService, Service, StreamService};
-use crate::{async_func_notype, async_func_typeno, func_end, service_handle};
+use crate::{async_func_typeno, func_end, service_handle};
 use ahash::AHashMap;
-use futures_util::SinkExt;
 use log::error;
 use rinf::DartSignal;
 use std::ops::DerefMut;
