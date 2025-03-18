@@ -1,6 +1,6 @@
 use crate::messages::base::{BaseRequest, BaseResponse};
 use crate::service::service::{ImmService, LazyService, Service, StreamService};
-use crate::service_handle;
+use crate::{async_func_notype, async_func_typeno, func_end, service_handle};
 use ahash::AHashMap;
 use futures_util::SinkExt;
 use log::error;
@@ -9,6 +9,15 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::Mutex;
+use prost::Message;
+use crate::common::global_data::GlobalData;
+use crate::messages::common::StringMessage;
+use crate::service::ai::BaiduAiService;
+use crate::service::display::display_os::{DisplayLight, DisplayMode};
+use crate::service::settings::about::AboutService;
+use crate::service::settings::autostart::AutoStartService;
+use crate::service::syncfile::SyncFileService;
+use crate::service::utils::UtilsService;
 
 /// 服务类型枚举
 #[allow(dead_code)]
@@ -28,18 +37,22 @@ enum StreamServiceEnum {
     StreamService(Arc<Mutex<Box<dyn StreamService>>>),
 }
 
+const BASE_SERVICE:&str = "BaseService";
+
 /// 服务分发
 pub struct ApiService {
     services: AHashMap<&'static str, ServiceEnum>,
     stream_services: AHashMap<&'static str, StreamServiceEnum>,
+    global_data: GlobalData,
 }
 
 impl ApiService {
     /// new
-    pub fn new() -> Self {
+    pub fn new(global_data: GlobalData) -> Self {
         ApiService {
             services: AHashMap::new(),
             stream_services: AHashMap::new(),
+            global_data
         }
     }
 
@@ -79,10 +92,10 @@ impl ApiService {
     /// 如果该服务已被使用，则阻塞
     pub fn handle(&self, signal: DartSignal<BaseRequest>) {
         if signal.message.is_stream {
-            // 流式服务处理
             self.handle_stream(signal);
             return;
         }
+        
         // 一般服务处理
         let Some(service) = self.services.get(signal.message.service.as_str()) else {
             // 如果一般性服务也没有，则再次查找stream服务
@@ -372,5 +385,95 @@ mod macros {
                 }
             }
         };
+    }
+}
+
+impl ApiService {
+    /// api服务处理
+    pub async fn api_handle(&mut self, signal: DartSignal<BaseRequest>) {
+        let id = signal.message.id;
+        match self.inner_handle(signal).await{
+            Ok(r) => {
+                BaseResponse {
+                    id,
+                    msg: String::with_capacity(0),
+                    is_stream: false,
+                    is_end: false,
+                }.send_signal_to_dart(r.unwrap_or(Vec::with_capacity(0)));
+            }
+            Err(e) => {
+                BaseResponse {
+                    id, 
+                    msg: e.to_string(),
+                    is_stream: false,
+                    is_end: false,
+                }.send_signal_to_dart(Vec::with_capacity(0));
+            }
+        };
+    }
+    
+    async fn inner_handle(&mut self, signal: DartSignal<BaseRequest>) -> anyhow::Result<Option<Vec<u8>>> {
+        let func = signal.message.func.as_str();
+        let data = signal.binary;
+        
+        async_func_typeno!(self, func, data, enable_service, StringMessage);
+        
+        func_end!(func)
+    }
+
+
+    const UTIL_PAGE: &'static str = "SyncFilePage";
+    const SYNC_FILE_PAGE: &'static str = "SyncFilePage";
+    const AUTO_START_PAGE: &'static str = "AutoStartPage";
+    const DISPLAY_PAGE: &'static str = "DisplayPage";
+    const ABOUT_PAGE: &'static str = "AboutPage";
+    const AI_PAGE: &'static str = "AiPage";
+    
+    async fn enable_service(&mut self, service: StringMessage) -> anyhow::Result<()> {
+        let service = service.value;
+        
+        if service == Self::UTIL_PAGE {
+            self.add_imm_service(Box::new(UtilsService::new()));
+        }
+        
+        if service == Self::SYNC_FILE_PAGE {
+            let service = SyncFileService::new(self.global_data.clone()).await?;
+            self.add_service(Box::new(service));
+        } 
+        
+        if service == Self::AUTO_START_PAGE {
+            self.add_imm_service(Box::new(AutoStartService::new()?));
+        }
+        
+        if service == Self::ABOUT_PAGE {
+            self.add_service(Box::new(AboutService::new()));
+        }
+        
+        if service == Self::DISPLAY_PAGE {
+            #[cfg(target_os = "windows")]
+            {
+                self.add_imm_service(Box::new(DisplayLight::new()));
+                self.add_lazy_service(Box::new(DisplayMode::new(self.global_data.clone()).await));
+            }
+            #[cfg(target_os = "linux")]
+            {
+                if let Some(display) = DisplayLight::new().await {
+                    api.add_service(Box::new(display));
+                } else {
+                    error!("display light 服务创建失败");
+                }
+
+                match DisplayMode::new(gd.clone()).await {
+                    Ok(mode) => api.add_service(Box::new(mode)),
+                    Err(e) => error!("display mode服务创建失败。原因:{e}"),
+                }
+            }
+        }
+        
+        if service == Self::AI_PAGE {
+            self.add_stream_service(Box::new(BaiduAiService::new(self.global_data.clone()).await));
+        }
+        
+        Ok(())
     }
 }

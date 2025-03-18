@@ -30,61 +30,28 @@ async fn main() {
     tokio::spawn(base_request());
 }
 
-async fn init_service(gd: GlobalData) -> ApiService {
-    let mut api = ApiService::new();
-    api.add_imm_service(Box::new(UtilsService::new()));
-
-    #[cfg(target_os = "windows")]
-    {
-        api.add_imm_service(Box::new(DisplayLight::new()));
-        api.add_lazy_service(Box::new(DisplayMode::new(gd.clone()).await));
-    }
-    #[cfg(target_os = "linux")]
-    {
-        if let Some(display) = DisplayLight::new().await {
-            api.add_service(Box::new(display));
-        } else {
-            error!("display light 服务创建失败");
-        }
-
-        match DisplayMode::new(gd.clone()).await {
-            Ok(mode) => api.add_service(Box::new(mode)),
-            Err(e) => error!("display mode服务创建失败。原因:{e}"),
-        }
-    }
-    match SyncFileService::new(gd.clone()).await {
-        Ok(s) => {
-            api.add_service(Box::new(s));
-        }
-        Err(e) => {
-            error!("sync file服务创建失败：原因:{e}");
-        }
-    }
-    match AutoStartService::new() {
-        Ok(service) => api.add_imm_service(Box::new(service)),
-        Err(e) => error!("autostart服务创建失败 原因:{}", e),
-    };
-
-    api.add_service(Box::new(AboutService::new()));
-    api.add_stream_service(Box::new(BaiduAiService::new(gd.clone()).await));
-
-    api
-}
-
 async fn base_request() -> Result<()> {
     let path = lock().ok();
     let global_data = GlobalData::new().await.expect("Global data initialized");
     let gd = global_data;
-    let api = init_service(gd.clone()).await;
+    let mut api = ApiService::new(gd);
 
     let mut receiver = BaseRequest::get_dart_signal_receiver()?;
     let mut close_signal = None;
     while let Some(signal) = receiver.recv().await {
-        if signal.message.service == "BaseService" && signal.message.func == "close" {
-            close_signal = Some(api.close(signal).await);
-            log::info!("服务已全部停止");
-            break;
+        // Api 服务特殊处理
+        if signal.message.service == "ApiService" {
+            // close处理
+            if signal.message.func == "close" {
+                close_signal = Some(api.close(signal).await);
+                log::info!("服务已全部停止");
+                break;
+            }
+            // api其他情况处理
+            api.api_handle(signal).await;
+            continue;
         }
+        // 通常服务处理
         api.handle(signal);
     }
 
