@@ -53,8 +53,14 @@ class AiController extends GetxController {
 
   // 设置KV
   Future<bool> setKV() async {
+    String appId = state.appIdController.text.trim();
+    if (state.modelEnum == ModelEnum.Spark) {
+      if (!appId.startsWith("Bearer ")) {
+        appId = "Bearer $appId";
+      }
+    }
     try {
-      await $api.setKV(state.appIdController.text, state.secretController.text);
+      await $api.setKV(appId, state.secretController.text);
     } catch (e) {
       return false;
     }
