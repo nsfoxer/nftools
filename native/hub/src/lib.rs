@@ -16,7 +16,6 @@ use crate::service::display::display_os::{DisplayLight, DisplayMode};
 use crate::service::settings::about::AboutService;
 use crate::service::settings::autostart::AutoStartService;
 use crate::service::syncfile::SyncFileService;
-use crate::service::system_info::SystemInfoService;
 use crate::service::utils::UtilsService;
 use anyhow::anyhow;
 use common::global_data::GlobalData;
@@ -66,7 +65,6 @@ async fn init_service(gd: GlobalData) -> ApiService {
         Err(e) => error!("autostart服务创建失败 原因:{}", e),
     };
 
-    api.add_service(Box::new(SystemInfoService::new().await));
     api.add_service(Box::new(AboutService::new()));
     api.add_stream_service(Box::new(BaiduAiService::new(gd.clone()).await));
 
