@@ -117,7 +117,8 @@ class _MainAppState extends State<MainApp>
     await $base_api.closeRust();
     finalizeRust(); // Shut down the `tokio` Rust runtime.
     debugPrint("flutter stop");
-    await windowManager.destroy();
+    await windowManager.setPreventClose(false);
+    await windowManager.close();
   }
 
   @override
