@@ -162,15 +162,17 @@ class AiPage extends StatelessWidget {
                       : () {
                           _showIdList(context);
                         }),
-              CommandBarButton(
-                icon: const Icon($me.Icons.model_training),
-                label: Text(logic.state.modelEnum.toString()),
-                onPressed: logic.state.isLoading
-                    ? null
-                    : () {
-                        logic.changeModel();
-                      },
-              ),
+              // 禁用掉百度的API start ============
+              // CommandBarButton(
+              //   icon: const Icon($me.Icons.model_training),
+              //   label: Text(logic.state.modelEnum.toString()),
+              //   onPressed: logic.state.isLoading
+              //       ? null
+              //       : () {
+              //           logic.changeModel();
+              //         },
+              // ),
+              // 禁用掉百度的API end ============
             ],
           );
         }),
