@@ -6,7 +6,6 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/api/display_api.dart';
-import 'package:nftools/api/system_info.dart' as $sys_info_api;
 import 'package:nftools/api/base.dart' as $base_api;
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/global_controller.dart';

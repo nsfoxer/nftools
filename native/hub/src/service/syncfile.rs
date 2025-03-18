@@ -108,6 +108,7 @@ impl Service for SyncFileService {
     async fn close(&mut self) -> Result<()> {
         self.global_data.set_data(ACCOUNT_CACHE.to_string(), &self.account_info).await?;
         self.global_data.set_data(format!("{}-{}", SYNC_FILE_PREFIX, get_machine_id()?), &self.file_sync).await?;
+        self.global_data.set_data(TIMER_CACHE.to_string(), &self.timer).await?;
         Ok(())
     }
 }
