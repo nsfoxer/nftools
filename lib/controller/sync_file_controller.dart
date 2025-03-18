@@ -24,6 +24,7 @@ class SyncFileController extends GetxController {
 
   // 初始化数据
   _init() async {
+    state.timer = await $api.getTimer();
     try {
       if (!await $api.hasAccount()) {
         info("无登录信息或登录失败，请先登录");
