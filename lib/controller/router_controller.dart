@@ -6,7 +6,6 @@ import 'package:nftools/state/router_state.dart';
 import '../api/base.dart' as $api;
 import '../main.dart';
 import '../router/router.dart';
-import '../utils/log.dart';
 
 class RouterController extends GetxController {
   final routerState = RouterState();
@@ -30,9 +29,9 @@ class RouterController extends GetxController {
 
       // 设置值
       if (!value.isFooter) {
-        routerState.menuDatas.add(value);
+        routerState.menuData.add(value);
       } else {
-        routerState.footerDatas.add(value);
+        routerState.footerData.add(value);
       }
       // 启用服务
       for (final service in value.services) {
@@ -45,13 +44,11 @@ class RouterController extends GetxController {
     }
     // 初始化控制器
     final services = <Function>[];
-    services.addAll(routerState.menuDatas.map((x) => x.builderController));
-    services.addAll(routerState.footerDatas.map((x) => x.builderController));
+    services.addAll(routerState.menuData.map((x) => x.builderController));
+    services.addAll(routerState.footerData.map((x) => x.builderController));
     for (final value in services) {
       value.call();
     }
-    info(" --------------- ${services.length} <------------");
-
     routerState.router = _generateRouter();
     update();
   }
@@ -73,8 +70,8 @@ class RouterController extends GetxController {
           );
         },
         routes: () {
-          var routers = _generateRoute(routerState.menuDatas);
-          routers.addAll(_generateRoute(routerState.footerDatas));
+          var routers = _generateRoute(routerState.menuData);
+          routers.addAll(_generateRoute(routerState.footerData));
           return routers;
         }(),
       )
@@ -118,38 +115,10 @@ class RouterController extends GetxController {
   int calculateIndex(BuildContext context) {
     final local = GoRouterState.of(context).uri.toString();
     List<MenuData> tmp = [];
-    tmp.addAll(routerState.menuDatas);
-    tmp.addAll(routerState.footerDatas);
+    tmp.addAll(routerState.menuData);
+    tmp.addAll(routerState.footerData);
 
     return tmp.indexWhere((x) => x.url == local);
   }
 
-  Bindings generateBindings() {
-    // return BindingsBuilder(() {
-    //   for (final value in routerState.menuDatas) {
-    //     value.builderController.call();
-    //   }
-    //   for (final value in routerState.footerDatas) {
-    //     value.builderController.call();
-    //   }
-    // });
-    final services = <Function>[];
-    services.addAll(routerState.menuDatas.map((x) => x.builderController));
-    services.addAll(routerState.footerDatas.map((x) => x.builderController));
-    info("${services.length} <------------");
-    return RouterServiceBindings(services);
-  }
-}
-
-class RouterServiceBindings implements Bindings {
-  List<Function> services = [];
-
-  RouterServiceBindings(this.services);
-
-  @override
-  void dependencies() {
-    for (final value in services) {
-      value.call();
-    }
-  }
 }
