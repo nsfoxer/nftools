@@ -27,7 +27,7 @@ class DisplayPage extends StatelessWidget {
 }
 
 class _DisplayLight extends StatelessWidget {
-  const _DisplayLight({super.key});
+  const _DisplayLight();
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +126,6 @@ class _Mode extends StatelessWidget {
   final String? picFile;
 
   const _Mode({
-    super.key,
     required this.display,
     required this.isSelect,
     this.picFile,

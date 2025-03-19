@@ -17,13 +17,12 @@ import '../controller/system_mode_controller.dart';
 import '../pages/ai_page.dart';
 import '../pages/settings/controller/about_controller.dart';
 import '../pages/settings/controller/auto_start_controller.dart';
-import '../utils/log.dart';
 
 @Immutable()
 class RouterServiceData {
   const RouterServiceData();
 
-  static final Map<String, MenuData> menuDatas = {
+  static final Map<String, MenuData> menuData = {
     "/": MenuData("/", Icons.home, "主页", const HomePage(), [ServiceName.displayMode], () {
       Get.lazyPut<MainPageController>(() => MainPageController(), fenix: true);
     }),
@@ -31,7 +30,6 @@ class RouterServiceData {
     "/display": MenuData("/display", Icons.display_settings, "显示", const DisplayPage(), [
       ServiceName.displayMode, ServiceName.displayLight, ServiceName.utils
       ], () {
-      info("display");
       Get.lazyPut<DisplayController>(() => DisplayController(), fenix: true);
       Get.lazyPut<DisplayModeController>(() => DisplayModeController(),  fenix: true);
       Get.lazyPut<SystemModeController>(() => SystemModeController(), fenix: true);
@@ -52,6 +50,7 @@ class RouterServiceData {
   };
 }
 
+// 当前路由信息
 class MyRouterConfig {
   // 当前路由
   static String currentUrl = "/";

@@ -20,7 +20,7 @@ class RouterController extends GetxController {
   }
 
   Future<void> _init() async {
-    for (final value in RouterServiceData.menuDatas.values) {
+    for (final value in RouterServiceData.menuData.values) {
       // 是否已启用
       final isEnable = await $api.getRouterEnabled(value.url);
       if (!isEnable) {
@@ -50,7 +50,6 @@ class RouterController extends GetxController {
       value.call();
     }
     routerState.router = _generateRouter();
-    update();
   }
 
   // 生成路由
