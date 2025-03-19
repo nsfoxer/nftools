@@ -1,9 +1,10 @@
 import 'package:nftools/messages/ai.pb.dart';
 
+import '../common/constants.dart';
 import '../messages/common.pb.dart';
 import 'api.dart';
 
-const String _service = "BaiduAiService";
+const String _service = ServiceName.ai;
 const String _question = "question";
 const String _getKV = "get_kv";
 const String _setKV = "set_kv";

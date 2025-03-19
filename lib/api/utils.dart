@@ -2,9 +2,10 @@
 import 'package:nftools/messages/common.pb.dart';
 import 'package:nftools/messages/utils.pb.dart';
 
+import '../common/constants.dart';
 import 'api.dart';
 
-const String _service = "Utils";
+const String _service = ServiceName.utils;
 const String _compressLocalPic = "compress_local_img";
 const String _notify = "notify";
 const String _networkStatus = "network_status";
