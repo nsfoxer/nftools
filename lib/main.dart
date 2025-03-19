@@ -172,7 +172,6 @@ class _MainAppState extends State<MainApp>
           fontFamily: fonts),
       title: Constants.appName,
       debugShowCheckedModeBanner: false,
-      // initialBinding: routerLogic.generateBindings(),
       localizationsDelegates: FluentLocalizations.localizationsDelegates,
       routeInformationParser: routerLogic.routerState.router.routeInformationParser,
       routerDelegate: routerLogic.routerState.router.routerDelegate,
@@ -308,8 +307,8 @@ class MainPage extends StatelessWidget {
       pane: NavigationPane(
         selected: logic.calculateIndex(context),
         displayMode: PaneDisplayMode.compact,
-        items: _buildPaneItem(logic.routerState.menuDatas, context),
-        footerItems: _buildPaneItem(logic.routerState.footerDatas, context),
+        items: _buildPaneItem(logic.routerState.menuData, context),
+        footerItems: _buildPaneItem(logic.routerState.footerData, context),
       ),
       paneBodyBuilder: (item, child) {
         return FocusTraversalGroup(child: this.child);
