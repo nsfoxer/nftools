@@ -1,8 +1,6 @@
 
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/messages/common.pb.dart';
-import 'package:nftools/messages/utils.pb.dart';
-import 'package:nftools/utils/log.dart';
 
 import 'api.dart';
 
@@ -21,7 +19,6 @@ Future<bool> getRouterEnabled(String router) async {
   var data = await sendRequest<StringMessage>
     (_service, "getRouterEnabled", StringMessage(value: router));
   final r =  BoolMessage.fromBuffer(data).value;
-  info("message: $router $r");
   return r;
 }
 

@@ -11,7 +11,6 @@ import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/router_controller.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
-import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/utils.dart';
 import 'package:rinf/rinf.dart';
 import 'package:tray_manager/tray_manager.dart';
@@ -47,7 +46,7 @@ class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
   @override
-  _MainAppState createState() => _MainAppState();
+  State<MainApp> createState() => _MainAppState();
 }
 
 class _MainAppState extends State<MainApp>
@@ -67,6 +66,7 @@ class _MainAppState extends State<MainApp>
 
   void _init() async {
     await windowManager.setPreventClose(true);
+    // 等待后端服务启动
     await Future.delayed(const Duration(milliseconds: 500));
     primaryColor = await getSystemColor();
     setState(() {});
@@ -85,10 +85,10 @@ class _MainAppState extends State<MainApp>
     windowManager.hide();
   }
 
-  @override
-  void onWindowFocus() {
-    setState(() {});
-  }
+  // @override
+  // void onWindowFocus() {
+  //   setState(() {});
+  // }
 
   @override
   void onTrayIconMouseDown() {
@@ -156,7 +156,6 @@ class _MainAppState extends State<MainApp>
           accentColor: AccentColor.swatch(swatch));
     }
     final routerLogic = Get.find<RouterController>();
-    info("start ========");
     var bgColor = m.resources.solidBackgroundFillColorTertiary;
     return GetMaterialApp.router(
       themeMode: ThemeMode.dark,
