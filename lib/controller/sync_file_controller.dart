@@ -22,9 +22,16 @@ class SyncFileController extends GetxController {
     state.dispose();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    _timer?.cancel();
+  }
+
   // 初始化数据
   _init() async {
     state.timer = await $api.getTimer();
+    _setTimer(state.timer);
     try {
       if (!await $api.hasAccount()) {
         info("无登录信息或登录失败，请先登录");
@@ -187,7 +194,12 @@ class SyncFileController extends GetxController {
     }
 
     $api.setTimer(v);
+   _setTimer(v);
 
+    update();
+  }
+
+  void _setTimer(int v) {
     if (v > 0) {
       _timer = Timer.periodic(Duration(minutes: v), (timer) async {
         if (!state.isLogin) {
@@ -210,6 +222,6 @@ class SyncFileController extends GetxController {
         info("同步完成");
       });
     }
-    update();
   }
 }
+
