@@ -3,7 +3,7 @@ use crate::common::utils::{get_machine_id, sha256};
 use crate::common::WEBDAV_SYNC_DIR;
 use crate::messages::common::{BoolMessage, StringMessage, Uint32Message};
 use crate::messages::syncfile::{AddLocal4RemoteMsg, AddSyncDirMsg, FileMsg, FileStatusEnum, ListFileMsg, SyncFileDetailMsg, WebDavConfigMsg};
-use crate::service::service::{Service, ServiceName};
+use crate::service::service::Service;
 use crate::{
     async_func_notype, async_func_typeno, async_func_typetype, func_end, func_notype, func_typeno,
 };
@@ -71,12 +71,6 @@ const TIMER_CACHE: &str = "timerCache";
 const ACCOUNT_CACHE: &str = "accountCache";
 const SYNC_FILE_PREFIX: &str = "syncFilePrefix";
 const METADATA_FILE: &str = ".sync_file.db";
-
-impl ServiceName for SyncFileService {
-    fn get_service_name(&self) -> &'static str {
-        NAME
-    }
-}
 
 #[async_trait]
 impl Service for SyncFileService {

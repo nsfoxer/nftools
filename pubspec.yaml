@@ -32,6 +32,7 @@ dependencies:
   markdown_widget: ^2.3.2+6
   url_launcher: ^6.3.1
   flutter_svg: ^2.0.16
+  meta: ^1.15.0
 
 dev_dependencies:
   flutter_lints: ^3.0.0

@@ -1,7 +1,7 @@
 use crate::{common, func_end, func_notype, func_typeno};
 use crate::common::utils;
 use crate::messages::common::BoolMessage;
-use crate::service::service::{ImmService, ServiceName};
+use crate::service::service::{ImmService};
 use anyhow::Result;
 use auto_launch::AutoLaunch;
 use prost::Message;
@@ -9,13 +9,6 @@ use prost::Message;
 /// 开机自启动服务
 pub struct AutoStartService {
     auto_launch: AutoLaunch,
-}
-
-const NAME: &str = "AutoStartService";
-impl ServiceName for AutoStartService {
-    fn get_service_name(&self) -> &'static str {
-        NAME
-    }
 }
 
 #[async_trait::async_trait]

@@ -15,6 +15,7 @@ use crate::service::display::display_os::{DisplayLight, DisplayMode};
 use anyhow::anyhow;
 use common::global_data::GlobalData;
 use std::path::PathBuf;
+use convert_case::{Case, Casing};
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use tokio;
 
@@ -32,7 +33,9 @@ async fn base_request() -> Result<()> {
 
     let mut receiver = BaseRequest::get_dart_signal_receiver()?;
     let mut close_signal = None;
-    while let Some(signal) = receiver.recv().await {
+    while let Some(mut signal) = receiver.recv().await {
+        signal.message.func = signal.message.func.trim().to_case(Case::Snake);
+        let signal = signal;
         // Api 服务特殊处理
         if signal.message.service == "ApiService" {
             // close处理

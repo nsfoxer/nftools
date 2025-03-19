@@ -2,9 +2,10 @@ import 'package:nftools/messages/common.pb.dart';
 import 'package:nftools/messages/syncfile.pb.dart';
 import 'package:nftools/utils/log.dart';
 
+import '../common/constants.dart';
 import 'api.dart';
 
-const String _service = "SyncFileService";
+const String _service = ServiceName.syncFile;
 const String _listDirs = "list_dirs";
 const String _hasAccount = "has_account";
 const String _getAccount = "get_account";

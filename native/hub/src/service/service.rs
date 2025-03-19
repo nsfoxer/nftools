@@ -2,15 +2,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use tokio::sync::mpsc::UnboundedSender;
 
-/// 服务标识
-pub trait ServiceName {
-    /// 服务标识
-    fn get_service_name(&self) -> &'static str;
-}
-
 /// 服务
 #[async_trait]
-pub trait Service: Send + ServiceName {
+pub trait Service: Send {
     /// 处理服务
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>>;
     /// 关闭服务 有退出保存数据需求在这里处理
@@ -28,7 +22,7 @@ pub trait LazyService: Service {
 
 /// "无状态"服务 可多请求同时处理
 #[async_trait]
-pub trait ImmService: Send + Sync + ServiceName {
+pub trait ImmService: Send + Sync {
     /// 实际处理
     async fn handle(&self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>>;
     /// 关闭服务 有退出保存数据需求在这里处理
