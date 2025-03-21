@@ -254,7 +254,7 @@ class SyncFilePage extends StatelessWidget {
                 color: typography.body?.color,
               ),
               NFLayout.vlineh1,
-              const Text("无数据")
+              Text("无数据", style: typography.body),
             ],
           ),
           rowsPerPage: 7,
