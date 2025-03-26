@@ -381,12 +381,13 @@ impl SyncFileService {
         // 1. 基本校验
         // 本地校验
         self.check_local_dir(&req.local_dir)?;
+        // 暂时取消
         // 判断本地文件夹是否非空
-        let mut entries = fs::read_dir(&req.local_dir).await?;
-        let entry = entries.next_entry().await?;
-        if entry.is_some() {
-            return Err(anyhow!("添加的本地文件夹必须为空文件夹"));
-        }
+        // let mut entries = fs::read_dir(&req.local_dir).await?;
+        // let entry = entries.next_entry().await?;
+        // if entry.is_some() {
+        //     return Err(anyhow!("添加的本地文件夹必须为空文件夹"));
+        // }
 
         // 远端不校验
         self.file_sync
@@ -711,7 +712,7 @@ impl SyncFileService {
 
         // 2. 不允许存在路径包含关系
         for path in self.file_sync.files.values() {
-            if path.starts_with(&local_dir) || local_dir.starts_with(path) {
+            if path.starts_with(local_dir) || local_dir.starts_with(path) {
                 return Err(anyhow!("设定路径存在包含关系: 已存在路径 {}", path));
             }
         }

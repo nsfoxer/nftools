@@ -366,9 +366,9 @@ Future<String?> _addLocalDir() async {
   if (directoryPath == null) {
     return null;
   }
-  if (Platform.isWindows) {
+  if (Platform.isWindows && !directoryPath.endsWith("\\")) {
     directoryPath += "\\";
-  } else if (Platform.isLinux) {
+  } else if (Platform.isLinux && !directoryPath.endsWith("/")) {
     directoryPath += "/";
   }
   return directoryPath;

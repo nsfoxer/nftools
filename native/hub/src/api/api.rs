@@ -6,6 +6,7 @@ use log::{error, info};
 use rinf::DartSignal;
 use std::ops::DerefMut;
 use std::sync::Arc;
+use anyhow::anyhow;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::Mutex;
 use prost::Message;
@@ -455,6 +456,9 @@ impl ApiService {
             #[cfg(target_os = "windows")] {
                 self.add_imm_service(Box::new(DisplayLight::new()), Self::DISPLAY_LIGHT_SERVICE);
             }
+            #[cfg(target_os = "linux")] {
+                self.add_service(Box::new(DisplayLight::new().await.ok_or(anyhow!("创建light服务失败"))?), Self::DISPLAY_LIGHT_SERVICE);
+            }
         }
         
         if service == Self::DISPLAY_MODE_SERVICE {
@@ -464,16 +468,7 @@ impl ApiService {
             }
             #[cfg(target_os = "linux")]
             {
-                if let Some(display) = DisplayLight::new().await {
-                    api.add_service(Box::new(display));
-                } else {
-                    error!("display light 服务创建失败");
-                }
-
-                match DisplayMode::new(gd.clone()).await {
-                    Ok(mode) => api.add_service(Box::new(mode)),
-                    Err(e) => error!("display mode服务创建失败。原因:{e}"),
-                }
+                self.add_service(Box::new(DisplayMode::new(self.global_data.clone()).await?), Self::DISPLAY_MODE_SERVICE);
             }
         }
         
