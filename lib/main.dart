@@ -6,10 +6,9 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/api/display_api.dart';
-import 'package:nftools/api/system_info.dart' as $sys_info_api;
 import 'package:nftools/api/base.dart' as $base_api;
 import 'package:nftools/common/constants.dart';
-import 'package:nftools/controller/global_controller.dart';
+import 'package:nftools/controller/router_controller.dart';
 import 'package:nftools/messages/generated.dart';
 import 'package:nftools/router/router.dart';
 import 'package:nftools/utils/utils.dart';
@@ -47,7 +46,7 @@ class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
   @override
-  _MainAppState createState() => _MainAppState();
+  State<MainApp> createState() => _MainAppState();
 }
 
 class _MainAppState extends State<MainApp>
@@ -57,28 +56,18 @@ class _MainAppState extends State<MainApp>
   @override
   void initState() {
     super.initState();
+    Get.put<RouterController>(RouterController(), permanent: true);
     // 添加window——manager监听器
     windowManager.addListener(this);
     trayManager.addListener(this);
     WidgetsBinding.instance.addObserver(this);
     _init();
-    _initColor(false);
   }
 
   void _init() async {
     await windowManager.setPreventClose(true);
-    setState(() {});
-  }
-
-  void _initColor(bool wait) async {
-    if (wait) {
-      // linux后端需要等待才能得到正确的值，否则会是上次的值
-      final duration = Platform.isLinux
-          ? const Duration(seconds: 6)
-          : const Duration(seconds: 2);
-      await Future.delayed(duration);
-    }
-
+    // 等待后端服务启动
+    await Future.delayed(const Duration(milliseconds: 500));
     primaryColor = await getSystemColor();
     setState(() {});
   }
@@ -96,10 +85,10 @@ class _MainAppState extends State<MainApp>
     windowManager.hide();
   }
 
-  @override
-  void onWindowFocus() {
-    setState(() {});
-  }
+  // @override
+  // void onWindowFocus() {
+  //   setState(() {});
+  // }
 
   @override
   void onTrayIconMouseDown() {
@@ -118,7 +107,8 @@ class _MainAppState extends State<MainApp>
     await $base_api.closeRust();
     finalizeRust(); // Shut down the `tokio` Rust runtime.
     debugPrint("flutter stop");
-    await windowManager.destroy();
+    await windowManager.setPreventClose(false);
+    await windowManager.close();
   }
 
   @override
@@ -140,7 +130,7 @@ class _MainAppState extends State<MainApp>
 
   @override
   void didChangePlatformBrightness() {
-    _initColor(true);
+    _init();
     super.didChangePlatformBrightness();
   }
 
@@ -165,7 +155,7 @@ class _MainAppState extends State<MainApp>
               const TooltipThemeData(waitDuration: Duration(milliseconds: 300)),
           accentColor: AccentColor.swatch(swatch));
     }
-
+    final routerLogic = Get.find<RouterController>();
     var bgColor = m.resources.solidBackgroundFillColorTertiary;
     return GetMaterialApp.router(
       themeMode: ThemeMode.dark,
@@ -181,11 +171,10 @@ class _MainAppState extends State<MainApp>
           fontFamily: fonts),
       title: Constants.appName,
       debugShowCheckedModeBanner: false,
-      initialBinding: GlobalControllerBindings(),
       localizationsDelegates: FluentLocalizations.localizationsDelegates,
-      routeInformationParser: router.routeInformationParser,
-      routerDelegate: router.routerDelegate,
-      routeInformationProvider: router.routeInformationProvider,
+      routeInformationParser: routerLogic.routerState.router.routeInformationParser,
+      routerDelegate: routerLogic.routerState.router.routerDelegate,
+      routeInformationProvider: routerLogic.routerState.router.routeInformationProvider,
       builder: (context, child) {
         return AnimatedFluentTheme(
           data: m,
@@ -196,60 +185,6 @@ class _MainAppState extends State<MainApp>
   }
 }
 
-List<GoRoute> _generateRoute(List<MenuData> datas) {
-  List<GoRoute> result = [];
-  final tween1 =
-      Tween(begin: const Offset(0.0, 0.2), end: const Offset(0.0, 0.0))
-          .chain(CurveTween(curve: Curves.easeIn));
-  final tween2 =
-      Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeIn));
-  for (var value in datas) {
-    result.add(GoRoute(
-        path: value.url,
-        pageBuilder: (context, state) {
-          // 计算页面动画
-          return CustomTransitionPage(
-            key: state.pageKey,
-            child: value.body,
-            transitionDuration: const Duration(milliseconds: 400),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return SlideTransition(
-                position: animation.drive(tween1),
-                child: FadeTransition(
-                  opacity: secondaryAnimation.drive(tween2),
-                  child: child,
-                ),
-              );
-            },
-          );
-        }));
-  }
-
-  return result;
-}
-
-final rootNavigatorKey = GlobalKey<NavigatorState>();
-final _shellNavigatorKey = GlobalKey<NavigatorState>();
-final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
-  ShellRoute(
-    navigatorKey: _shellNavigatorKey,
-    builder: (context, state, child) {
-      MyRouterConfig.lastUrl = MyRouterConfig.currentUrl;
-      MyRouterConfig.currentUrl = state.fullPath ?? '/';
-      MyRouterConfig.themeContext = _shellNavigatorKey.currentContext;
-      return MainPage(
-        buildContext: _shellNavigatorKey.currentContext,
-        child: child,
-      );
-    },
-    routes: () {
-      var routers = _generateRoute(MyRouterConfig.menuDatas);
-      routers.addAll(_generateRoute(MyRouterConfig.footerDatas));
-      return routers;
-    }(),
-  )
-]);
 
 class MainPage extends StatelessWidget {
   final BuildContext? buildContext;
@@ -261,9 +196,6 @@ class MainPage extends StatelessWidget {
       List<MenuData> datas, BuildContext context) {
     List<NavigationPaneItem> children = [];
     for (var value in datas) {
-      if (!value.isVisible) {
-        continue;
-      }
       children.add(PaneItem(
           icon: Icon(value.icon),
           title: Text(value.label),
@@ -275,27 +207,19 @@ class MainPage extends StatelessWidget {
     return children;
   }
 
-  int _calculateIndex(BuildContext context) {
-    final local = GoRouterState.of(context).uri.toString();
-    List<MenuData> tmp = [];
-    tmp.addAll(MyRouterConfig.menuDatas.where((x) => x.isVisible).toList());
-    tmp.addAll(MyRouterConfig.footerDatas);
-
-    return tmp.indexWhere((x) => x.url == local);
-  }
 
   @override
   Widget build(BuildContext context) {
     final typography = FluentTheme.of(context).typography;
     final bg = FluentTheme.of(context).navigationPaneTheme.backgroundColor;
-    return NavigationView(
+    return GetBuilder<RouterController>(builder: (logic) => NavigationView(
       appBar: NavigationAppBar(
         automaticallyImplyLeading: false,
         leading: () {
-          final enabled = buildContext != null && router.canPop();
+          final enabled = buildContext != null && logic.routerState.router.canPop();
           final onPressed = enabled
               ? () {
-                  if (router.canPop()) {
+                  if (logic.routerState.router.canPop()) {
                     context.pop();
                   }
                 }
@@ -380,15 +304,15 @@ class MainPage extends StatelessWidget {
             )),
       ),
       pane: NavigationPane(
-        selected: _calculateIndex(context),
+        selected: logic.calculateIndex(context),
         displayMode: PaneDisplayMode.compact,
-        items: _buildPaneItem(MyRouterConfig.menuDatas, context),
-        footerItems: _buildPaneItem(MyRouterConfig.footerDatas, context),
+        items: _buildPaneItem(logic.routerState.menuData, context),
+        footerItems: _buildPaneItem(logic.routerState.footerData, context),
       ),
       paneBodyBuilder: (item, child) {
         return FocusTraversalGroup(child: this.child);
       },
-    );
+    ));
   }
 }
 

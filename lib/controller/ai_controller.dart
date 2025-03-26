@@ -23,8 +23,13 @@ class AiController extends GetxController {
   void _init({bool forceUpdate = false}) async {
     // get_kv
     try {
-      final model = await $api.getModel();
-      state.modelEnum = model;
+      // 这里把百度的API给禁用掉 start ========
+      await $api.setModel(ModelEnum.Spark);
+      state.modelEnum = ModelEnum.Spark;
+      // final model = await $api.getModel();
+      // state.modelEnum = model;
+      // 这里把百度的API给禁用掉 end ========
+      
       // 获取KV信息
       final r = await $api.getKV();
       state.appIdController.text = r.apiKey;
@@ -48,8 +53,14 @@ class AiController extends GetxController {
 
   // 设置KV
   Future<bool> setKV() async {
+    String appId = state.appIdController.text.trim();
+    if (state.modelEnum == ModelEnum.Spark) {
+      if (!appId.startsWith("Bearer ")) {
+        appId = "Bearer $appId";
+      }
+    }
     try {
-      await $api.setKV(state.appIdController.text, state.secretController.text);
+      await $api.setKV(appId, state.secretController.text);
     } catch (e) {
       return false;
     }

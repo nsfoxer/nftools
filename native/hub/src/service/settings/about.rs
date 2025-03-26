@@ -1,6 +1,6 @@
 use crate::common::utils::{get_cache_dir, version};
 use crate::messages::common::StringMessage;
-use crate::service::service::{Service, ServiceName};
+use crate::service::service::{Service};
 use std::time::Duration;
 
 use crate::{async_func_nono, async_func_notype, func_end, func_notype};
@@ -31,11 +31,6 @@ pub struct AboutService {
 const NAME: &str = "AboutService";
 const URL: &str = "https://nsfoxer-oss.oss-cn-beijing.aliyuncs.com/nftools/server.json";
 
-impl ServiceName for AboutService {
-    fn get_service_name(&self) -> &'static str {
-        NAME
-    }
-}
 
 #[async_trait::async_trait]
 impl Service for AboutService {

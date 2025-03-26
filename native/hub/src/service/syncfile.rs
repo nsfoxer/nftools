@@ -1,9 +1,9 @@
 use crate::common::global_data::GlobalData;
 use crate::common::utils::{get_machine_id, sha256};
 use crate::common::WEBDAV_SYNC_DIR;
-use crate::messages::common::{BoolMessage, StringMessage};
+use crate::messages::common::{BoolMessage, StringMessage, Uint32Message};
 use crate::messages::syncfile::{AddLocal4RemoteMsg, AddSyncDirMsg, FileMsg, FileStatusEnum, ListFileMsg, SyncFileDetailMsg, WebDavConfigMsg};
-use crate::service::service::{Service, ServiceName};
+use crate::service::service::Service;
 use crate::{
     async_func_notype, async_func_typeno, async_func_typetype, func_end, func_notype, func_typeno,
 };
@@ -62,23 +62,20 @@ pub struct SyncFileService {
     file_sync: LocalRemoteFileMappingDO,
     // client
     client: Option<Client>,
+    // timer
+    timer: Option<u32>,
 }
 
 const NAME: &str = "SyncFileService";
+const TIMER_CACHE: &str = "timerCache";
 const ACCOUNT_CACHE: &str = "accountCache";
 const SYNC_FILE_PREFIX: &str = "syncFilePrefix";
 const METADATA_FILE: &str = ".sync_file.db";
 
-impl ServiceName for SyncFileService {
-    fn get_service_name(&self) -> &'static str {
-        NAME
-    }
-}
-
 #[async_trait]
 impl Service for SyncFileService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        async_func_notype!(self, func, has_account, list_dirs);
+        async_func_notype!(self, func, has_account, list_dirs, get_timer);
         async_func_typetype!(
             self,
             func,
@@ -93,7 +90,7 @@ impl Service for SyncFileService {
             AddLocal4RemoteMsg
         );
 
-        async_func_typeno!(self, func, req_data, del_remote_dir, StringMessage);
+        async_func_typeno!(self, func, req_data, del_remote_dir, StringMessage, set_timer, Uint32Message);
 
         func_typeno!(self, func, req_data, del_local_dir, StringMessage);
         func_notype!(self, func, get_account);
@@ -105,6 +102,7 @@ impl Service for SyncFileService {
     async fn close(&mut self) -> Result<()> {
         self.global_data.set_data(ACCOUNT_CACHE.to_string(), &self.account_info).await?;
         self.global_data.set_data(format!("{}-{}", SYNC_FILE_PREFIX, get_machine_id()?), &self.file_sync).await?;
+        self.global_data.set_data(TIMER_CACHE.to_string(), &self.timer).await?;
         Ok(())
     }
 }
@@ -117,10 +115,11 @@ impl SyncFileService {
             .await
             .unwrap_or_default();
         let r = Self {
-            global_data,
             file_sync,
             account_info: account,
             client: None,
+            timer: global_data.get_data(TIMER_CACHE.to_string()).await,
+            global_data,
         };
 
         Ok(r)
@@ -128,6 +127,19 @@ impl SyncFileService {
 }
 
 impl SyncFileService {
+    /// 保存定时器时间
+    async fn set_timer(&mut self, timer: Uint32Message) -> Result<()> {
+        self.timer = Some(timer.value);
+        Ok(())
+    }
+    
+    /// 获取定时器时间
+    async fn get_timer(&self) -> Result<Uint32Message> {
+        Ok(Uint32Message{
+            value: self.timer.unwrap_or(0),
+        })
+    }
+
     /// 测试帐号是否可用
     async fn has_account(&mut self) -> Result<BoolMessage> {
         match &self.account_info {

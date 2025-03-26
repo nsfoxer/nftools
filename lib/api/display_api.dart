@@ -4,10 +4,11 @@ import 'dart:ui';
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:nftools/api/api.dart';
+import 'package:nftools/common/constants.dart';
 import 'package:nftools/messages/common.pb.dart';
 import 'package:nftools/messages/display.pb.dart';
 
-const String _service = "DisplayLight";
+const String _service = ServiceName.displayLight;
 const String _funcSupport = "get_all_devices";
 const String _setLight = "set_light";
 
@@ -21,7 +22,7 @@ Future<void> setLight(DisplayInfo info) async {
   await sendRequest(_service, _setLight, info);
 }
 
-const String _service2 = "DisplayMode";
+const String _service2 = ServiceName.displayMode;
 const String _getCurrentMode = "get_current_mode";
 const String _setMode = "set_mode";
 const String _getWallpaper = "get_wallpaper";

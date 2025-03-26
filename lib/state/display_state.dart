@@ -6,10 +6,6 @@ class DisplayState {
   String lightWallpaper = "";
   // 暗色壁纸
   String darkWallpaper = "";
-  // 主题模式
-  _ThemeMode displayMode = _ThemeMode.light;
 
   DisplayState();
 }
-
-enum _ThemeMode { light, dark }
