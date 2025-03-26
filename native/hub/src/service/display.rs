@@ -5,7 +5,7 @@ pub mod display_os {
     use crate::messages::display::{
         DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp, SystemModeMsg,
     };
-    use crate::service::service::{ImmService, LazyService, Service, ServiceName};
+    use crate::service::service::{ImmService, LazyService, Service};
     use crate::{async_func_notype, async_func_typeno, func_end, func_notype, func_typeno};
     use anyhow::{anyhow, Error, Result};
     use async_trait::async_trait;
@@ -23,11 +23,6 @@ pub mod display_os {
     /// 显示器亮度调节
     pub struct DisplayLight {}
     
-    impl ServiceName for DisplayLight {
-        fn get_service_name(&self) -> &'static str {
-            "DisplayLight"
-        }
-    }
     
     #[async_trait]
     impl ImmService for DisplayLight {
@@ -95,12 +90,6 @@ pub mod display_os {
         theme_reg: RegKey,
         global_data: GlobalData,
         system_mode: SystemModeData,
-    }
-    
-    impl ServiceName for DisplayMode {
-        fn get_service_name(&self) -> &'static str {
-            "DisplayMode"
-        }
     }
 
     #[async_trait]

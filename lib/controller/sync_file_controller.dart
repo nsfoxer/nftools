@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 import 'package:nftools/api/syncfile.dart' as $api;
 import 'package:nftools/messages/syncfile.pb.dart';
@@ -7,26 +9,36 @@ import 'package:nftools/utils/log.dart';
 class SyncFileController extends GetxController {
   final state = SyncFileState();
 
+  Timer? _timer;
+
   @override
   void onReady() {
     _init();
     super.onReady();
   }
 
-
   @override
   void onClose() {
     state.dispose();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    _timer?.cancel();
+  }
+
   // 初始化数据
   _init() async {
+    state.timer = await $api.getTimer();
+    _setTimer(state.timer);
     try {
       if (!await $api.hasAccount()) {
         info("无登录信息或登录失败，请先登录");
       } else {
         var result = await $api.listDirs();
         state.fileList = result.files;
+        state.isLogin = true;
       }
       var accountInfo = await $api.getAccount();
       state.urlController.text = accountInfo.url;
@@ -50,29 +62,22 @@ class SyncFileController extends GetxController {
     } on Exception catch (_) {
       result = false;
     }
+    if (result) {
+      state.isLogin = true;
+    }
     return result;
   }
 
   void refreshList() async {
-
     state.isLoading = true;
     update();
-    try {
-      await _init();
-    } finally {
-      state.isLoading = false;
-      update();
-    }
+    await _init();
   }
 
   // 列出所有文件夹
-  void listFiles() async {
+  Future<void> listFiles() async {
     var result = await $api.listDirs();
     state.fileList = result.files;
-    state.fileList.sort((a, b) {
-      return (a.status.name + a.localDir + a.remoteDir)
-          .compareTo(b.status.name + b.localDir + b.remoteDir);
-    });
     update();
   }
 
@@ -177,4 +182,46 @@ class SyncFileController extends GetxController {
     }
     return (rowCount ~/ state.pageController.currentRowIndex) + 1;
   }
+
+  // 设置定时器
+  void setTimer(int? v) {
+    if (v == null) {
+      return;
+    }
+    state.timer = v;
+    if (_timer != null) {
+      _timer!.cancel();
+    }
+
+    $api.setTimer(v);
+   _setTimer(v);
+
+    update();
+  }
+
+  void _setTimer(int v) {
+    if (v > 0) {
+      _timer = Timer.periodic(Duration(minutes: v), (timer) async {
+        if (!state.isLogin) {
+          return;
+        }
+        info("开始同步");
+        state.isLoading = true;
+        update();
+        await listFiles();
+        for (var value in state.fileList) {
+          if (value.localDir.isEmpty ||
+              value.remoteDir.isEmpty ||
+              value.status == FileStatusEnum.SYNCED) {
+            continue;
+          }
+          await syncDir(value.remoteDir);
+        }
+        state.isLoading = false;
+        update();
+        info("同步完成");
+      });
+    }
+  }
 }
+

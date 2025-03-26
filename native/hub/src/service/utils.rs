@@ -1,5 +1,5 @@
 use crate::messages::common::{BoolMessage, StringMessage};
-use crate::service::service::{ImmService, ServiceName};
+use crate::service::service::ImmService;
 use prost::Message;
 use std::ffi::OsStr;
 use std::path::PathBuf;
@@ -14,11 +14,7 @@ use tokio::fs;
 /// 工具类服务
 pub struct UtilsService {}
 
-impl ServiceName for UtilsService {
-    fn get_service_name(&self) -> &'static str {
-        "Utils"
-    }
-}
+
 
 #[async_trait::async_trait]
 impl ImmService for UtilsService {
@@ -99,7 +95,8 @@ impl UtilsService {
     fn notify(&self, body: StringMessage) -> Result<()> {
         crate::common::utils::notify(body.value.as_str())
     }
-    
+
+    /// 检查网络状态
     async fn network_status(&self) -> Result<BoolMessage> {
         let client = reqwest::Client::new();
         let response = client.get("https://www.baidu.com").send().await;

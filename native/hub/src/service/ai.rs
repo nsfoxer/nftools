@@ -3,7 +3,7 @@ use crate::messages::ai::{
     AiModelMsg, BaiduAiKeyReqMsg, BaiduAiRspMsg, ModelEnum, QuestionListMsg, QuestionMsg,
 };
 use crate::messages::common::{Uint32Message, VecStringMessage};
-use crate::service::service::{Service, ServiceName, StreamService};
+use crate::service::service::{Service, StreamService};
 use crate::{
     async_func_nono, async_func_notype, async_func_typeno, async_stream_func_typeno, func_end,
     func_notype, func_typeno, func_typetype,
@@ -132,12 +132,6 @@ impl BaiduAiService {
             history,
             model,
         }
-    }
-}
-
-impl ServiceName for BaiduAiService {
-    fn get_service_name(&self) -> &'static str {
-        BAIDU_AI
     }
 }
 
