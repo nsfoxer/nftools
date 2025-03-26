@@ -148,4 +148,6 @@ sequenceDiagram
 cmake
 ninja
 libayatana-indicator (ayatana-appindicator3-0.1 or appindicator3)
+libbus-sys
+liblzma
 ```
