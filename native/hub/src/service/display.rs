@@ -285,7 +285,7 @@ pub mod display_os {
         DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp,
         SystemModeMsg,
     };
-    use crate::service::service::{Service, ServiceName};
+    use crate::service::service::{Service};
     use crate::{async_func_notype, async_func_typeno, func_end, func_notype, func_typeno};
     use ahash::{HashMap, HashMapExt};
     use anyhow::{Error, Result};
@@ -312,12 +312,6 @@ pub mod display_os {
     /// 显示器亮度调节
     pub struct DisplayLight {
         devices: HashMap<String, I2cDeviceDdc>,
-    }
-    
-    impl ServiceName for DisplayLight {
-        fn get_service_name(&self) -> &'static str {
-            "DisplayLight"
-        }
     }
 
     #[async_trait]
@@ -451,12 +445,6 @@ pub mod display_os {
         power_id: Option<u32>,
         // 锁屏id
         screen_saver_id: Option<u32>,
-    }
-    
-    impl ServiceName for DisplayMode {
-        fn get_service_name(&self) -> &'static str {
-            "DisplayMode"
-        }
     }
 
     #[async_trait]
