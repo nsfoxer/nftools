@@ -106,6 +106,11 @@ class RouterController extends GetxController {
               },
             );
           }));
+      routerState.urlData.add(value.url);
+      // 处理子集处理
+      if (value.children != null && value.children!.isNotEmpty) {
+        result.addAll(_generateRoute(value.children!.values.toList()));
+      }
     }
     return result;
   }
@@ -113,11 +118,7 @@ class RouterController extends GetxController {
   // 计算当前索引
   int calculateIndex(BuildContext context) {
     final local = GoRouterState.of(context).uri.toString();
-    List<MenuData> tmp = [];
-    tmp.addAll(routerState.menuData);
-    tmp.addAll(routerState.footerData);
-
-    return tmp.indexWhere((x) => x.url == local);
+    return routerState.urlData.indexOf(local);
   }
 
 }

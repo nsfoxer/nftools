@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:meta/meta.dart';
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/pages/display_page.dart';
+import 'package:nftools/pages/empty_page.dart';
 import 'package:nftools/pages/home_page.dart';
 import 'package:nftools/pages/settings/page/settings_page.dart';
 import 'package:nftools/pages/sync_file_page.dart';
@@ -17,6 +18,7 @@ import '../controller/system_mode_controller.dart';
 import '../pages/ai_page.dart';
 import '../pages/settings/controller/about_controller.dart';
 import '../pages/settings/controller/auto_start_controller.dart';
+import '../pages/utils/page/utils_page.dart';
 
 @Immutable()
 class RouterServiceData {
@@ -41,6 +43,11 @@ class RouterServiceData {
 
     "/ai": MenuData("/ai", Icons.chat, "AI对话", const AiPage(), [ServiceName.ai], () {
       Get.put<AiController>(AiController(), permanent: true);
+    }),
+
+    "/utils": MenuData("/utils", Icons.settings, "工具", const EmptyPage(), [], () {
+    }, children: {
+      "/utils/diffText": MenuData("/utils/diffText", Icons.settings, "文本对比", const UtilsPage(), [], () {}),
     }),
 
     "/settings": MenuData("/settings", Icons.settings, "设置", const SettingsPage(), [ServiceName.about, ServiceName.utils, ServiceName.autoStart], () {
@@ -75,10 +82,17 @@ class MenuData {
   final List<String> services;
   // 页面依赖的控制器初始化
   final Function builderController;
+  // 是否为父级
+  final Map<String, MenuData>? children;
   // 是否为底部
   final bool isFooter;
 
   const MenuData(this.url, this.icon, this.label, this.body, this.services,
       this.builderController,
-      {this.isFooter = false});
+      {this.children, this.isFooter = false});
+
+  @override
+  String toString() {
+    return 'MenuData{label: $label, url: $url, icon: $icon, body: $body, services: $services, builderController: $builderController, children: $children, isFooter: $isFooter}';
+  }
 }

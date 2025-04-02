@@ -196,13 +196,21 @@ class MainPage extends StatelessWidget {
       List<MenuData> datas, BuildContext context) {
     List<NavigationPaneItem> children = [];
     for (var value in datas) {
-      children.add(PaneItem(
-          icon: Icon(value.icon),
-          title: Text(value.label),
-          body: value.body,
-          onTap: () {
-            context.go(value.url);
-          }));
+      if (value.children == null || value.children!.isEmpty) {
+        children.add(PaneItem(
+            icon: Icon(value.icon),
+            title: Text(value.label),
+            body: value.body,
+            onTap: () {
+              context.go(value.url);
+            }));
+        continue;
+      }
+      children.add(PaneItemExpander(
+          icon: Icon(value.icon), title: Text(value.label), body: value.body,
+          onTap: () => context.go(value.url),
+          items: _buildPaneItem(value.children!.values.toList(), context)
+      ));
     }
     return children;
   }
