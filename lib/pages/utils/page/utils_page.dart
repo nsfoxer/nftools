@@ -1,16 +1,4 @@
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:pretty_diff_text/pretty_diff_text.dart';
-
-final _old = """
-I'm a old text
-Two
-3
-""";
-final _new = """
-I'm a new text
-2
-Three
-""";
 
 class UtilsPage extends StatelessWidget {
   const UtilsPage({super.key});
@@ -22,12 +10,13 @@ class UtilsPage extends StatelessWidget {
       header: PageHeader(
         title: Text('Utils', style: typography.title),
       ),
-      content: PrettyDiffText(
-        oldText: _old,
-        newText: _new,
-        defaultTextStyle: typography.body!,
-        diffCleanupType: DiffCleanupType.NONE,
-      ),
+      content: const Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("文本对比")
+        ]
+      )
     );
   }
 

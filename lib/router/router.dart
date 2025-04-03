@@ -8,6 +8,7 @@ import 'package:nftools/pages/empty_page.dart';
 import 'package:nftools/pages/home_page.dart';
 import 'package:nftools/pages/settings/page/settings_page.dart';
 import 'package:nftools/pages/sync_file_page.dart';
+import 'package:nftools/pages/utils/page/text_diff_page.dart';
 
 import '../controller/ai_controller.dart';
 import '../controller/display_controller.dart';
@@ -18,6 +19,7 @@ import '../controller/system_mode_controller.dart';
 import '../pages/ai_page.dart';
 import '../pages/settings/controller/about_controller.dart';
 import '../pages/settings/controller/auto_start_controller.dart';
+import '../pages/utils/controller/text_diff_controller.dart';
 import '../pages/utils/page/utils_page.dart';
 
 @Immutable()
@@ -25,32 +27,35 @@ class RouterServiceData {
   const RouterServiceData();
 
   static final Map<String, MenuData> menuData = {
-    "/": MenuData("/", Icons.home, "主页", const HomePage(), [ServiceName.displayMode], () {
+    "/": MenuData("/", Icons.home, "主页", const HomePage(), [ServiceNameConstant.displayMode], () {
       Get.lazyPut<MainPageController>(() => MainPageController(), fenix: true);
     }),
 
     "/display": MenuData("/display", Icons.display_settings, "显示", const DisplayPage(), [
-      ServiceName.displayMode, ServiceName.displayLight, ServiceName.utils
+      ServiceNameConstant.displayMode, ServiceNameConstant.displayLight, ServiceNameConstant.utils
       ], () {
       Get.lazyPut<DisplayController>(() => DisplayController(), fenix: true);
       Get.lazyPut<DisplayModeController>(() => DisplayModeController(),  fenix: true);
       Get.lazyPut<SystemModeController>(() => SystemModeController(), fenix: true);
     }),
 
-    "/sync_file": MenuData("/sync_file", FluentIcons.cloud_flow, "文件同步", const SyncFilePage(), [ServiceName.syncFile], () {
+    "/sync_file": MenuData("/sync_file", FluentIcons.cloud_flow, "文件同步", const SyncFilePage(), [ServiceNameConstant.syncFile], () {
       Get.put<SyncFileController>(SyncFileController(), permanent: true);
     }),
 
-    "/ai": MenuData("/ai", Icons.chat, "AI对话", const AiPage(), [ServiceName.ai], () {
+    "/ai": MenuData("/ai", Icons.chat, "AI对话", const AiPage(), [ServiceNameConstant.ai], () {
       Get.put<AiController>(AiController(), permanent: true);
     }),
 
-    "/utils": MenuData("/utils", Icons.settings, "工具", const EmptyPage(), [], () {
+    "/utils": MenuData("/utils", Icons.settings, "工具", const UtilsPage(), [], () {
     }, children: {
-      "/utils/diffText": MenuData("/utils/diffText", Icons.settings, "文本对比", const UtilsPage(), [], () {}),
+      "/utils/diffText": MenuData("/utils/diffText", Icons.settings, "文本对比", const TextDiffPage(), [], () {
+        debugPrint("====================文本对比");
+        Get.put<TextDiffController>(TextDiffController(), permanent: true);
+      }),
     }),
 
-    "/settings": MenuData("/settings", Icons.settings, "设置", const SettingsPage(), [ServiceName.about, ServiceName.utils, ServiceName.autoStart], () {
+    "/settings": MenuData("/settings", Icons.settings, "设置", const SettingsPage(), [ServiceNameConstant.about, ServiceNameConstant.utils, ServiceNameConstant.autoStart], () {
       Get.lazyPut<AutoStartController>(() => AutoStartController(), fenix: true);
       Get.put<AboutController>(AboutController(), permanent: true);
     }, isFooter: true),

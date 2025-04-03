@@ -42,13 +42,13 @@ class RouterController extends GetxController {
         await $api.enableService(service);
       }
     }
-    // 初始化控制器
-    final services = <Function>[];
-    services.addAll(routerState.menuData.map((x) => x.builderController));
-    services.addAll(routerState.footerData.map((x) => x.builderController));
-    for (final value in services) {
-      value.call();
-    }
+    // // 初始化控制器
+    // final services = <Function>[];
+    // services.addAll(routerState.menuData.map((x) => x.builderController));
+    // services.addAll(routerState.footerData.map((x) => x.builderController));
+    // for (final value in services) {
+    //   value.call();
+    // }
     routerState.router = _generateRouter();
   }
 
@@ -106,7 +106,10 @@ class RouterController extends GetxController {
               },
             );
           }));
+      // 记录url值
       routerState.urlData.add(value.url);
+      // 初始化控制器
+      value.builderController.call();
       // 处理子集处理
       if (value.children != null && value.children!.isNotEmpty) {
         result.addAll(_generateRoute(value.children!.values.toList()));

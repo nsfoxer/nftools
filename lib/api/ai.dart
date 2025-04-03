@@ -4,7 +4,7 @@ import '../common/constants.dart';
 import '../messages/common.pb.dart';
 import 'api.dart';
 
-const String _service = ServiceName.ai;
+const String _service = ServiceNameConstant.ai;
 const String _question = "question";
 const String _getKV = "get_kv";
 const String _setKV = "set_kv";

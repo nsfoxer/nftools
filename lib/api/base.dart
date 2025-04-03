@@ -4,7 +4,7 @@ import 'package:nftools/messages/common.pb.dart';
 
 import 'api.dart';
 
-const String _service = ServiceName.api;
+const String _service = ServiceNameConstant.api;
 const String _close = "close";
 
 // 结束所有服务

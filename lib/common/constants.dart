@@ -3,8 +3,8 @@ class Constants {
   static const String appName = "nftools";
 }
 
-class ServiceName {
-  const ServiceName();
+class ServiceNameConstant {
+  const ServiceNameConstant();
   static const String api= "ApiService";
   static const String displayLight= "DisplayLightService";
   static const String displayMode = "DisplayModeService";
@@ -13,4 +13,10 @@ class ServiceName {
   static const String about = "AboutService";
   static const String autoStart = "AutoStartService";
   static const String ai = "AiService";
+}
+
+class PageWidgetNameConstant {
+  const PageWidgetNameConstant();
+  static const String textDiffTextPrettyDiffText = "textDiffPagePrettyDiffText";
+
 }
