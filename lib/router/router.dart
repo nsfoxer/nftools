@@ -47,10 +47,9 @@ class RouterServiceData {
       Get.put<AiController>(AiController(), permanent: true);
     }),
 
-    "/utils": MenuData("/utils", Icons.settings, "工具", const UtilsPage(), [], () {
+    "/utils": MenuData("/utils", FluentIcons.toolbox, "工具", const UtilsPage(), [], () {
     }, children: {
-      "/utils/diffText": MenuData("/utils/diffText", Icons.settings, "文本对比", const TextDiffPage(), [], () {
-        debugPrint("====================文本对比");
+      "/utils/diffText": MenuData("/utils/diffText", FluentIcons.diff_side_by_side, "文本对比", const TextDiffPage(), [], () {
         Get.put<TextDiffController>(TextDiffController(), permanent: true);
       }),
     }),
