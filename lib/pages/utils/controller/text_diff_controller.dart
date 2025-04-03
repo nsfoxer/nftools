@@ -1,4 +1,3 @@
-import 'package:easy_debounce/easy_debounce.dart';
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:get/get.dart';
 import 'package:nftools/common/constants.dart';
@@ -19,7 +18,7 @@ class TextDiffController extends GetxController {
  }
 
  void _updateDiff(){
-   EasyDebounce.debounce(PageWidgetNameConstant.textDiffTextPrettyDiffText, Duration(seconds: 1), () {
+   EasyThrottle.throttle(PageWidgetNameConstant.textDiffTextPrettyDiffText, const Duration(seconds: 1), () {
      update([PageWidgetNameConstant.textDiffTextPrettyDiffText]);
    });
  }
