@@ -32,15 +32,15 @@ class TextDiffPage extends StatelessWidget {
                         children: [
                           Expanded(
                               flex: 20,
-                              child: _CodeEditor(
-                                  codeLineEditingController:
+                              child: NFCodeEditor(
+                                  controller:
                                       logic.state.oldTextEditingController,
                                   readOnly: false)),
                           const $me.VerticalDivider(),
                           Expanded(
                             flex: 20,
-                            child: _CodeEditor(
-                                codeLineEditingController:
+                            child: NFCodeEditor(
+                                controller:
                                     logic.state.newTextEditingController,
                                 readOnly: false),
                           ),
@@ -86,40 +86,5 @@ class TextDiffPage extends StatelessWidget {
                 ],
               )),
     );
-  }
-}
-
-// 代码编辑器
-class _CodeEditor extends StatelessWidget {
-  final CodeLineEditingController codeLineEditingController;
-  final bool readOnly;
-
-  const _CodeEditor(
-      {super.key,
-      required this.codeLineEditingController,
-      required this.readOnly});
-
-  @override
-  Widget build(BuildContext context) {
-    return NFCardContent(
-        child: CodeEditor(
-      wordWrap: false,
-      controller: codeLineEditingController,
-      readOnly: readOnly,
-      indicatorBuilder:
-          (context, editingController, chunkController, notifier) {
-        return Row(
-          children: [
-            DefaultCodeLineNumber(
-              controller: editingController,
-              notifier: notifier,
-              minNumberCount: 0,
-            ),
-            DefaultCodeChunkIndicator(
-                width: 5, controller: chunkController, notifier: notifier)
-          ],
-        );
-      },
-    ));
   }
 }

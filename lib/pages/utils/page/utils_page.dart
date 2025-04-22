@@ -22,6 +22,7 @@ class UtilsPage extends StatelessWidget {
                 runSpacing: NFLayout.v1,
                 children: [
                   _UtilsPage(url: "/utils/diffText", child: Text("文本对比")),
+                  _UtilsPage(url: "/utils/textTool", child: Text("文本工具")),
                 ])));
   }
 }

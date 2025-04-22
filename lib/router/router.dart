@@ -9,6 +9,7 @@ import 'package:nftools/pages/home_page.dart';
 import 'package:nftools/pages/settings/page/settings_page.dart';
 import 'package:nftools/pages/sync_file_page.dart';
 import 'package:nftools/pages/utils/page/text_diff_page.dart';
+import 'package:nftools/pages/utils/page/text_tool_page.dart';
 
 import '../controller/ai_controller.dart';
 import '../controller/display_controller.dart';
@@ -20,6 +21,7 @@ import '../pages/ai_page.dart';
 import '../pages/settings/controller/about_controller.dart';
 import '../pages/settings/controller/auto_start_controller.dart';
 import '../pages/utils/controller/text_diff_controller.dart';
+import '../pages/utils/controller/text_tool_controller.dart';
 import '../pages/utils/page/utils_page.dart';
 
 @Immutable()
@@ -52,6 +54,9 @@ class RouterServiceData {
       "/utils/diffText": MenuData("/utils/diffText", FluentIcons.diff_side_by_side, "文本对比", const TextDiffPage(), [], () {
         Get.put<TextDiffController>(TextDiffController(), permanent: true);
       }),
+      "/utils/textTool": MenuData("/utils/textTool", FluentIcons.text_box, "文本工具", const TextToolPage(), [], () {
+        Get.put<TextToolController>(TextToolController(), permanent: true);
+      })
     }),
 
     "/settings": MenuData("/settings", Icons.settings, "设置", const SettingsPage(), [ServiceNameConstant.about, ServiceNameConstant.utils, ServiceNameConstant.autoStart], () {
