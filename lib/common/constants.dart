@@ -18,5 +18,7 @@ class ServiceNameConstant {
 class PageWidgetNameConstant {
   const PageWidgetNameConstant();
   static const String textDiffTextPrettyDiffText = "textDiffPagePrettyDiffText";
+  static const String textToolPageStatistic = "textToolPageStatistic";
+
 
 }

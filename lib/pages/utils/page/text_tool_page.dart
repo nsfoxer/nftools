@@ -2,6 +2,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 
+import '../../../common/constants.dart';
 import '../../../common/style.dart';
 import '../controller/text_tool_controller.dart';
 
@@ -33,7 +34,7 @@ class TextToolPage extends StatelessWidget {
                     Row(mainAxisAlignment: MainAxisAlignment.start, children: [
               // 文本框
               Expanded(
-                  flex: 3,
+                  flex: 7,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -49,23 +50,41 @@ class TextToolPage extends StatelessWidget {
                   )),
               const Divider(direction: Axis.vertical),
               // 统计框
-              Expanded(
-                  flex: 1,
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('统计', style: typography.subtitle),
-                        Expanded(
-                            child: GetBuilder<TextToolController>(
-                          builder: (logic) => ListView.builder(
-                              scrollDirection: Axis.vertical,
-                              itemCount: logic.state.data.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                debugPrint('build index: $index');
-                                return _StatisticItem(data: logic.state.data[index], isTitle: index == 0);
-                              }),
-                        ))
-                      ])),
+              GetBuilder<TextToolController>(
+                  id: PageWidgetNameConstant.textToolPageStatistic,
+                  builder: (logic) => Expanded(
+                      flex: 3,
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('统计', style: typography.subtitle),
+                                  IconButton(
+                                      icon: const Icon(FluentIcons.copy),
+                                      onPressed: () {
+                                        logic.copyData();
+                                      })
+                                ]),
+                            Expanded(
+                              child: ListView.builder(
+                                  prototypeItem: const _StatisticItem(
+                                    data: ("a", "a"),
+                                    isTitle: false,
+                                  ),
+                                  scrollDirection: Axis.vertical,
+                                  itemCount: logic.state.data.length,
+                                  itemBuilder:
+                                      (BuildContext context, int index) {
+                                    debugPrint('build index: $index');
+                                    return _StatisticItem(
+                                        data: logic.state.data[index],
+                                        isTitle: index == 0);
+                                  }),
+                            )
+                          ]))),
             ])),
           ]),
     );
@@ -100,8 +119,21 @@ class _StatisticItem extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(data.$1, style: style),
-        Text(data.$2, style: style),
+        Expanded(
+            child: Text(
+          softWrap: true,
+          data.$1,
+          maxLines: 1,
+          style: style,
+          overflow: TextOverflow.ellipsis,
+        )),
+        Expanded(
+            child: Text(
+          data.$2,
+          maxLines: 1,
+          style: style,
+          overflow: TextOverflow.ellipsis,
+        )),
       ],
     );
   }
