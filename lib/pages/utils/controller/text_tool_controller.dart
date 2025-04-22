@@ -33,9 +33,11 @@ class TextToolController extends GetxController {
   void operate(TextToolEnum textToolEnum){
     switch (textToolEnum) {
       case TextToolEnum.sortAsc:
-        throw UnimplementedError();
+        state.data = _sort(true);
+        break;
       case TextToolEnum.sortDesc:
-        throw UnimplementedError();
+        state.data = _sort(false);
+        break;
       case TextToolEnum.unique:
         state.data = _unique();
         break;
@@ -44,13 +46,24 @@ class TextToolController extends GetxController {
     update([PageWidgetNameConstant.textToolPageStatistic]);
   }
 
-  // 去重排序
-  List<(String, String)> _unique(){
-    final data = state.textEditingController.text
+  // 排序
+  List<(String, String)> _sort(bool isAsc){
+    final data = _baseFilterText(state.textEditingController.text);
+    data.sort((a, b) => isAsc? a.compareTo(b) : b.compareTo(a));
+    state.textEditingController.text = data.join('\n');
+    return _baseStatisticText(data);
+  }
+
+  // 基本过滤Text
+  List<String> _baseFilterText(String text) {
+    return text
         .split('\n')
         .map((line) => line.trim())
         .where((line) => line.isNotEmpty)
         .toList();
+  }
+
+  List<(String, String)> _baseStatisticText(List<String> data) {
     // 统计每一行数据的出现次数
     Map<String, int> lineCount = {};
     for (String line in data) {
@@ -60,16 +73,24 @@ class TextToolController extends GetxController {
     List<MapEntry<String, int>> sortedResult = lineCount.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    // 保存text数据
-    final resultString = sortedResult.map((e) => e.key).join('\n');
-    state.textEditingController.text = resultString;
-
     // 返回统计数据
     List<(String, String)> result = [("数据", "出现次数/次")];
     for (MapEntry<String, int> entry in sortedResult) {
       result.add((entry.key, entry.value.toString()));
     }
     return result;
+  }
+
+  // 去重排序
+  List<(String, String)> _unique(){
+    final data = _baseFilterText(state.textEditingController.text);
+    final statisticData = _baseStatisticText(data);
+
+    // 保存text数据
+    final resultString = statisticData.map((e) => e.$1).join('\n');
+    state.textEditingController.text = resultString;
+
+    return statisticData;
   }
 
   // 复制统计数据
