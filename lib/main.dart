@@ -85,11 +85,6 @@ class _MainAppState extends State<MainApp>
     windowManager.hide();
   }
 
-  // @override
-  // void onWindowFocus() {
-  //   setState(() {});
-  // }
-
   @override
   void onTrayIconMouseDown() {
     _displayApp();
@@ -172,9 +167,11 @@ class _MainAppState extends State<MainApp>
       title: Constants.appName,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: FluentLocalizations.localizationsDelegates,
-      routeInformationParser: routerLogic.routerState.router.routeInformationParser,
+      routeInformationParser:
+          routerLogic.routerState.router.routeInformationParser,
       routerDelegate: routerLogic.routerState.router.routerDelegate,
-      routeInformationProvider: routerLogic.routerState.router.routeInformationProvider,
+      routeInformationProvider:
+          routerLogic.routerState.router.routeInformationProvider,
       builder: (context, child) {
         return AnimatedFluentTheme(
           data: m,
@@ -184,7 +181,6 @@ class _MainAppState extends State<MainApp>
     );
   }
 }
-
 
 class MainPage extends StatelessWidget {
   final BuildContext? buildContext;
@@ -202,125 +198,135 @@ class MainPage extends StatelessWidget {
             title: Text(value.label),
             body: value.body,
             onTap: () {
-              context.go(value.url);
+              if (MyRouterConfig.currentUrl != value.url) {
+                context.push(value.url);
+              }
             }));
         continue;
       }
       children.add(PaneItemExpander(
-          icon: Icon(value.icon), title: Text(value.label), body: value.body,
-          onTap: () => context.go(value.url),
-          items: _buildPaneItem(value.children!.values.toList(), context)
-      ));
+          icon: Icon(value.icon),
+          title: Text(value.label),
+          body: value.body,
+          onTap: () {
+            if (MyRouterConfig.currentUrl != value.url) {
+              context.push(value.url);
+            }
+          },
+          items: _buildPaneItem(value.children!.values.toList(), context)));
     }
     return children;
   }
-
 
   @override
   Widget build(BuildContext context) {
     final typography = FluentTheme.of(context).typography;
     final bg = FluentTheme.of(context).navigationPaneTheme.backgroundColor;
-    return GetBuilder<RouterController>(builder: (logic) => NavigationView(
-      appBar: NavigationAppBar(
-        automaticallyImplyLeading: false,
-        leading: () {
-          final enabled = buildContext != null && logic.routerState.router.canPop();
-          final onPressed = enabled
-              ? () {
-                  if (logic.routerState.router.canPop()) {
-                    context.pop();
-                  }
-                }
-              : null;
-          return PaneItem(
-                  icon: const Icon(FluentIcons.back),
-                  enabled: enabled,
-                  body: const SizedBox.shrink())
-              .build(context, false, onPressed,
-                  displayMode: PaneDisplayMode.compact);
-        }(),
-        title: GestureDetector(
-            onTapDown: (_) {
-              windowManager.startDragging();
-            },
-            child: Container(
-                height: double.infinity,
-                width: double.infinity,
-                color: Colors.transparent,
-                child: const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(Constants.appName),
-                ))),
-        actions: Container(
-            margin: const EdgeInsets.fromLTRB(5, 0, 0, 5),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                // 最小化按钮
-                SizedBox(
-                    height: 30,
-                    width: 45,
-                    child: IconButton(
-                        iconButtonMode: IconButtonMode.small,
-                        icon: Icon(
-                          FluentIcons.chrome_minimize,
-                          size: typography.caption?.fontSize,
-                        ),
-                        onPressed: () {
-                          windowManager.minimize();
-                        })),
-                // 最大化按钮
-                SizedBox(
-                    height: 30,
-                    width: 45,
-                    child: IconButton(
-                        iconButtonMode: IconButtonMode.small,
-                        icon: Icon(
-                          FluentIcons.chrome_restore,
-                          size: typography.caption?.fontSize,
-                        ),
-                        onPressed: () async {
-                          if (await windowManager.isMaximized()) {
-                            windowManager.unmaximize();
-                          } else {
-                            windowManager.maximize();
+    return GetBuilder<RouterController>(
+        builder: (logic) => NavigationView(
+              appBar: NavigationAppBar(
+                automaticallyImplyLeading: false,
+                leading: () {
+                  final enabled =
+                      buildContext != null && logic.routerState.router.canPop();
+                  final onPressed = enabled
+                      ? () {
+                          if (logic.routerState.router.canPop()) {
+                            context.pop();
                           }
-                        })),
-                // 关闭窗口按钮
-                SizedBox(
-                    height: 30,
-                    width: 45,
-                    child: IconButton(
-                        iconButtonMode: IconButtonMode.small,
-                        icon: Icon(
-                          FluentIcons.chrome_close,
-                          size: typography.caption?.fontSize,
-                        ),
-                        style: ButtonStyle(backgroundColor:
-                            WidgetStateColor.resolveWith((state) {
-                          if (state.contains(WidgetState.hovered)) {
-                            return const Color.fromARGB(255, 192, 43, 28);
-                          }
-                          return bg ?? Colors.transparent;
-                        })),
-                        onPressed: () {
-                          windowManager.hide();
-                        })),
-              ],
-            )),
-      ),
-      pane: NavigationPane(
-        selected: logic.calculateIndex(context),
-        displayMode: PaneDisplayMode.compact,
-        items: _buildPaneItem(logic.routerState.menuData, context),
-        footerItems: _buildPaneItem(logic.routerState.footerData, context),
-      ),
-      paneBodyBuilder: (item, child) {
-        return FocusTraversalGroup(child: this.child);
-      },
-    ));
+                        }
+                      : null;
+                  return PaneItem(
+                          icon: const Icon(FluentIcons.back),
+                          enabled: enabled,
+                          body: const SizedBox.shrink())
+                      .build(context, false, onPressed,
+                          displayMode: PaneDisplayMode.compact);
+                }(),
+                title: GestureDetector(
+                    onTapDown: (_) {
+                      windowManager.startDragging();
+                    },
+                    child: Container(
+                        height: double.infinity,
+                        width: double.infinity,
+                        color: Colors.transparent,
+                        child: const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(Constants.appName),
+                        ))),
+                actions: Container(
+                    margin: const EdgeInsets.fromLTRB(5, 0, 0, 5),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        // 最小化按钮
+                        SizedBox(
+                            height: 30,
+                            width: 45,
+                            child: IconButton(
+                                iconButtonMode: IconButtonMode.small,
+                                icon: Icon(
+                                  FluentIcons.chrome_minimize,
+                                  size: typography.caption?.fontSize,
+                                ),
+                                onPressed: () {
+                                  windowManager.minimize();
+                                })),
+                        // 最大化按钮
+                        SizedBox(
+                            height: 30,
+                            width: 45,
+                            child: IconButton(
+                                iconButtonMode: IconButtonMode.small,
+                                icon: Icon(
+                                  FluentIcons.chrome_restore,
+                                  size: typography.caption?.fontSize,
+                                ),
+                                onPressed: () async {
+                                  if (await windowManager.isMaximized()) {
+                                    windowManager.unmaximize();
+                                  } else {
+                                    windowManager.maximize();
+                                  }
+                                })),
+                        // 关闭窗口按钮
+                        SizedBox(
+                            height: 30,
+                            width: 45,
+                            child: IconButton(
+                                iconButtonMode: IconButtonMode.small,
+                                icon: Icon(
+                                  FluentIcons.chrome_close,
+                                  size: typography.caption?.fontSize,
+                                ),
+                                style: ButtonStyle(backgroundColor:
+                                    WidgetStateColor.resolveWith((state) {
+                                  if (state.contains(WidgetState.hovered)) {
+                                    return const Color.fromARGB(
+                                        255, 192, 43, 28);
+                                  }
+                                  return bg ?? Colors.transparent;
+                                })),
+                                onPressed: () {
+                                  windowManager.hide();
+                                })),
+                      ],
+                    )),
+              ),
+              pane: NavigationPane(
+                selected: logic.calculateIndex(context),
+                displayMode: PaneDisplayMode.auto,
+                items: _buildPaneItem(logic.routerState.menuData, context),
+                footerItems:
+                    _buildPaneItem(logic.routerState.footerData, context),
+              ),
+              paneBodyBuilder: (item, child) {
+                return FocusTraversalGroup(child: this.child);
+              },
+            ));
   }
 }
 
