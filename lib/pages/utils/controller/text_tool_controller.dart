@@ -87,7 +87,7 @@ class TextToolController extends GetxController {
     final statisticData = _baseStatisticText(data);
 
     // 保存text数据
-    final resultString = statisticData.map((e) => e.$1).join('\n');
+    final resultString = statisticData.skip(1).map((e) => e.$1).join('\n');
     state.textEditingController.text = resultString;
 
     return statisticData;
