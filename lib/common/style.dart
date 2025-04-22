@@ -16,6 +16,7 @@ final class NFTextStyle {
 }
 
 final class NFLayout {
+  static const double v0 = 10.0;
   static const double v1 = 8.0;
   static const double v2 = 6.0;
   static const double v3 = 4.0;
