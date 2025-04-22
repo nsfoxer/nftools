@@ -318,7 +318,7 @@ class MainPage extends StatelessWidget {
               ),
               pane: NavigationPane(
                 selected: logic.calculateIndex(context),
-                displayMode: PaneDisplayMode.auto,
+                displayMode: PaneDisplayMode.compact,
                 items: _buildPaneItem(logic.routerState.menuData, context),
                 footerItems:
                     _buildPaneItem(logic.routerState.footerData, context),

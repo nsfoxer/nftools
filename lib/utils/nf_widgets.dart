@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/common/style.dart';
+import 'package:re_editor/re_editor.dart';
 
 // card 内容体
 class NFCardContent extends StatelessWidget {
@@ -144,6 +145,41 @@ class NFPanelWidget extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: children,
+        ));
+  }
+}
+
+// 代码编辑器
+class NFCodeEditor extends StatelessWidget {
+  final CodeLineEditingController controller;
+  final bool? readOnly;
+
+  const NFCodeEditor(
+      {super.key,
+        required this.controller,
+        this.readOnly});
+
+  @override
+  Widget build(BuildContext context) {
+    return NFCardContent(
+        child: CodeEditor(
+          wordWrap: false,
+          controller: controller,
+          readOnly: readOnly??false,
+          indicatorBuilder:
+              (context, editingController, chunkController, notifier) {
+            return Row(
+              children: [
+                DefaultCodeLineNumber(
+                  controller: editingController,
+                  notifier: notifier,
+                  minNumberCount: 0,
+                ),
+                DefaultCodeChunkIndicator(
+                    width: 5, controller: chunkController, notifier: notifier)
+              ],
+            );
+          },
         ));
   }
 }
