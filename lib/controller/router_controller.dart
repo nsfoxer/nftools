@@ -42,13 +42,6 @@ class RouterController extends GetxController {
         await $api.enableService(service);
       }
     }
-    // // 初始化控制器
-    // final services = <Function>[];
-    // services.addAll(routerState.menuData.map((x) => x.builderController));
-    // services.addAll(routerState.footerData.map((x) => x.builderController));
-    // for (final value in services) {
-    //   value.call();
-    // }
     routerState.router = _generateRouter();
   }
 
