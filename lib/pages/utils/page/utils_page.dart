@@ -41,6 +41,6 @@ class _UtilsPage extends StatelessWidget {
           height: 80,
           child: Center(child: child),
         ),
-        onPressed: () => context.push(url));
+        onPressed: () => context.replace(url));
   }
 }

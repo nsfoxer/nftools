@@ -1,8 +1,13 @@
 import 'dart:ui';
 
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:get/get.dart';
 import 'package:nftools/common/style.dart';
 import 'package:re_editor/re_editor.dart';
+import 'package:re_highlight/languages/dart.dart';
+import 'package:re_highlight/languages/json.dart';
+import 'package:re_highlight/styles/base16/github.dart';
+import 'package:re_highlight/styles/github-dark.dart';
 
 // card 内容体
 class NFCardContent extends StatelessWidget {
@@ -161,11 +166,25 @@ class NFCodeEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.mediaQuery.platformBrightness.isDark;
     return NFCardContent(
         child: CodeEditor(
           wordWrap: false,
           controller: controller,
           readOnly: readOnly??false,
+          style: CodeEditorStyle(
+            codeTheme: CodeHighlightTheme(
+                languages: {
+                  'json': CodeHighlightThemeMode(
+                      mode: langJson
+                  ),
+                  'dart': CodeHighlightThemeMode(
+                      mode: langDart
+                  )
+                },
+                theme: isDark ? githubDarkTheme: githubTheme,
+            ),
+          ),
           indicatorBuilder:
               (context, editingController, chunkController, notifier) {
             return Row(

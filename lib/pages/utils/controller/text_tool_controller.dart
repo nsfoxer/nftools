@@ -1,33 +1,23 @@
-import 'package:easy_debounce/easy_debounce.dart';
+import 'dart:convert';
+
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/pages/utils/state/text_tool_state.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:pasteboard/pasteboard.dart';
 
-import '../state/text_diff_state.dart';
-
-
 class TextToolController extends GetxController {
 
  final TextToolState state = TextToolState();
+ final JsonDecoder _jsonDecoder = const JsonDecoder();
+ final JsonEncoder _jsonPrettyEncoder = const JsonEncoder.withIndent('  ');
 
- @override
- void onInit() {
-    super.onInit();
-    state.textEditingController.addListener(_updateDiff);
- }
-
- void _updateDiff(){
-   EasyDebounce.debounce(PageWidgetNameConstant.textDiffTextPrettyDiffText, const Duration(milliseconds: 500), () {
-     update([PageWidgetNameConstant.textDiffTextPrettyDiffText]);
-   });
- }
 
  @override
   void onClose() {
-    super.onClose();
     state.textEditingController.dispose();
+    super.onClose();
   }
 
   void operate(TextToolEnum textToolEnum){
@@ -41,6 +31,10 @@ class TextToolController extends GetxController {
       case TextToolEnum.unique:
         state.data = _unique();
         break;
+      case TextToolEnum.json:
+        _jsonFormat(false); break;
+      case TextToolEnum.miniJson:
+        _jsonFormat(true); break;
     }
 
     update([PageWidgetNameConstant.textToolPageStatistic]);
@@ -103,12 +97,37 @@ class TextToolController extends GetxController {
     info("复制统计成功");
   }
 
+  void _jsonFormat(bool isMini){
+    final data;
+    try {
+     data = _jsonDecoder.convert(state.textEditingController.text);
+    } catch (e) {
+      error("JSON格式错误\n ${e.toString()}");
+      return;
+    }
+    final String result;
+    if (isMini) {
+      result = json.encode(data);
+    } else {
+      result = _jsonPrettyEncoder.convert(data);
+    }
+    state.textEditingController.text = result;
+
+    // 统计
+    state.data = [];
+
+    update([PageWidgetNameConstant.textToolPageStatistic]);
+  }
+
 }
 
 enum TextToolEnum {
   sortAsc("排序"),
   sortDesc("排序（降序）"),
-  unique("去重");
+  unique("去重"),
+  json("JSON格式化"),
+  miniJson("JSON格式化（最小化）"),
+  ;
 
   const TextToolEnum(this.desc);
 

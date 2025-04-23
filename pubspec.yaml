@@ -36,6 +36,7 @@ dependencies:
   pretty_diff_text: ^2.0.0
   re_editor: ^0.7.0
   pasteboard: ^0.4.0
+  re_highlight: ^0.0.3
 
 dev_dependencies:
   flutter_lints: ^3.0.0
