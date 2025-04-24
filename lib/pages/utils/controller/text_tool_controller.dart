@@ -16,6 +16,7 @@ class TextToolController extends GetxController {
 
  @override
   void onClose() {
+   debugPrint("===============TextToolController onClose");
     state.textEditingController.dispose();
     super.onClose();
   }
