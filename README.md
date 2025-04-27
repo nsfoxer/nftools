@@ -151,3 +151,16 @@ libayatana-indicator (ayatana-appindicator3-0.1 or appindicator3)
 libbus-sys
 liblzma
 ```
+
+### 使用
+
+```bash
+# flutter 
+# 安装 protobuf的dart插件
+dart pub global activate protobuf 4.0.0
+# 编译为dart
+protoc --dart_out=lib/ ./messages/*.proto
+
+
+```
+

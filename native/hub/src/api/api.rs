@@ -1,15 +1,15 @@
-use crate::messages::base::{BaseRequest, BaseResponse};
 use crate::service::service::{ImmService, LazyService, Service, StreamService};
 use crate::{async_func_typeno, async_func_typetype, func_end, service_handle};
 use ahash::AHashMap;
 use log::{error, info};
-use rinf::DartSignal;
+use rinf::{DartSignal, DartSignalPack, RustSignalBinary};
 use std::ops::DerefMut;
 use std::sync::Arc;
 use anyhow::anyhow;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::Mutex;
 use prost::Message;
+use crate::api::{BaseRequest, BaseResponse};
 use crate::common::global_data::GlobalData;
 use crate::messages::common::{BoolMessage, StringMessage};
 use crate::service::ai::BaiduAiService;
@@ -88,7 +88,7 @@ impl ApiService {
 
     /// 处理服务
     /// 如果该服务已被使用，则阻塞
-    pub fn handle(&self, signal: DartSignal<BaseRequest>) {
+    pub fn handle(&self, signal: DartSignalPack<BaseRequest>) {
         if signal.message.is_stream {
             self.handle_stream(signal);
             return;
@@ -127,7 +127,7 @@ impl ApiService {
         };
     }
 
-    pub async fn close(self, signal: DartSignal<BaseRequest>) -> BaseResponse{
+    pub async fn close(self, signal: DartSignalPack<BaseRequest>) -> BaseResponse{
         let mut handles = Vec::new();
         // 关闭所有服务
         for (desc, service) in self.services {
@@ -177,7 +177,7 @@ impl ApiService {
     }
 
     /// 流式服务处理
-    fn handle_stream(&self, signal: DartSignal<BaseRequest>) {
+    fn handle_stream(&self, signal: DartSignalPack<BaseRequest>) {
         let Some(service) = self.stream_services.get(signal.message.service.as_str()) else {
             generate_error_response(
                 signal.message.id,
@@ -241,7 +241,7 @@ impl ApiService {
 
     fn stream_service_handle(
         service: Arc<Mutex<Box<dyn StreamService>>>,
-        signal: DartSignal<BaseRequest>,
+        signal: DartSignalPack<BaseRequest>,
         tx: UnboundedSender<anyhow::Result<Option<Vec<u8>>>>,
     ) {
         tokio::spawn(async move {
@@ -258,7 +258,7 @@ impl ApiService {
 
     fn lazy_service_handle(
         service: Arc<Mutex<(Box<dyn LazyService>, bool)>>,
-        signal: DartSignal<BaseRequest>,
+        signal: DartSignalPack<BaseRequest>,
     ) {
         tokio::spawn(async move {
             service_handle!(_lazy_handle, service, signal);
@@ -283,7 +283,7 @@ impl ApiService {
             .unwrap_or(Vec::with_capacity(0)))
     }
 
-    fn service_handle(service: Arc<Mutex<Box<dyn Service>>>, signal: DartSignal<BaseRequest>) {
+    fn service_handle(service: Arc<Mutex<Box<dyn Service>>>, signal: DartSignalPack<BaseRequest>) {
         tokio::spawn(async move {
             service_handle!(_handle, service, signal);
         });
@@ -301,7 +301,7 @@ impl ApiService {
             .unwrap_or(Vec::with_capacity(0)))
     }
 
-    fn imm_service_handle(service: Arc<Box<dyn ImmService>>, signal: DartSignal<BaseRequest>) {
+    fn imm_service_handle(service: Arc<Box<dyn ImmService>>, signal: DartSignalPack<BaseRequest>) {
         tokio::spawn(async move {
             service_handle!(_imm_handle, service, signal);
         });
@@ -332,7 +332,7 @@ impl ApiService {
 
     fn handle_stream_service_for_service(
         service: &StreamServiceEnum,
-        signal: DartSignal<BaseRequest>,
+        signal: DartSignalPack<BaseRequest>,
     ) {
         match service {
             StreamServiceEnum::StreamService(service) => {
@@ -388,7 +388,7 @@ mod macros {
 
 impl ApiService {
     /// api服务处理
-    pub async fn api_handle(&mut self, signal: DartSignal<BaseRequest>) {
+    pub async fn api_handle(&mut self, signal: DartSignalPack<BaseRequest>) {
         let id = signal.message.id;
         match self.inner_handle(signal).await{
             Ok(r) => {
@@ -410,7 +410,7 @@ impl ApiService {
         };
     }
     
-    async fn inner_handle(&mut self, signal: DartSignal<BaseRequest>) -> anyhow::Result<Option<Vec<u8>>> {
+    async fn inner_handle(&mut self, signal: DartSignalPack<BaseRequest>) -> anyhow::Result<Option<Vec<u8>>> {
         let func = signal.message.func.as_str();
         let data = signal.binary;
         

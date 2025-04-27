@@ -10,19 +10,22 @@ mod service;
 use crate::api::api::ApiService;
 use crate::common::utils::notify;
 use crate::common::*;
-use crate::messages::base::BaseRequest;
 use crate::service::display::display_os::{DisplayLight, DisplayMode};
 use anyhow::anyhow;
 use common::global_data::GlobalData;
 use std::path::PathBuf;
 use convert_case::{Case, Casing};
+use rinf::{dart_shutdown, DartSignalBinary, RustSignalBinary};
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use tokio;
+use crate::api::BaseRequest;
 
 rinf::write_interface!();
 
+#[tokio::main]
 async fn main() {
     tokio::spawn(base_request());
+    dart_shutdown().await;
 }
 
 async fn base_request() -> Result<()> {
@@ -31,9 +34,11 @@ async fn base_request() -> Result<()> {
     let gd = global_data;
     let mut api = ApiService::new(gd);
 
-    let mut receiver = BaseRequest::get_dart_signal_receiver()?;
+    let receiver = BaseRequest::get_dart_signal_receiver();
     let mut close_signal = None;
     while let Some(mut signal) = receiver.recv().await {
+        rinf::debug_print!("receive signal: {:?}", signal.message);
+        println!("receive signal: {:?}", signal.message);
         signal.message.func = signal.message.func.trim().to_case(Case::Snake);
         let signal = signal;
         // Api 服务特殊处理
