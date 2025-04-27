@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:fixnum/fixnum.dart';
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:protobuf/protobuf.dart' as $pb;
-import 'package:nftools/messages/base.pb.dart';
 import 'package:rinf/rinf.dart';
+
+import '../src/bindings/bindings.dart';
 
 // 请求序列
 Int64 _seq = Int64.ZERO;
@@ -21,7 +23,7 @@ void initMsg() {
       _handleStream(data);
       return;
     }
-    var complete = _reqMap.remove(rsp.id);
+    var complete = _reqMap.remove(Int64(rsp.id.toInt()));
     if (complete == null) {
       // 错误，没有请求id
       error("无法处理响应:无法找到对应id：${rsp.id}");
@@ -47,13 +49,15 @@ Future<List<int>> sendRequest<T extends $pb.GeneratedMessage>(
   Completer<List<int>> completer = Completer();
   _reqMap[id] = completer;
   // 发送
+  debugPrint("sendRequest: $service, $func, $request");
   BaseRequest(
-    id: id,
+    id: Uint64(BigInt.from(id.toInt())),
     service: service,
     func: func,
     isStream: false,
   ).sendSignalToRust(request?.writeToBuffer() ?? Uint8List(0));
   // 返回
+  debugPrint("sendRequest: finish");
   return completer.future;
 }
 
@@ -67,7 +71,7 @@ Stream<List<int>> sendRequestStream<T extends $pb.GeneratedMessage>(
   _reqStreamMap[id] = controller;
   // 发送
   BaseRequest(
-    id: id,
+    id: Uint64(BigInt.from(id.toInt())),
     service: service,
     func: func,
     isStream: true,
@@ -77,9 +81,10 @@ Stream<List<int>> sendRequestStream<T extends $pb.GeneratedMessage>(
 }
 
 // 处理流式响应
-void _handleStream(RustSignal<BaseResponse> data) {
+void _handleStream(RustSignalPack<BaseResponse> data) {
+  debugPrint("handleStream: ${data.message.id}");
   final rsp = data.message;
-  var controller = _reqStreamMap[rsp.id];
+  var controller = _reqStreamMap[Int64(rsp.id.toInt())];
   if (controller == null) {
     error("无法处理响应:无法找到对应id：${rsp.id}");
     return;

@@ -11,8 +11,11 @@ edition = "2021"
 # `staticlib` is for iOS and macOS.
 crate-type = ["lib", "cdylib", "staticlib"]
 
+[build-dependencies]
+prost-build = "0.13.5"
+
 [dependencies]
-rinf = "6.15.0"
+rinf = "8.1.0"
 prost = "0.12.6"
 tokio = { version = "1.39.2", features = ["full"] }
 tokio-stream = { version = "0.1.15", features = ["full"] }
