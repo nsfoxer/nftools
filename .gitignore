@@ -49,4 +49,6 @@ target/
 # Generated messages
 */**/messages/
 
+lib/src/**
+
 **/*.exe
