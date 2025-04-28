@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize, DartSignalBinary)]
 pub struct BaseRequest {
     // 请求 id
-    pub id: u64,
+    pub id: u32,
     // 请求服务
     pub service: String,
     // 请求方法
@@ -22,7 +22,7 @@ pub struct BaseRequest {
 #[derive(Debug, Serialize, RustSignalBinary)]
 pub struct BaseResponse {
     // 响应 id
-    pub id: u64,
+    pub id: u32,
     // 响应错误信息,当存在时，则response无意义
     pub msg: String,
     // 是否为流式响应

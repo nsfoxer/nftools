@@ -2,10 +2,9 @@ use crate::service::service::{ImmService, LazyService, Service, StreamService};
 use crate::{async_func_typeno, async_func_typetype, func_end, service_handle};
 use ahash::AHashMap;
 use log::{error, info};
-use rinf::{DartSignal, DartSignalPack, RustSignalBinary};
+use rinf::{DartSignalPack, RustSignalBinary};
 use std::ops::DerefMut;
 use std::sync::Arc;
-use anyhow::anyhow;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::Mutex;
 use prost::Message;
@@ -346,7 +345,7 @@ impl ApiService {
 }
 
 /// 生成错误响应
-fn generate_error_response(id: u64, error: String, is_stream: bool) -> BaseResponse {
+fn generate_error_response(id: u32, error: String, is_stream: bool) -> BaseResponse {
     BaseResponse {
         id,
         msg: error,
