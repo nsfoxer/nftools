@@ -37,8 +37,6 @@ async fn base_request() -> Result<()> {
     let receiver = BaseRequest::get_dart_signal_receiver();
     let mut close_signal = None;
     while let Some(mut signal) = receiver.recv().await {
-        rinf::debug_print!("receive signal: {:?}", signal.message);
-        println!("receive signal: {:?}", signal.message);
         signal.message.func = signal.message.func.trim().to_case(Case::Snake);
         let signal = signal;
         // Api 服务特殊处理

@@ -10,10 +10,10 @@ import 'package:rinf/rinf.dart';
 import '../src/bindings/bindings.dart';
 
 // 请求序列
-Int64 _seq = Int64.ZERO;
+int _seq = 0;
 // 响应流
-Map<Int64, Completer<List<int>>> _reqMap = {};
-Map<Int64, StreamController<List<int>>> _reqStreamMap = {};
+Map<int, Completer<List<int>>> _reqMap = {};
+Map<int, StreamController<List<int>>> _reqStreamMap = {};
 
 // 启动监听响应数据
 void initMsg() {
@@ -23,7 +23,7 @@ void initMsg() {
       _handleStream(data);
       return;
     }
-    var complete = _reqMap.remove(Int64(rsp.id.toInt()));
+    var complete = _reqMap.remove(rsp.id);
     if (complete == null) {
       // 错误，没有请求id
       error("无法处理响应:无法找到对应id：${rsp.id}");
@@ -49,15 +49,13 @@ Future<List<int>> sendRequest<T extends $pb.GeneratedMessage>(
   Completer<List<int>> completer = Completer();
   _reqMap[id] = completer;
   // 发送
-  debugPrint("sendRequest: $service, $func, $request");
   BaseRequest(
-    id: Uint64(BigInt.from(id.toInt())),
+    id: id,
     service: service,
     func: func,
     isStream: false,
   ).sendSignalToRust(request?.writeToBuffer() ?? Uint8List(0));
   // 返回
-  debugPrint("sendRequest: finish");
   return completer.future;
 }
 
@@ -71,7 +69,7 @@ Stream<List<int>> sendRequestStream<T extends $pb.GeneratedMessage>(
   _reqStreamMap[id] = controller;
   // 发送
   BaseRequest(
-    id: Uint64(BigInt.from(id.toInt())),
+    id: id,
     service: service,
     func: func,
     isStream: true,
