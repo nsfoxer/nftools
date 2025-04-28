@@ -1,4 +1,6 @@
 // 时间操作
+import 'dart:convert';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:go_router/go_router.dart';
 
@@ -42,4 +44,11 @@ bool isDark(BuildContext context) {
 
 Color primaryColor(BuildContext context) {
   return FluentTheme.of(context).accentColor.normal;
+}
+
+const JsonDecoder _jsonDecoder = JsonDecoder();
+const JsonEncoder _jsonPrettyEncoder = JsonEncoder.withIndent('  ');
+String formatJson(String json) {
+  final data = _jsonDecoder.convert(json);
+  return _jsonPrettyEncoder.convert(data);
 }
