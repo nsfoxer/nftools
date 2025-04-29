@@ -12,7 +12,8 @@ import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 import 'package:nftools/utils/utils.dart';
 
-import '../messages/syncfile.pb.dart';
+import '../src/bindings/bindings.dart';
+
 
 class SyncFilePage extends StatelessWidget {
   const SyncFilePage({super.key});
@@ -415,7 +416,7 @@ class SourceData extends $me.DataTableSource {
           return Row(
             children: [
               Button(
-                  onPressed: file.status == FileStatusEnum.SYNCED
+                  onPressed: file.status == FileStatusEnumMsg.synced
                       ? null
                       : () async {
                           await logic.syncDir(file.remoteDir);
@@ -453,13 +454,13 @@ class SourceData extends $me.DataTableSource {
       $me.DataCell(() {
         var desc = "";
         switch (file.status) {
-          case FileStatusEnum.DOWNLOAD:
+          case FileStatusEnumMsg.download:
             desc = "待下载";
             break;
-          case FileStatusEnum.SYNCED:
+          case FileStatusEnumMsg.synced:
             desc = "已同步";
             break;
-          case FileStatusEnum.UPLOAD:
+          case FileStatusEnumMsg.upload:
             desc = "待上传";
             break;
         }
@@ -469,7 +470,7 @@ class SourceData extends $me.DataTableSource {
         );
       }()),
       $me.DataCell(Text(
-        "${file.new_4}        ${file.del}        ${file.modify}",
+        "${file.add}        ${file.del}        ${file.modify}",
         style: typography.caption,
       )),
     ]);

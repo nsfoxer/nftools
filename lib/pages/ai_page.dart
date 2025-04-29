@@ -7,11 +7,12 @@ import 'package:go_router/go_router.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/ai_controller.dart';
-import 'package:nftools/messages/ai.pb.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 import 'package:nftools/utils/utils.dart';
 import 'package:url_launcher/link.dart';
+
+import '../src/bindings/bindings.dart';
 
 class AiPage extends StatelessWidget {
   const AiPage({super.key});
@@ -74,7 +75,7 @@ class AiPage extends StatelessWidget {
     await showDialog<String>(
         context: context,
         builder: (context) => GetBuilder<AiController>(builder: (logic) {
-              final bool isBaidu = logic.state.modelEnum == ModelEnum.Baidu;
+              final bool isBaidu = logic.state.modelEnum == ModelEnumMsg.baidu;
               return ContentDialog(
                 title: Text(
                   "密钥管理",
@@ -178,7 +179,7 @@ class AiPage extends StatelessWidget {
         }),
       ),
       content: GetBuilder<AiController>(builder: (logic) {
-        final bool isBaidu = logic.state.modelEnum == ModelEnum.Baidu;
+        final bool isBaidu = logic.state.modelEnum == ModelEnumMsg.baidu;
         final contents = logic.state.contentData.contents;
         if (!logic.state.isLogin) {
           return Center(

@@ -14,7 +14,6 @@ dependencies:
     sdk: flutter
   rinf: ^8.1.0
   get: ^4.6.6
-  protobuf: ^4.0.0
   fixnum: ^1.1.0
   cupertino_icons: ^1.0.8
   easy_debounce: ^2.0.3

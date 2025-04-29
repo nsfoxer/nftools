@@ -18,7 +18,7 @@ import 'package:window_manager/window_manager.dart';
 
 void main() async {
   // 1. 初始化后端
-  await initializeRust(assignRustSignal);
+  // await initializeRust(assignRustSignal);
   initMsg();
 
   // 2，初始化 window manager

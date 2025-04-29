@@ -1,8 +1,8 @@
 use crate::common::global_data::GlobalData;
 use crate::common::utils::{get_machine_id, sha256};
 use crate::common::WEBDAV_SYNC_DIR;
-use crate::messages::common::{BoolMessage, StringMessage, Uint32Message};
-use crate::messages::syncfile::{AddLocal4RemoteMsg, AddSyncDirMsg, FileMsg, FileStatusEnum, ListFileMsg, SyncFileDetailMsg, WebDavConfigMsg};
+use crate::messages::common::{BoolMsg, StringMsg, UintFiveMsg};
+use crate::messages::syncfile::{AddLocalForRemoteMsg, AddSyncDirMsg, FileMsg, FileStatusEnumMsg, ListFileMsg, SyncFileDetailMsg, WebDavConfigMsg};
 use crate::service::service::Service;
 use crate::{
     async_func_notype, async_func_typeno, async_func_typetype, func_end, func_notype, func_typeno,
@@ -11,7 +11,6 @@ use ahash::{AHashMap, AHashSet};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use filetime::FileTime;
-use prost::Message;
 use reqwest_dav::list_cmd::ListEntity;
 use reqwest_dav::re_exports::reqwest::Body;
 use reqwest_dav::{Auth, Client, ClientBuilder, Depth};
@@ -20,7 +19,6 @@ use std::fmt::Debug;
 use std::ops::Add;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tokio::fs;
 use tokio::fs::{create_dir_all, metadata, File};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -81,7 +79,7 @@ impl Service for SyncFileService {
             func,
             req_data,
             sync_dir,
-            StringMessage,
+            StringMsg,
             set_account,
             WebDavConfigMsg,
             add_sync_dir,
@@ -90,9 +88,9 @@ impl Service for SyncFileService {
             AddLocal4RemoteMsg
         );
 
-        async_func_typeno!(self, func, req_data, del_remote_dir, StringMessage, set_timer, Uint32Message);
+        async_func_typeno!(self, func, req_data, del_remote_dir, StringMsg, set_timer, Uint32Msg);
 
-        func_typeno!(self, func, req_data, del_local_dir, StringMessage);
+        func_typeno!(self, func, req_data, del_local_dir, StringMsg);
         func_notype!(self, func, get_account);
 
         func_end!(func)
@@ -128,28 +126,29 @@ impl SyncFileService {
 
 impl SyncFileService {
     /// 保存定时器时间
-    async fn set_timer(&mut self, timer: Uint32Message) -> Result<()> {
+    async fn set_timer(&mut self, timer: UintFiveMsg) -> Result<()> {
         self.timer = Some(timer.value);
         Ok(())
     }
     
     /// 获取定时器时间
-    async fn get_timer(&self) -> Result<Uint32Message> {
-        Ok(Uint32Message{
+    async fn get_timer(&self) -> Result<UintFiveMsg> {
+        Ok(UintFiveMsg {
             value: self.timer.unwrap_or(0),
         })
     }
 
     /// 测试帐号是否可用
-    async fn has_account(&mut self) -> Result<BoolMessage> {
+    async fn has_account(&mut self) -> Result<BoolMsg> {
         match &self.account_info {
-            None => Ok(BoolMessage { value: false }),
+            None => Ok(BoolMsg { value: false }),
             Some(account) => {
                 let client = Self::connect(account).await?;
                 self.client = Some(client);
-                Ok(BoolMessage { value: true })
+                Ok(BoolMsg { value: true })
             }
         }
+        
     }
 
     /// 获取账户信息
@@ -166,7 +165,7 @@ impl SyncFileService {
     }
 
     /// 设置账户信息
-    async fn set_account(&mut self, account: WebDavConfigMsg) -> Result<BoolMessage> {
+    async fn set_account(&mut self, account: WebDavConfigMsg) -> Result<BoolMsg> {
         let account = AccountInfo {
             user: account.account,
             passwd: account.passwd,
@@ -193,8 +192,8 @@ impl SyncFileService {
             result.push(FileMsg {
                 local_dir: self.file_sync.files.get(*file).unwrap().clone(),
                 remote_dir: "".to_string(),
-                status: 0,
-                new: 0,
+                status: FileStatusEnumMsg::UPLOAD,
+                add: 0,
                 del: 0,
                 modify: 0,
                 tag: "".to_string(),
@@ -206,8 +205,8 @@ impl SyncFileService {
             result.push(FileMsg {
                 local_dir: "".to_string(),
                 remote_dir: file.to_string(),
-                status: 0,
-                new: 0,
+                status: FileStatusEnumMsg::UPLOAD,
+                add: 0,
                 del: 0,
                 modify: 0,
                 tag: remote_files.get(*file).unwrap().tag.clone(),
@@ -224,7 +223,7 @@ impl SyncFileService {
                 local_dir: self.file_sync.files.get(*file).unwrap().clone(),
                 remote_dir: file.to_string(),
                 status: diff_result.0.into(),
-                new: diff_result.1.len() as u32,
+                add: diff_result.1.len() as u32,
                 del: diff_result.2.len() as u32,
                 modify: diff_result.3.len() as u32,
                 tag: remote_files.get(*file).unwrap().tag.clone(),
@@ -234,7 +233,7 @@ impl SyncFileService {
     }
 
     /// 同步一个文件夹
-    async fn sync_dir(&mut self, remote_dir: StringMessage) -> Result<SyncFileDetailMsg> {
+    async fn sync_dir(&mut self, remote_dir: StringMsg) -> Result<SyncFileDetailMsg> {
         // 获取本地文件属性
         let local_dir = self
             .file_sync
@@ -254,7 +253,7 @@ impl SyncFileService {
 
         // 执行相关操作
         match status {
-            FileStatusEnum::Upload => {
+            FileStatusEnumMsg::UPLOAD => {
                 Self::upload_files(
                     &mut remote_metadata,
                     &mut add_files,
@@ -271,7 +270,7 @@ impl SyncFileService {
                 )
                 .await?;
             }
-            FileStatusEnum::Download => {
+            FileStatusEnumMsg::DOWNLOAD => {
                 Self::download_files(
                     &mut remote_metadata,
                     &mut add_files,
@@ -282,20 +281,20 @@ impl SyncFileService {
                 .await?;
                 Self::delete_local_files(&del_files, local_dir).await?;
             }
-            FileStatusEnum::Synced => {}
+            FileStatusEnumMsg::SYNCED => {}
         }
 
         let mut upload_files = Vec::new();
         let mut download_files = Vec::new();
         for (file, status) in modify_files {
             match status {
-                FileStatusEnum::Upload => {
+                FileStatusEnumMsg::UPLOAD => {
                     upload_files.push(file);
                 }
-                FileStatusEnum::Download => {
+                FileStatusEnumMsg::DOWNLOAD => {
                     download_files.push(file);
                 }
-                FileStatusEnum::Synced => {}
+                FileStatusEnumMsg::SYNCED => {}
             }
         }
         Self::upload_files(
@@ -367,8 +366,8 @@ impl SyncFileService {
         let result = FileMsg {
             local_dir: sync.local_dir,
             remote_dir,
-            status: FileStatusEnum::Upload.into(),
-            new: l_metadata.files.keys().len() as u32,
+            status: FileStatusEnumMsg::UPLOAD.into(),
+            add: l_metadata.files.keys().len() as u32,
             del: 0,
             modify: 0,
             tag: sync.tag
@@ -377,7 +376,7 @@ impl SyncFileService {
     }
 
     /// 对空缺的远端目录新增本地路径
-    async fn add_local_file(&mut self, req: AddLocal4RemoteMsg) -> Result<FileMsg> {
+    async fn add_local_file(&mut self, req: AddLocalForRemoteMsg) -> Result<FileMsg> {
         // 1. 基本校验
         // 本地校验
         self.check_local_dir(&req.local_dir)?;
@@ -400,8 +399,8 @@ impl SyncFileService {
         Ok(FileMsg {
             local_dir: req.local_dir,
             remote_dir: req.remote_dir,
-            status: FileStatusEnum::Download.into(),
-            new: r_metadata.files.len() as u32,
+            status: FileStatusEnumMsg::DOWNLOAD.into(),
+            add: r_metadata.files.len() as u32,
             del: 0,
             modify: 0,
             tag: r_metadata.tag
@@ -409,13 +408,13 @@ impl SyncFileService {
     }
 
     /// 删除本地路径
-    fn del_local_dir(&mut self, local_dir: StringMessage) -> Result<()> {
+    fn del_local_dir(&mut self, local_dir: StringMsg) -> Result<()> {
         self.file_sync.files.retain(|_k, v| v != &local_dir.value);
         Ok(())
     }
 
     /// 删除远端路径(会将远端数据一并删除)
-    async fn del_remote_dir(&mut self, remote_dir: StringMessage) -> Result<()> {
+    async fn del_remote_dir(&mut self, remote_dir: StringMsg) -> Result<()> {
         let client = self
             .client
             .as_ref()
@@ -529,10 +528,10 @@ impl SyncFileService {
         l_metadata: &LocalFileMetadata,
         r_metadata: &RemoteFileMedata,
     ) -> (
-        FileStatusEnum,
+        FileStatusEnumMsg,
         Vec<String>,
         Vec<String>,
-        Vec<(String, FileStatusEnum)>,
+        Vec<(String, FileStatusEnumMsg)>,
     ) {
         // 对比远端与本地文件差异
         let l_dirs: AHashSet<&String> = l_metadata.files.keys().collect();
@@ -553,16 +552,16 @@ impl SyncFileService {
             // 本地多出的文件要上传，远端多出的文件要删除
             add_files = l_diff;
             del_files = r_diff;
-            status = FileStatusEnum::Upload;
+            status = FileStatusEnumMsg::UPLOAD;
         } else if l_metadata.last_time < r_metadata.last_time {
             // 远端比本地新
             // 本地多出的文件要删除，远端多出的文件要下载
             add_files = r_diff;
             del_files = l_diff;
-            status = FileStatusEnum::Download;
+            status = FileStatusEnumMsg::DOWNLOAD;
         } else {
             // 远端和本地一样新
-            status = FileStatusEnum::Synced;
+            status = FileStatusEnumMsg::SYNCED;
             add_files = Vec::with_capacity(0);
             del_files = Vec::with_capacity(0);
         }
@@ -572,10 +571,10 @@ impl SyncFileService {
             let rf = r_metadata.files.get(&same_fir).unwrap();
             if *lf > *rf {
                 // 本地修改时间大于远端
-                modify_files.push((same_fir, FileStatusEnum::Upload));
+                modify_files.push((same_fir, FileStatusEnumMsg::UPLOAD));
             } else if *lf < *rf {
                 // 本地修改时间小于远端
-                modify_files.push((same_fir, FileStatusEnum::Download));
+                modify_files.push((same_fir, FileStatusEnumMsg::DOWNLOAD));
             }
         }
 

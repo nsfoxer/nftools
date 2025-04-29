@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:fixnum/fixnum.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/utils/log.dart';
-import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:rinf/rinf.dart';
 
 import '../src/bindings/bindings.dart';
@@ -12,8 +11,8 @@ import '../src/bindings/bindings.dart';
 // 请求序列
 int _seq = 0;
 // 响应流
-Map<int, Completer<List<int>>> _reqMap = {};
-Map<int, StreamController<List<int>>> _reqStreamMap = {};
+Map<int, Completer<Uint8List>> _reqMap = {};
+Map<int, StreamController<Uint8List>> _reqStreamMap = {};
 
 // 启动监听响应数据
 void initMsg() {
@@ -39,14 +38,20 @@ void initMsg() {
   });
 }
 
+// 定义一个 mixin 来约束 bincodeSerialize 方法
+mixin ApiSerializable {
+  Uint8List bincodeSerialize();
+}
+
+
 // 发送请求，并响应
 // 返回序列化后的响应数据
-Future<List<int>> sendRequest<T extends $pb.GeneratedMessage>(
+Future<Uint8List> sendRequest<T extends ApiSerializable >(
     String service, String func, T? request) {
   // 序列号
   final id = _seq++;
   // 记录发送信息
-  Completer<List<int>> completer = Completer();
+  Completer<Uint8List> completer = Completer();
   _reqMap[id] = completer;
   // 发送
   BaseRequest(
@@ -54,18 +59,18 @@ Future<List<int>> sendRequest<T extends $pb.GeneratedMessage>(
     service: service,
     func: func,
     isStream: false,
-  ).sendSignalToRust(request?.writeToBuffer() ?? Uint8List(0));
+  ).sendSignalToRust(request?.bincodeSerialize() ?? Uint8List(0));
   // 返回
   return completer.future;
 }
 
 // 发送请求，并流式响应
-Stream<List<int>> sendRequestStream<T extends $pb.GeneratedMessage>(
+Stream<List<int>> sendRequestStream<T>(
     String service, String func, T? request) {
   // 序列号
   final id = _seq++;
   // 记录发送信息
-  StreamController<List<int>> controller = StreamController();
+  StreamController<Uint8List> controller = StreamController();
   _reqStreamMap[id] = controller;
   // 发送
   BaseRequest(
@@ -73,7 +78,7 @@ Stream<List<int>> sendRequestStream<T extends $pb.GeneratedMessage>(
     service: service,
     func: func,
     isStream: true,
-  ).sendSignalToRust(request?.writeToBuffer() ?? Uint8List(0));
+  ).sendSignalToRust(request?.tryBincodeSerialize() ?? Uint8List(0));
   // 返回
   return controller.stream;
 }

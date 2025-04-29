@@ -66,8 +66,7 @@ mod macros {
         $(
         stringify!($name) => {
             let rsp = $self.$name()?;
-            let mut buf = Vec::new();
-            rsp.encode(&mut buf)?;
+            let buf = rinf::serialize(&rsp)?;
             return Ok(Some(buf));
         },
         )*
@@ -82,7 +81,7 @@ mod macros {
     match $function {
         $(
         stringify!($name) => {
-            let req = <$req>::decode(&$data[..])?;
+            let req = rinf::deserialize($data.as_slice())?;
             $self.$name(req)?;
             return Ok(None);
         },
@@ -98,10 +97,9 @@ mod macros {
     match $function {
         $(
         stringify!($name) => {
-            let req = <$req>::decode(&$data[..])?;
+            let req = rinf::deserialize($data.as_slice())?;
             let rsp = $self.$name(req)?;
-            let mut buf = Vec::new();
-            rsp.encode(&mut buf)?;
+            let buf = rinf::serialize(&rsp)?;
             return Ok(Some(buf));
         }
         )*
@@ -133,8 +131,7 @@ mod macros {
         $(
         stringify!($name) => {
             let rsp = $self.$name().await?;
-            let mut buf = Vec::new();
-            rsp.encode(&mut buf)?;
+            let buf = rinf::serialize(&rsp)?;
             return Ok(Some(buf));
         },
         )*
@@ -149,7 +146,7 @@ mod macros {
     match $function {
         $(
         stringify!($name) => {
-            let req = <$req>::decode(&$data[..])?;
+            let req = rinf::deserialize($data.as_slice())?;
             $self.$name(req).await?;
             return Ok(None);
         }
@@ -165,10 +162,9 @@ mod macros {
     match $function {
         $(
         stringify!($name) => {
-            let req = <$req>::decode(&$data[..])?;
+            let req = rinf::deserialize($data.as_slice())?;
             let rsp = $self.$name(req).await?;
-            let mut buf = Vec::new();
-            rsp.encode(&mut buf)?;
+            let buf = rinf::serialize(&rsp)?;
             return Ok(Some(buf));
         }
         )*
@@ -183,7 +179,7 @@ mod macros {
     match $function {
         $(
         stringify!($name) => {
-            let req = <$req>::decode(&$data[..])?;
+            let req = rinf::deserialize($data.as_slice())?;
             $self.$name(req, $tx).await?;
             return Ok(());
         }

@@ -7,10 +7,9 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::Mutex;
-use prost::Message;
 use crate::api::{BaseRequest, BaseResponse};
 use crate::common::global_data::GlobalData;
-use crate::messages::common::{BoolMessage, StringMessage};
+use crate::messages::common::{BoolMsg, StringMsg};
 use crate::service::ai::BaiduAiService;
 use crate::service::display::display_os::{DisplayLight, DisplayMode};
 use crate::service::settings::about::AboutService;
@@ -428,7 +427,7 @@ impl ApiService {
     const ABOUT_SERVICE: &'static str = "AboutService";
     const AI_SERVICE: &'static str = "AiService";
     
-    async fn enable_service(&mut self, service: StringMessage) -> anyhow::Result<()> {
+    async fn enable_service(&mut self, service: StringMsg) -> anyhow::Result<()> {
         let service = service.value;
         if self.services.contains_key(service.as_str()) || self.stream_services.contains_key(service.as_str()) {
             return Err(anyhow::anyhow!("服务已初始化"));
@@ -478,8 +477,8 @@ impl ApiService {
         Ok(())
     }
 
-    async fn get_router_enabled(&self, service: StringMessage) -> anyhow::Result<BoolMessage> {
+    async fn get_router_enabled(&self, service: StringMsg) -> anyhow::Result<BoolMsg> {
         info!("查询{}", service.value);
-        Ok(BoolMessage{value: true})
+        Ok(BoolMsg{value: true})
     }
 }

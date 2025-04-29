@@ -1,6 +1,5 @@
-use crate::messages::common::{BoolMessage, StringMessage};
+use crate::messages::common::{BoolMsg, StringMsg};
 use crate::service::service::ImmService;
-use prost::Message;
 use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::time::UNIX_EPOCH;
@@ -28,7 +27,7 @@ impl ImmService for UtilsService {
             CompressLocalPicMsg
         );
         async_func_notype!(self, func, network_status);
-        func_typeno!(self, func, req_data, notify, StringMessage);
+        func_typeno!(self, func, req_data, notify, StringMsg);
         func_end!(func)
     }
 }
@@ -43,7 +42,7 @@ impl UtilsService {
     /// 压缩图片
     /// local_img: 本地图片路径
     /// 返回： 压缩后的本地图片路径
-    async fn compress_local_img(&self, local_img: CompressLocalPicMsg) -> Result<StringMessage> {
+    async fn compress_local_img(&self, local_img: CompressLocalPicMsg) -> Result<StringMsg> {
         // 1. 计算img的cache file
         let metadata = fs::metadata(&local_img.local_file).await?;
         let time = metadata.modified()?;
@@ -68,7 +67,7 @@ impl UtilsService {
 
         // 2. 如果cache存在，则直接返回
         if cache_path.exists() {
-            return Ok(StringMessage {
+            return Ok(StringMsg {
                 value: cache_path.to_str().unwrap().to_string(),
             });
         }
@@ -86,22 +85,22 @@ impl UtilsService {
         });
         let r = handle.await??;
 
-        Ok(StringMessage {
+        Ok(StringMsg {
             value: r.to_str().unwrap().to_string(),
         })
     }
 
     /// 桌面通知
-    fn notify(&self, body: StringMessage) -> Result<()> {
+    fn notify(&self, body: StringMsg) -> Result<()> {
         crate::common::utils::notify(body.value.as_str())
     }
 
     /// 检查网络状态
-    async fn network_status(&self) -> Result<BoolMessage> {
+    async fn network_status(&self) -> Result<BoolMsg> {
         let client = reqwest::Client::new();
         let response = client.get("https://www.baidu.com").send().await;
         
-        Ok(BoolMessage{
+        Ok(BoolMsg{
             value: response.is_ok(),
         })
     }

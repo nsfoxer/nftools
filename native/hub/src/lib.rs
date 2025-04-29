@@ -4,8 +4,8 @@
 mod api;
 mod common;
 mod dbus;
-mod messages;
 mod service;
+mod messages;
 
 use crate::api::api::ApiService;
 use crate::common::utils::notify;

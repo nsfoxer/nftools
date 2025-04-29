@@ -1,9 +1,9 @@
 #[cfg(target_os = "windows")]
 pub mod display_os {
     use crate::common::global_data::GlobalData;
-    use crate::messages::common::Uint32Message;
+    use crate::messages::common::UintFiveMsg;
     use crate::messages::display::{
-        DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp, SystemModeMsg,
+        DisplayInfoMsg, DisplayInfoReqMsg, GetDisplayModeRspMsg, GetWallpaperRspMsg, SystemModeMsg,
     };
     use crate::service::service::{ImmService, LazyService, Service};
     use crate::{async_func_notype, async_func_typeno, func_end, func_notype, func_typeno};
@@ -11,10 +11,8 @@ pub mod display_os {
     use async_trait::async_trait;
     use ddc::{Ddc, VcpValue};
     use ddc_winapi::Monitor;
-    use prost::Message;
     use serde::{Deserialize, Serialize};
     use std::path::PathBuf;
-    use std::sync::Arc;
     use tokio_stream::wrappers::ReadDirStream;
     use tokio_stream::StreamExt;
     use winreg::enums::{KEY_READ, KEY_WRITE};
@@ -28,7 +26,7 @@ pub mod display_os {
     impl ImmService for DisplayLight {
         async fn handle(&self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
             func_notype!(self, func, get_all_devices);
-            func_typeno!(self, func, req_data, set_light, DisplayInfo);
+            func_typeno!(self, func, req_data, set_light, DisplayInfoMsg);
 
             func_end!(func)
         }
@@ -39,7 +37,7 @@ pub mod display_os {
             Self {}
         }
 
-        fn get_all_devices(&self) -> Result<DisplayInfoResponse> {
+        fn get_all_devices(&self) -> Result<DisplayInfoReqMsg> {
             let display_infos = Monitor::enumerate()
                 .unwrap_or(Vec::new())
                 .into_iter()
@@ -51,18 +49,18 @@ pub mod display_os {
                             .value(),
                     )
                 })
-                .map(|(d, v)| DisplayInfo {
+                .map(|(d, v)| DisplayInfoMsg {
                     screen: d,
                     value: v as u32,
                 })
                 .collect();
-            let result = DisplayInfoResponse {
+            let result = DisplayInfoReqMsg {
                 infos: display_infos,
             };
             Ok(result)
         }
 
-        fn set_light(&self, display_info: DisplayInfo) -> Result<()> {
+        fn set_light(&self, display_info: DisplayInfoMsg) -> Result<()> {
             let m = Monitor::enumerate()
                 .unwrap_or(Vec::new())
                 .into_iter()
@@ -109,7 +107,7 @@ pub mod display_os {
                 func,
                 req_data,
                 set_mode,
-                crate::messages::display::DisplayMode
+                crate::messages::display::DisplayModeMsg
             );
             func_end!(func)
         }
@@ -199,22 +197,22 @@ pub mod display_os {
         }
 
         /// 获取系统颜色信息 返回 ARGB
-        fn get_system_color(&self) -> Result<Uint32Message> {
+        fn get_system_color(&self) -> Result<UintFiveMsg> {
             let hklm = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
             let color =
                 hklm.open_subkey_with_flags("Software\\Microsoft\\Windows\\DWM", KEY_READ)?;
             let v: u32 = color.get_value("ColorizationColor")?;
-            Ok(Uint32Message { value: v })
+            Ok(UintFiveMsg { value: v })
         }
 
-        fn get_current_mode(&self) -> Result<GetDisplayModeRsp> {
+        fn get_current_mode(&self) -> Result<GetDisplayModeRspMsg> {
             let theme = &self.theme_reg;
             let v: u32 = theme.get_value("SystemUsesLightTheme")?;
-            let mode = crate::messages::display::DisplayMode { is_light: v == 1 };
-            Ok(GetDisplayModeRsp { mode: Some(mode) })
+            let mode = crate::messages::display::DisplayModeMsg { is_light: v == 1 };
+            Ok(GetDisplayModeRspMsg { mode })
         }
 
-        fn set_mode(&self, mode: crate::messages::display::DisplayMode) -> Result<()> {
+        fn set_mode(&self, mode: crate::messages::display::DisplayModeMsg) -> Result<()> {
             let theme = &self.theme_reg;
             let value = if mode.is_light { 1u32 } else { 0u32 };
             theme.set_value("SystemUsesLightTheme", &value)?;
@@ -223,7 +221,7 @@ pub mod display_os {
             Ok(())
         }
 
-        async fn get_wallpaper(&self) -> Result<GetWallpaperRsp> {
+        async fn get_wallpaper(&self) -> Result<GetWallpaperRspMsg> {
             let appdata = match std::env::var("APPDATA") {
                 Ok(v) => v,
                 Err(_) => {
@@ -240,7 +238,7 @@ pub mod display_os {
                     let file = file.to_str().unwrap();
                     if file.ends_with(".jpg") {
                         let path = entry.path().to_str().unwrap().to_string();
-                        return Ok(GetWallpaperRsp {
+                        return Ok(GetWallpaperRspMsg {
                             light_wallpaper: path.clone(),
                             dark_wallpaper: path,
                         });
@@ -255,7 +253,7 @@ pub mod display_os {
                     let file = file.to_str().unwrap();
                     if file.starts_with("Transcoded") {
                         let path = entry.path().to_str().unwrap().to_string();
-                        return Ok(GetWallpaperRsp {
+                        return Ok(GetWallpaperRspMsg {
                             light_wallpaper: path.clone(),
                             dark_wallpaper: path,
                         });
@@ -280,9 +278,9 @@ pub mod display_os {
     use crate::common::APP_NAME;
     use crate::dbus::power_manager::OrgFreedesktopPowerManagementInhibit;
     use crate::dbus::wallpaper::OrgKdePlasmaShell;
-    use crate::messages::common::Uint32Message;
+    use crate::messages::common::UintFiveMsg;
     use crate::messages::display::{
-        DisplayInfo, DisplayInfoResponse, GetDisplayModeRsp, GetWallpaperRsp,
+        DisplayInfoMsg, DisplayInfoReqMsg, GetDisplayModeRspMsg, GetWallpaperRspMsg,
         SystemModeMsg,
     };
     use crate::service::service::{Service};
@@ -296,7 +294,7 @@ pub mod display_os {
     use ddc::Ddc;
     use ddc_i2c::I2cDeviceDdc;
     use log::error;
-    use prost::Message;
+    use prost::Msg;
     use std::path::PathBuf;
     use std::sync::Arc;
     use std::time::Duration;
@@ -335,16 +333,16 @@ pub mod display_os {
         }
 
         /// 获取所有设备信息
-        fn get_all_devices(&mut self) -> Result<DisplayInfoResponse> {
+        fn get_all_devices(&mut self) -> Result<DisplayInfoReqMsg> {
             let displays: Vec<String> = self.devices.keys().map(|k| k.to_string()).collect();
             let displays = displays
                 .into_iter()
-                .map(|x| DisplayInfo {
+                .map(|x| DisplayInfoMsg {
                     screen: x.to_string(),
                     value: self.get_now_light(x.as_str()).unwrap_or(0) as u32,
                 })
                 .collect();
-            let resp = DisplayInfoResponse { infos: displays };
+            let resp = DisplayInfoReqMsg { infos: displays };
             Ok(resp)
         }
 
@@ -365,7 +363,7 @@ pub mod display_os {
         }
 
         /// 设置亮度
-        fn set_light(&mut self, display: DisplayInfo) -> Result<()> {
+        fn set_light(&mut self, display: DisplayInfoMsg) -> Result<()> {
             match self.devices.get_mut(&display.screen) {
                 None => {
                     error!("获取设备失败");
@@ -527,13 +525,13 @@ pub mod display_os {
         }
 
         /// 获取系统颜色信息 返回 ARGB
-        async fn get_system_color(&self) -> Result<Uint32Message> {
+        async fn get_system_color(&self) -> Result<UintFiveMsg> {
             let color = self.proxy.color().await?;
-            Ok(Uint32Message { value: color })
+            Ok(UintFiveMsg { value: color })
         }
 
         /// 设置显示模式
-        async fn set_mode(&self, req: crate::messages::display::DisplayMode) -> Result<()> {
+        async fn set_mode(&self, req: crate::messages::display::DisplayModeMsg) -> Result<()> {
             let mut cmd = tokio::process::Command::new("plasma-apply-lookandfeel");
             cmd.arg("-a");
 
@@ -552,7 +550,7 @@ pub mod display_os {
         }
 
         /// 获取当前模式
-        async fn get_current_mode(&self) -> Result<GetDisplayModeRsp> {
+        async fn get_current_mode(&self) -> Result<GetDisplayModeRspMsg> {
             let file = &self.theme_mode_path;
             let r = match tokio::fs::read_to_string(file).await {
                 Ok(data) => !data.contains("dark"),
@@ -561,13 +559,13 @@ pub mod display_os {
                 }
             };
 
-            Ok(GetDisplayModeRsp {
-                mode: Some(crate::messages::display::DisplayMode { is_light: r }),
+            Ok(GetDisplayModeRspMsg {
+                mode: Some(crate::messages::display::DisplayModeMsg { is_light: r }),
             })
         }
 
         /// 获取壁纸
-        async fn get_wallpaper(&self) -> Result<GetWallpaperRsp> {
+        async fn get_wallpaper(&self) -> Result<GetWallpaperRspMsg> {
             let proxy = &self.proxy;
             let reply = proxy.wallpaper(0).await?;
             let image = reply.get("Image");
@@ -579,7 +577,7 @@ pub mod display_os {
             let mut path = PathBuf::from(image);
             // 非文件夹直接返回
             if !path.is_dir() {
-                return Ok(GetWallpaperRsp {
+                return Ok(GetWallpaperRspMsg {
                     light_wallpaper: image.to_string(),
                     dark_wallpaper: image.to_string(),
                 });
@@ -592,7 +590,7 @@ pub mod display_os {
             path.push("images_dark");
             let dark = Self::read_first_pic(&path).await?;
 
-            Ok(GetWallpaperRsp {
+            Ok(GetWallpaperRspMsg {
                 light_wallpaper: light,
                 dark_wallpaper: dark,
             })
