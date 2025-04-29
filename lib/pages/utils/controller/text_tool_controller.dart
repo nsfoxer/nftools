@@ -16,7 +16,6 @@ class TextToolController extends GetxController {
 
  @override
   void onClose() {
-   debugPrint("===============TextToolController onClose");
     state.textEditingController.dispose();
     super.onClose();
   }
@@ -36,9 +35,18 @@ class TextToolController extends GetxController {
         _jsonFormat(false); break;
       case TextToolEnum.miniJson:
         _jsonFormat(true); break;
+      case TextToolEnum.clean:
+        _cleanInvisibleCharacters(state.textEditingController.text);
+        break;
     }
 
     update([PageWidgetNameConstant.textToolPageStatistic]);
+  }
+
+  void _cleanInvisibleCharacters(String input) {
+    // 匹配 ASCII 码范围在 0 - 31 以及 127 的不可见字符
+    RegExp invisibleChars = RegExp(r'[\x00-\x09\x0B-\x1F\x7F\xa0]');
+    state.textEditingController.text = input.replaceAll(invisibleChars, '');
   }
 
   // 排序
@@ -120,6 +128,7 @@ class TextToolController extends GetxController {
     update([PageWidgetNameConstant.textToolPageStatistic]);
   }
 
+
 }
 
 enum TextToolEnum {
@@ -128,6 +137,7 @@ enum TextToolEnum {
   unique("去重"),
   json("JSON格式化"),
   miniJson("JSON格式化（最小化）"),
+  clean("清除非正常字符"),
   ;
 
   const TextToolEnum(this.desc);
