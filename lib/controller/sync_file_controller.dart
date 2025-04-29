@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:get/get.dart';
 import 'package:nftools/api/syncfile.dart' as $api;
-import 'package:nftools/messages/syncfile.pb.dart';
 import 'package:nftools/state/sync_file_state.dart';
 import 'package:nftools/utils/log.dart';
+
+import '../src/bindings/bindings.dart';
 
 class SyncFileController extends GetxController {
   final state = SyncFileState();
@@ -110,10 +111,14 @@ class SyncFileController extends GetxController {
         if (value.remoteDir != remoteId) {
           continue;
         }
-        value.modify = 0;
-        value.new_4 = 0;
-        value.del = 0;
-        value.status = FileStatusEnum.SYNCED;
+        value = FileMsg(
+            localDir: value.localDir,
+            remoteDir: value.remoteDir,
+            tag: value.tag,
+            modify: 0,
+            add: 0,
+            del: 0,
+            status: FileStatusEnumMsg.synced);
       }
       return result;
     } finally {
@@ -212,7 +217,7 @@ class SyncFileController extends GetxController {
         for (var value in state.fileList) {
           if (value.localDir.isEmpty ||
               value.remoteDir.isEmpty ||
-              value.status == FileStatusEnum.SYNCED) {
+              value.status == FileStatusEnumMsg.synced) {
             continue;
           }
           await syncDir(value.remoteDir);

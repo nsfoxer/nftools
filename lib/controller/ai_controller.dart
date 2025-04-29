@@ -2,8 +2,8 @@ import 'package:easy_debounce/easy_debounce.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/api/ai.dart' as $api;
-import 'package:nftools/messages/ai.pb.dart';
 
+import '../src/bindings/bindings.dart';
 import '../state/ai_state.dart';
 
 class AiController extends GetxController {
@@ -17,6 +17,7 @@ class AiController extends GetxController {
 
   @override
   void onClose() {
+    debugPrint("onClose");
     state.dispose();
   }
 
@@ -24,20 +25,20 @@ class AiController extends GetxController {
     // get_kv
     try {
       // 这里把百度的API给禁用掉 start ========
-      await $api.setModel(ModelEnum.Spark);
-      state.modelEnum = ModelEnum.Spark;
+      await $api.setModel(ModelEnumMsg.spark);
+      state.modelEnum= ModelEnumMsg.spark;
       // final model = await $api.getModel();
-      // state.modelEnum = model;
+      // state.ModelEnumMsg = model;
       // 这里把百度的API给禁用掉 end ========
       
       // 获取KV信息
       final r = await $api.getKV();
       state.appIdController.text = r.apiKey;
       state.secretController.text = r.secret;
-      if (state.modelEnum == ModelEnum.Baidu && r.apiKey.isNotEmpty && r.secret.isNotEmpty) {
+      if (state.modelEnum == ModelEnumMsg.baidu && r.apiKey.isNotEmpty && r.secret.isNotEmpty) {
         state.isLogin = true;
       }
-      if (state.modelEnum == ModelEnum.Spark && r.apiKey.isNotEmpty) {
+      if (state.modelEnum == ModelEnumMsg.spark && r.apiKey.isNotEmpty) {
         state.isLogin = true;
       }
     } catch (e) {
@@ -54,7 +55,7 @@ class AiController extends GetxController {
   // 设置KV
   Future<bool> setKV() async {
     String appId = state.appIdController.text.trim();
-    if (state.modelEnum == ModelEnum.Spark) {
+    if (state.modelEnum == ModelEnumMsg.spark) {
       if (!appId.startsWith("Bearer ")) {
         appId = "Bearer $appId";
       }
@@ -190,11 +191,11 @@ class AiController extends GetxController {
   }
 
   Future<void> changeModel() async {
-    final ModelEnum model;
-    if (state.modelEnum == ModelEnum.Baidu) {
-      model = ModelEnum.Spark;
+    final ModelEnumMsg model;
+    if (state.modelEnum == ModelEnumMsg.baidu) {
+      model = ModelEnumMsg.spark;
     } else {
-      model = ModelEnum.Baidu;
+      model = ModelEnumMsg.baidu;
     }
     state.reInit();
     state.modelEnum = model;

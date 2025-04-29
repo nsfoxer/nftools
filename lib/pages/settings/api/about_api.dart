@@ -23,7 +23,7 @@ Future<String> newestVersion() async {
 // 获取历史记录
 Future<String> getRecord() async {
   final data = await sendRequest<EmptyMsg>(_service, _record, null);
-  return StringMsg.fromBuffer(data).value;
+  return StringMsg.bincodeDeserialize(data).value;
 }
 
 // 下载并安装最新版

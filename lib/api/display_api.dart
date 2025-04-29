@@ -5,20 +5,20 @@ import 'dart:ui';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/common/constants.dart';
-import 'package:nftools/messages/common.pb.dart';
-import 'package:nftools/messages/display.pb.dart';
+
+import '../src/bindings/bindings.dart';
 
 const String _service = ServiceNameConstant.displayLight;
 const String _funcSupport = "get_all_devices";
 const String _setLight = "set_light";
 
-Future<List<DisplayInfo>> displaySupport() async {
-  var data = await sendRequest<EmptyMessage>(_service, _funcSupport, null);
-  var result = DisplayInfoResponse.fromBuffer(data);
+Future<List<DisplayInfoMsg>> displaySupport() async {
+  var data = await sendRequest<EmptyMsg>(_service, _funcSupport, null);
+  var result = DisplayInfoReqMsg.bincodeDeserialize(data);
   return result.infos;
 }
 
-Future<void> setLight(DisplayInfo info) async {
+Future<void> setLight(DisplayInfoMsg info) async {
   await sendRequest(_service, _setLight, info);
 }
 
@@ -30,31 +30,31 @@ const String _getSystemColor = "get_system_color";
 const String _getSystemMode = "get_system_mode";
 const String _setSystemMode = "set_system_mode";
 
-Future<DisplayMode> getCurrentMode() async {
-  var data = await sendRequest<EmptyMessage>(_service2, _getCurrentMode, null);
-  var result = DisplayMode.fromBuffer(data);
+Future<DisplayModeMsg> getCurrentMode() async {
+  var data = await sendRequest<EmptyMsg>(_service2, _getCurrentMode, null);
+  var result = DisplayModeMsg.bincodeDeserialize(data);
   return result;
 }
 
-Future<void> setMode(DisplayMode mode) async {
+Future<void> setMode(DisplayModeMsg mode) async {
   await sendRequest(_service2, _setMode, mode);
 }
 
 Future<Color> getSystemColor() async {
-  var data = await sendRequest<EmptyMessage>(_service2, _getSystemColor, null);
-  var result = Uint32Message.fromBuffer(data);
+  var data = await sendRequest<EmptyMsg>(_service2, _getSystemColor, null);
+  var result = UintFiveMsg.bincodeDeserialize(data);
   return Color(result.value).withAlpha(255).lighten();
 }
 
-Future<GetWallpaperRsp> getWallpaper() async {
-  var data = await sendRequest<EmptyMessage>(_service2, _getWallpaper, null);
-  var result = GetWallpaperRsp.fromBuffer(data);
+Future<GetWallpaperRspMsg> getWallpaper() async {
+  var data = await sendRequest<EmptyMsg>(_service2, _getWallpaper, null);
+  var result = GetWallpaperRspMsg.bincodeDeserialize(data);
   return result;
 }
 
 Future<SystemModeMsg> getSystemMode() async {
-  var data = await sendRequest<EmptyMessage>(_service2, _getSystemMode, null);
-  var result = SystemModeMsg.fromBuffer(data);
+  var data = await sendRequest<EmptyMsg>(_service2, _getSystemMode, null);
+  var result = SystemModeMsg.bincodeDeserialize(data);
   return result;
 }
 

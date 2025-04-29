@@ -1,7 +1,5 @@
-import 'package:nftools/messages/ai.pb.dart';
-
 import '../common/constants.dart';
-import '../messages/common.pb.dart';
+import '../src/bindings/bindings.dart';
 import 'api.dart';
 
 const String _service = ServiceNameConstant.ai;
@@ -20,13 +18,13 @@ const String _setModel = "set_model";
 Stream<BaiduAiRspMsg> quest(String msg, int id) {
   var stream =
       sendRequestStream(_service, _question, QuestionMsg(id: id, desc: msg));
-  return stream.map((x) => BaiduAiRspMsg.fromBuffer(x));
+  return stream.map((x) => BaiduAiRspMsg.bincodeDeserialize(x));
 }
 
 // 获取kv
 Future<BaiduAiKeyReqMsg> getKV() async {
-  var data = await sendRequest<EmptyMessage>(_service, _getKV, null);
-  return BaiduAiKeyReqMsg.fromBuffer(data);
+  var data = await sendRequest<EmptyMsg>(_service, _getKV, null);
+  return BaiduAiKeyReqMsg.bincodeDeserialize(data);
 }
 
 // set kv
@@ -37,40 +35,40 @@ Future<void> setKV(String appId, String secret) async {
 
 // 刷新token
 Future<void> refreshToken() async {
-  await sendRequest<EmptyMessage>(_service, _refresh, null);
+  await sendRequest<EmptyMsg>(_service, _refresh, null);
 }
 
 // 获取所有问题列表
 Future<List<QuestionMsg>> getQuestionList() async {
   final data =
-      await sendRequest<EmptyMessage>(_service, _getQuestionList, null);
-  return QuestionListMsg.fromBuffer(data).questionList;
+      await sendRequest<EmptyMsg>(_service, _getQuestionList, null);
+  return QuestionListMsg.bincodeDeserialize(data).questionList;
 }
 
 // 获取指定问题的请求数据
 Future<List<String>> getQuestion(int id) async {
-  final data = await sendRequest(_service, _getQuestion, Uint32Message(value: id));
-  return VecStringMessage.fromBuffer(data).values;
+  final data = await sendRequest(_service, _getQuestion, UintFiveMsg(value: id));
+  return VecStringMsg.bincodeDeserialize(data).values;
 }
 
 // 新增问题
 Future<void> addQuestion(int id) async {
-  await sendRequest(_service, _addQuestion, Uint32Message(value: id));
+  await sendRequest(_service, _addQuestion, UintFiveMsg(value: id));
 }
 
 // 删除问题
 Future<void> delQuestion(int id) async {
-  await sendRequest(_service, _delQuestion, Uint32Message(value: id));
+  await sendRequest(_service, _delQuestion, UintFiveMsg(value: id));
 }
 
 // 获取当前model
-Future<ModelEnum> getModel() async {
-  final data = await sendRequest<EmptyMessage>(_service, _getModel, null);
-  return AiModelMsg.fromBuffer(data).modelEnum;
+Future<ModelEnumMsg> getModel() async {
+  final data = await sendRequest<EmptyMsg>(_service, _getModel, null);
+  return AiModelMsg.bincodeDeserialize(data).modelEnum;
 }
 
 // 设置当前model
-Future<void> setModel(ModelEnum modelEnum) async {
-  await sendRequest(_service, _setModel, AiModelMsg(modelEnum: modelEnum));
+Future<void> setModel(ModelEnumMsg model) async {
+  await sendRequest(_service, _setModel, AiModelMsg(modelEnum: model));
 }
 
