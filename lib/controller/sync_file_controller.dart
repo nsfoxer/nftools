@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/api/syncfile.dart' as $api;
 import 'package:nftools/state/sync_file_state.dart';
@@ -107,18 +108,18 @@ class SyncFileController extends GetxController {
     update();
     try {
       final result = await $api.syncDir(remoteId);
-      for (var value in state.fileList) {
-        if (value.remoteDir != remoteId) {
-          continue;
-        }
-        value = FileMsg(
-            localDir: value.localDir,
-            remoteDir: value.remoteDir,
-            tag: value.tag,
+      for (int i = 0; i < state.fileList.length; i++) {
+        if (state.fileList[i].remoteDir == remoteId) {
+          state.fileList[i] = FileMsg(
+            localDir: state.fileList[i].localDir,
+            remoteDir: state.fileList[i].remoteDir,
+            tag: state.fileList[i].tag,
             modify: 0,
             add: 0,
             del: 0,
-            status: FileStatusEnumMsg.synced);
+            status: FileStatusEnumMsg.synced,
+          );
+        }
       }
       return result;
     } finally {
@@ -199,7 +200,7 @@ class SyncFileController extends GetxController {
     }
 
     $api.setTimer(v);
-   _setTimer(v);
+    _setTimer(v);
 
     update();
   }
@@ -229,4 +230,3 @@ class SyncFileController extends GetxController {
     }
   }
 }
-
