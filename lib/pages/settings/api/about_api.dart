@@ -1,5 +1,6 @@
 import 'package:nftools/api/api.dart';
-import 'package:nftools/messages/common.pb.dart';
+
+import '../../../src/bindings/bindings.dart';
 
 const String _service = "AboutService";
 const String _version = "version";
@@ -9,23 +10,23 @@ const String _installBNewest = "install_newest";
 
 // 获取当前版本号
 Future<String> version() async {
-  final data = await sendRequest<EmptyMessage>(_service, _version, null);
-  return StringMessage.fromBuffer(data).value;
+  final data = await sendRequest<EmptyMsg>(_service, _version, null);
+  return StringMsg.bincodeDeserialize(data).value;
 }
 
 // 获取最新版本编号
 Future<String> newestVersion() async {
-  final data = await sendRequest<EmptyMessage>(_service, _newestVersion, null);
-  return StringMessage.fromBuffer(data).value;
+  final data = await sendRequest<EmptyMsg>(_service, _newestVersion, null);
+  return StringMsg.bincodeDeserialize(data).value;
 }
 
 // 获取历史记录
 Future<String> getRecord() async {
-  final data = await sendRequest<EmptyMessage>(_service, _record, null);
-  return StringMessage.fromBuffer(data).value;
+  final data = await sendRequest<EmptyMsg>(_service, _record, null);
+  return StringMsg.fromBuffer(data).value;
 }
 
 // 下载并安装最新版
 Future<void> installNewest() async {
-  await sendRequest<EmptyMessage>(_service, _installBNewest, null);
+  await sendRequest<EmptyMsg>(_service, _installBNewest, null);
 }

@@ -1,8 +1,8 @@
 use crate::common::global_data::GlobalData;
 use crate::messages::ai::{
-    AiModelMsg, BaiduAiKeyReqMsg, BaiduAiRspMsg, ModelEnum, QuestionListMsg, QuestionMsg,
+    AiModelMsg, BaiduAiKeyReqMsg, BaiduAiRspMsg, ModelEnumMsg, QuestionListMsg, QuestionMsg,
 };
-use crate::messages::common::{Uint32Message, VecStringMessage};
+use crate::messages::common::{UintFiveMsg, VecStringMsg};
 use crate::service::service::{Service, StreamService};
 use crate::{
     async_func_nono, async_func_notype, async_func_typeno, async_stream_func_typeno, func_end,
@@ -13,7 +13,6 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures_util::StreamExt;
-use prost::Message;
 use reqwest::Client;
 use rinf::debug_print;
 use serde::{Deserialize, Serialize};
@@ -57,11 +56,11 @@ const SPARK_LITE_MODEL: &str = "lite";
 #[derive(Serialize)]
 struct BaiduAiRequest {
     model: Option<&'static str>,
-    messages: Vec<InnerMessage>,
+    messages: Vec<InnerMsg>,
     stream: bool,
 }
 #[derive(Serialize)]
-struct InnerMessage {
+struct InnerMsg {
     role: RoleEnum,
     content: String,
 }
@@ -163,15 +162,15 @@ impl Service for BaiduAiService {
             AiModelMsg
         );
         func_notype!(self, func, get_question_list, get_model);
-        func_typetype!(self, func, req_data, get_question, Uint32Message);
+        func_typetype!(self, func, req_data, get_question, Uint32Msg);
         func_typeno!(
             self,
             func,
             req_data,
             new_question,
-            Uint32Message,
+            Uint32Msg,
             del_question,
-            Uint32Message
+            Uint32Msg
         );
         func_end!(func)
     }
@@ -216,19 +215,19 @@ impl BaiduAiService {
             .enumerate()
             .map(|(i, v)| {
                 if i % 2 == 0 {
-                    InnerMessage {
+                    InnerMsg {
                         role: RoleEnum::User,
                         content: v.to_string(),
                     }
                 } else {
-                    InnerMessage {
+                    InnerMsg {
                         role: RoleEnum::Assistant,
                         content: v.to_string(),
                     }
                 }
             })
-            .collect::<Vec<InnerMessage>>();
-        msg.push(InnerMessage {
+            .collect::<Vec<InnerMsg>>();
+        msg.push(InnerMsg {
             role: RoleEnum::User,
             content: req.desc.to_string(),
         });
@@ -272,7 +271,8 @@ impl BaiduAiService {
                     }
                     let data = data.unwrap();
                     result.push_str(data.content.as_str());
-                    Ok(Some(data.encode_to_vec()))
+                    let buf = rinf::serialize(&data)?;
+                    Ok(Some(buf))
                 }
                 Err(e) => {
                     is_error = true;
@@ -420,24 +420,24 @@ impl BaiduAiService {
 
     fn get_model(&self) -> Result<AiModelMsg> {
         let model = match self.model {
-            AiModelEnum::Baidu => ModelEnum::Baidu,
-            AiModelEnum::Spark => ModelEnum::Spark,
+            AiModelEnum::Baidu => ModelEnumMsg::Baidu,
+            AiModelEnum::Spark => ModelEnumMsg::Spark,
         };
         Ok(AiModelMsg {
-            model_enum: i32::from(model),
+            model_enum: ModelEnumMsg::try_from(model)?,
         })
     }
 
     async fn set_model(&mut self, model: AiModelMsg) -> Result<()> {
-        let model = match ModelEnum::try_from(model.model_enum) {
+        let model = match ModelEnumMsg::try_from(model.model_enum) {
             Err(_e) => {
                 return Err(anyhow::anyhow!("无法获取model"));
             }
             Ok(v) => v,
         };
         let model = match model {
-            ModelEnum::Baidu => AiModelEnum::Baidu,
-            ModelEnum::Spark => AiModelEnum::Spark,
+            ModelEnumMsg::Baidu => AiModelEnum::Baidu,
+            ModelEnumMsg::Spark => AiModelEnum::Spark,
         };
         if model == self.model {
             return Ok(());
@@ -473,16 +473,16 @@ impl BaiduAiService {
         })
     }
 
-    fn get_question(&self, req: Uint32Message) -> Result<VecStringMessage> {
+    fn get_question(&self, req: UintFiveMsg) -> Result<VecStringMsg> {
         let result = self
             .history
             .get(&req.value)
             .ok_or(anyhow::anyhow!("无法找到对应id"))?;
         let result = result.into_iter().map(|x| x.to_string()).collect();
-        Ok(VecStringMessage { values: result })
+        Ok(VecStringMsg { values: result })
     }
 
-    fn new_question(&mut self, req: Uint32Message) -> Result<()> {
+    fn new_question(&mut self, req: UintFiveMsg) -> Result<()> {
         if self.history.contains_key(&req.value) {
             return Err(anyhow::anyhow!("已存在对应的对话id"));
         }
@@ -490,7 +490,7 @@ impl BaiduAiService {
         Ok(())
     }
 
-    fn del_question(&mut self, req: Uint32Message) -> Result<()> {
+    fn del_question(&mut self, req: UintFiveMsg) -> Result<()> {
         if self.history.remove(&req.value).is_none() {
             return Err(anyhow::anyhow!("不存在对应的对话id"));
         }

@@ -1,6 +1,7 @@
 import 'package:data_table_2/data_table_2.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:nftools/messages/syncfile.pb.dart';
+
+import '../src/bindings/bindings.dart';
 
 class SyncFileState {
   // 是否登录成功

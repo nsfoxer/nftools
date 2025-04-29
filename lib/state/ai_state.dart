@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:nftools/messages/ai.pb.dart';
+
+import '../src/bindings/bindings.dart';
 
 class AiState {
   // 对话列表controller
@@ -29,7 +30,7 @@ class AiState {
   // passwd控制器
   TextEditingController secretController = TextEditingController();
 
-  ModelEnum modelEnum = ModelEnum.Baidu;
+  ModelEnumMsg modelEnum = ModelEnumMsg.baidu;
 
   void dispose() {
     appIdController.dispose();
@@ -48,7 +49,7 @@ class AiState {
     if (scrollController.positions.isNotEmpty) {
       scrollController.jumpTo(0.0);
     }
-    modelEnum = ModelEnum.Baidu;
+    modelEnum = ModelEnumMsg.baidu;
   }
 }
 

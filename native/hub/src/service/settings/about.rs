@@ -1,12 +1,11 @@
 use crate::common::utils::{get_cache_dir, version};
-use crate::messages::common::StringMessage;
+use crate::messages::common::StringMsg;
 use crate::service::service::{Service};
 use std::time::Duration;
 
 use crate::{async_func_nono, async_func_notype, func_end, func_notype};
 use anyhow::Result;
 use futures_util::StreamExt;
-use prost::Message;
 use serde::Deserialize;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -44,23 +43,23 @@ impl Service for AboutService {
 
 impl AboutService {
     /// 获取当前版本号
-    fn version(&self) -> Result<StringMessage> {
-        Ok(StringMessage { value: version() })
+    fn version(&self) -> Result<StringMsg> {
+        Ok(StringMsg { value: version() })
     }
 
     /// 检查新版本
-    async fn check_updates(&mut self) -> Result<StringMessage> {
+    async fn check_updates(&mut self) -> Result<StringMsg> {
         self.get_version_info(true).await?;
         let version = self.version_info.as_ref().unwrap().version.clone();
-        Ok(StringMessage { value: version })
+        Ok(StringMsg { value: version })
     }
 
     /// 获取更新信息
-    async fn record(&mut self) -> Result<StringMessage> {
+    async fn record(&mut self) -> Result<StringMsg> {
         self.get_version_info(false).await?;
         let version_info = self.version_info.as_ref().unwrap();
         
-        Ok(StringMessage { value: version_info.record.clone() })
+        Ok(StringMsg { value: version_info.record.clone() })
     }
 
     /// 下载和安装最新版
