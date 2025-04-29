@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:meta/meta.dart';
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/pages/display_page.dart';
-import 'package:nftools/pages/empty_page.dart';
 import 'package:nftools/pages/home_page.dart';
 import 'package:nftools/pages/settings/page/settings_page.dart';
 import 'package:nftools/pages/sync_file_page.dart';

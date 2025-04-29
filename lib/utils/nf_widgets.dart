@@ -165,7 +165,6 @@ class NFCodeEditor extends StatelessWidget {
   final CodeLineEditingController controller;
   final bool? readOnly;
   final RxBool isDisplay = false.obs;
-  final JsonEncoder _jsonPrettyEncoder = const JsonEncoder.withIndent('  ');
 
   NFCodeEditor({super.key, required this.controller, this.readOnly});
 
@@ -180,6 +179,7 @@ class NFCodeEditor extends StatelessWidget {
         controller: controller,
         readOnly: readOnly ?? false,
         style: CodeEditorStyle(
+          textColor: FluentTheme.of(context).typography.body?.color,
           codeTheme: CodeHighlightTheme(
             languages: {
               'json': CodeHighlightThemeMode(mode: langJson),
