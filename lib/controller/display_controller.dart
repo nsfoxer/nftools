@@ -1,6 +1,6 @@
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:get/get.dart';
-import 'package:nftools/messages/display.pb.dart';
+import 'package:nftools/src/bindings/bindings.dart';
 import 'package:nftools/state/display_state.dart';
 import 'package:nftools/api/display_api.dart' as $api;
 
@@ -34,7 +34,7 @@ class DisplayController extends GetxController {
     EasyDebounce.debounce("display/setLight", const Duration(milliseconds: 20),
         () async {
       var light = value;
-      $api.setLight(DisplayInfo(screen: screen, value: light)).catchError((e) {
+      $api.setLight(DisplayInfoMsg(screen: screen, value: light)).catchError((e) {
         state.displayLight[screen] = -1;
         update();
       });

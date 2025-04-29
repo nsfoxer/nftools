@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:fixnum/fixnum.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:rinf/rinf.dart';
@@ -60,12 +59,13 @@ Future<Uint8List> sendRequest<T extends ApiSerializable >(
     func: func,
     isStream: false,
   ).sendSignalToRust(request?.bincodeSerialize() ?? Uint8List(0));
+  debugPrint("sendRequest: id: $id service: $service func: $func");
   // 返回
   return completer.future;
 }
 
 // 发送请求，并流式响应
-Stream<List<int>> sendRequestStream<T>(
+Stream<Uint8List> sendRequestStream<T extends ApiSerializable>(
     String service, String func, T? request) {
   // 序列号
   final id = _seq++;
@@ -78,7 +78,7 @@ Stream<List<int>> sendRequestStream<T>(
     service: service,
     func: func,
     isStream: true,
-  ).sendSignalToRust(request?.tryBincodeSerialize() ?? Uint8List(0));
+  ).sendSignalToRust(request?.bincodeSerialize() ?? Uint8List(0));
   // 返回
   return controller.stream;
 }
@@ -87,7 +87,7 @@ Stream<List<int>> sendRequestStream<T>(
 void _handleStream(RustSignalPack<BaseResponse> data) {
   debugPrint("handleStream: ${data.message.id}");
   final rsp = data.message;
-  var controller = _reqStreamMap[Int64(rsp.id.toInt())];
+  var controller = _reqStreamMap[rsp.id];
   if (controller == null) {
     error("无法处理响应:无法找到对应id：${rsp.id}");
     return;
@@ -96,7 +96,7 @@ void _handleStream(RustSignalPack<BaseResponse> data) {
     // 错误：处理错误
     error(rsp.msg);
     controller.addError(rsp.msg);
-  } else {
+  } else if (data.binary.isNotEmpty) {
     controller.add(data.binary);
   }
   if (rsp.isEnd) {
