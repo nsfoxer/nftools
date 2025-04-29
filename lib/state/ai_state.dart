@@ -46,9 +46,8 @@ class AiState {
     idList = [];
     appIdController.clear();
     secretController.clear();
-    if (scrollController.positions.isNotEmpty) {
-      scrollController.jumpTo(0.0);
-    }
+    scrollController.dispose();
+    scrollController = ScrollController();
     modelEnum = ModelEnumMsg.baidu;
   }
 }
