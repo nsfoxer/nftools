@@ -8,6 +8,7 @@ import 'package:nftools/utils/utils.dart';
 import 'package:re_editor/re_editor.dart';
 import 'package:re_highlight/languages/dart.dart';
 import 'package:re_highlight/languages/json.dart';
+import 'package:re_highlight/languages/sql.dart';
 import 'package:re_highlight/styles/base16/github.dart';
 import 'package:re_highlight/styles/github-dark.dart';
 
@@ -182,7 +183,8 @@ class NFCodeEditor extends StatelessWidget {
           codeTheme: CodeHighlightTheme(
             languages: {
               'json': CodeHighlightThemeMode(mode: langJson),
-              'dart': CodeHighlightThemeMode(mode: langDart)
+              'dart': CodeHighlightThemeMode(mode: langDart),
+              'sql': CodeHighlightThemeMode(mode: langSql),
             },
             theme: isDark ? githubDarkTheme : githubTheme,
           ),
@@ -221,12 +223,19 @@ class NFCodeEditor extends StatelessWidget {
                       icon: Icon(FluentIcons.auto_enhance_on,
                           size: typography.caption?.fontSize),
                       onPressed: () {
+                        bool success = true;
                         try {
                           final data = formatJson(controller.text);
                           controller.text = data;
                         } catch (ignored) {
                           // ignored
+                          success = false;
                         }
+                        if (!success) {
+                          final data = formatSql(controller.text);
+                          controller.text = data;
+                        }
+
                       }),
                 ))),
           )),
