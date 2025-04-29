@@ -294,7 +294,6 @@ pub mod display_os {
     use ddc::Ddc;
     use ddc_i2c::I2cDeviceDdc;
     use log::error;
-    use prost::Msg;
     use std::path::PathBuf;
     use std::sync::Arc;
     use std::time::Duration;
@@ -560,7 +559,7 @@ pub mod display_os {
             };
 
             Ok(GetDisplayModeRspMsg {
-                mode: Some(crate::messages::display::DisplayModeMsg { is_light: r }),
+                mode: crate::messages::display::DisplayModeMsg { is_light: r },
             })
         }
 
