@@ -1,5 +1,5 @@
 {
-  "package_server": "https://gitee.com/muwuren/nftools/releases/download/v0.1.3/nftools-install.exe",
-  "version": "v0.1.3",
-  "record": "- 优化程序后台服务加载为动态加载\n- 新增程序启动时动画\n- 优化windows退出时间慢问题"
+  "package_server": "https://gitee.com/muwuren/nftools/releases/download/v0.1.4/nftools-install.exe",
+  "version": "v0.1.4",
+  "record": "- 主页添加描述\n- 新增文本处理工具\n- 升级rinf版本，弃用protoc，转为bincode"
 }

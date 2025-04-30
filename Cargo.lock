@@ -560,20 +560,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dashmap"
-version = "6.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5041cc499144891f3790297212f32a74fb938e5136a14943f338ef9e0ae276cf"
-dependencies = [
- "cfg-if",
- "crossbeam-utils",
- "hashbrown 0.14.5",
- "lock_api",
- "once_cell",
- "parking_lot_core",
-]
-
-[[package]]
 name = "dbus"
 version = "0.9.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -828,12 +814,6 @@ name = "fallible-streaming-iterator"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
-
-[[package]]
-name = "fast_inv_sqrt"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6e61a440b33ad57e53bb01b33438d019d7a7d50a05b9def525c578c0a7e974f"
 
 [[package]]
 name = "fastrand"
@@ -1166,23 +1146,20 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "hub"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "ahash",
  "anyhow",
  "async-trait",
  "auto-launch",
  "bytes",
- "chrono",
  "convert_case",
- "dashmap",
  "dbus",
  "dbus-tokio",
  "ddc",
  "ddc-i2c",
  "ddc-winapi",
  "dirs 5.0.1",
- "fast_inv_sqrt",
  "filetime",
  "futures",
  "futures-util",
@@ -1190,11 +1167,9 @@ dependencies = [
  "log",
  "machine-uid",
  "notify-rust",
- "rand",
  "reqwest",
  "reqwest_dav",
  "rinf",
- "rust-lzma",
  "serde",
  "serde_json",
  "sha2",
@@ -2326,16 +2301,6 @@ dependencies = [
  "hashlink",
  "libsqlite3-sys",
  "smallvec",
-]
-
-[[package]]
-name = "rust-lzma"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d62915608f6cee1d7f2fc00f28b4f058ff79d6e4ec3c2fe0006b09b52437c84"
-dependencies = [
- "pkg-config",
- "vcpkg",
 ]
 
 [[package]]
