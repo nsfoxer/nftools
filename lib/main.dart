@@ -124,8 +124,13 @@ class _MainAppState extends State<MainApp>
   }
 
   @override
-  void didChangePlatformBrightness() {
-    _init();
+  void didChangePlatformBrightness() async{
+    if (Platform.isLinux) {
+      await Future.delayed(const Duration(seconds: 5));
+    }
+    primaryColor = await getSystemColor();
+    setState(() {});
+
     super.didChangePlatformBrightness();
   }
 
