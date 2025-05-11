@@ -274,6 +274,7 @@ pub mod display_os {
 
 #[cfg(target_os = "linux")]
 pub mod display_os {
+    use std::cell::OnceCell;
     use crate::common::global_data::GlobalData;
     use crate::common::APP_NAME;
     use crate::dbus::power_manager::OrgFreedesktopPowerManagementInhibit;
@@ -602,7 +603,8 @@ pub mod display_os {
             while let Some(Ok(entry)) = entries.next().await {
                 let file = entry.path();
                 let file = file.to_str().unwrap();
-                if file.ends_with(".jpg") || file.ends_with(".png") || file.ends_with(".webp") {
+                if file.ends_with(".jpg") || file.ends_with(".png") || file.ends_with(".webp")
+                    || file.ends_with(".jpeg") || file.ends_with(".jxl") {
                     return Ok(file.to_string());
                 }
             }
