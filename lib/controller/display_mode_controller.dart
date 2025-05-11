@@ -4,6 +4,7 @@ import 'package:nftools/api/utils.dart';
 import 'package:nftools/src/bindings/bindings.dart';
 import 'package:nftools/state/display_mode_state.dart';
 import 'package:nftools/api/display_api.dart' as $api;
+import 'package:nftools/utils/log.dart';
 
 class DisplayModeController extends GetxController {
   final state = DisplayModeState();
@@ -23,10 +24,18 @@ class DisplayModeController extends GetxController {
 
   void _setWallpaper() async {
     var r1 = await $api.getWallpaper();
-    state.lightWallpaper = await compressLocalFile(r1.lightWallpaper, 300, 200);
-    state.darkWallpaper = await compressLocalFile(r1.darkWallpaper, 300, 200);
+    state.lightWallpaper = await _tryCompressImage(r1.lightWallpaper);
+    state.darkWallpaper = await _tryCompressImage(r1.darkWallpaper);
     state.loadingWallpaper = false;
     update();
+  }
+
+  Future<String?> _tryCompressImage(String imageFile) async{
+    try {
+      return await compressLocalFile(imageFile, 300, 200);
+    } catch(ignore) {
+      return imageFile;
+    }
   }
 
   void getMode() {
