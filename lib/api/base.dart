@@ -8,10 +8,9 @@ const String _service = ServiceNameConstant.api;
 const String _close = "close";
 
 // 结束所有服务
-Future<String> closeRust() async {
-  var data = await sendRequest<EmptyMsg>
+Future<void> closeRust() async {
+  await sendRequest<EmptyMsg>
     (_service, _close, null);
-  return StringMsg.bincodeDeserialize(data).value;
 }
 
 // 查询路由是否已启用
