@@ -428,10 +428,10 @@ packages:
     dependency: "direct main"
     description:
       name: rinf
-      sha256: "29dbbdef0fe40a654344c3b60922e131295064d57c680645a75b278473f087d9"
+      sha256: "082011e294e85470d2acfb027ec9b7e912539328eb50dab8f5df49514d1cbf02"
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "8.1.0"
+    version: "8.2.0"
   screen_retriever:
     dependency: transitive
     description:
