@@ -5,7 +5,6 @@ import 'package:nftools/common/constants.dart';
 import 'package:nftools/pages/utils/controller/text_diff_controller.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 import 'package:pretty_diff_text/pretty_diff_text.dart';
-import 'package:re_editor/re_editor.dart';
 
 final ScrollController _hScrollController = ScrollController();
 final ScrollController _vScrollController = ScrollController();
