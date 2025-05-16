@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:rinf/rinf.dart';
 
@@ -59,7 +58,7 @@ Future<Uint8List> sendRequest<T extends ApiSerializable >(
     func: func,
     isStream: false,
   ).sendSignalToRust(request?.bincodeSerialize() ?? Uint8List(0));
-  debugPrint("sendRequest: id: $id service: $service func: $func");
+  debug("sendRequest: id: $id service: $service func: $func");
   // 返回
   return completer.future;
 }
@@ -85,7 +84,7 @@ Stream<Uint8List> sendRequestStream<T extends ApiSerializable>(
 
 // 处理流式响应
 void _handleStream(RustSignalPack<BaseResponse> data) {
-  debugPrint("handleStream: ${data.message.id}");
+  debug("handleStream: ${data.message.id}");
   final rsp = data.message;
   var controller = _reqStreamMap[rsp.id];
   if (controller == null) {
