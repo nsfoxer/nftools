@@ -17,7 +17,6 @@ class QrController extends GetxController {
 
   @override
   void onInit() {
-    debugPrint("messageinit =======================");
     super.onInit();
     _init();
     state.codeLineEditingController.addListener(() {
@@ -81,7 +80,6 @@ class QrController extends GetxController {
 
   @override
   void onClose() {
-    debugPrint("message dispose =======================");
     state.codeLineEditingController.dispose();
     super.onClose();
   }
