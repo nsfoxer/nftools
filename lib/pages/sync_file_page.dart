@@ -241,7 +241,7 @@ class SyncFilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     var typography = FluentTheme.of(context).typography;
     var table = GetBuilder<SyncFileController>(builder: (logic) {
-      return LoadingWidgets(
+      return NFLoadingWidgets(
         loading: logic.state.isLoading,
         child: PaginatedDataTable2(
           controller: logic.state.pageController,

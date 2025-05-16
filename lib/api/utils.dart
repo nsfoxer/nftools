@@ -1,4 +1,6 @@
 
+import 'dart:typed_data';
+
 import '../common/constants.dart';
 import '../src/bindings/bindings.dart';
 import 'api.dart';
@@ -7,6 +9,8 @@ const String _service = ServiceNameConstant.utils;
 const String _compressLocalPic = "compress_local_img";
 const String _notify = "notify";
 const String _networkStatus = "network_status";
+const String _genTextQrCode = "gen_text_qr_code";
+const String _genFileQrCode = "gen_file_qr_code";
 
 // 压缩本地图片
 Future<String> compressLocalFile(String localFile, int width, int height) async {
@@ -25,4 +29,18 @@ Future<bool> networkStatus() async {
   var data = await sendRequest<EmptyMsg>
     (_service, _networkStatus, null);
   return BoolMsg.bincodeDeserialize(data).value;
+}
+
+// 生成文本二维码
+Future<Uint8List> genTextQrCode(String text) async {
+  final data = await sendRequest<StringMsg>
+    (_service, _genTextQrCode, StringMsg(value: text));
+  return Uint8List.fromList(DataMsg.bincodeDeserialize(data).value);
+}
+
+// 生成文件二维码
+Future<Uint8List> genFileQrCode(String text) async {
+  final data = await sendRequest<StringMsg>
+    (_service, _genFileQrCode, StringMsg(value: text));
+  return Uint8List.fromList(DataMsg.bincodeDeserialize(data).value);
 }

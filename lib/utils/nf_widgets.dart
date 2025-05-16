@@ -58,11 +58,11 @@ class NFCard extends StatelessWidget {
 }
 
 // 加载组件
-class LoadingWidgets extends StatelessWidget {
+class NFLoadingWidgets extends StatelessWidget {
   final Widget child;
   final bool loading;
 
-  const LoadingWidgets({
+  const NFLoadingWidgets({
     super.key,
     required this.child,
     required this.loading,
@@ -165,8 +165,10 @@ class NFCodeEditor extends StatelessWidget {
   final CodeLineEditingController controller;
   final bool? readOnly;
   final RxBool isDisplay = false.obs;
+  final bool wordWrap;
+  final String? hint;
 
-  NFCodeEditor({super.key, required this.controller, this.readOnly});
+  NFCodeEditor({super.key, required this.controller, this.readOnly, this.wordWrap = false, this.hint});
 
   @override
   Widget build(BuildContext context) {
@@ -175,9 +177,10 @@ class NFCodeEditor extends StatelessWidget {
     return NFCardContent(
         child: Stack(children: [
       CodeEditor(
-        wordWrap: false,
+        wordWrap: wordWrap,
         controller: controller,
         readOnly: readOnly ?? false,
+        hint: hint,
         style: CodeEditorStyle(
           textColor: FluentTheme.of(context).typography.body?.color,
           codeTheme: CodeHighlightTheme(

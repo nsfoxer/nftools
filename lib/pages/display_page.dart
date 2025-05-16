@@ -80,7 +80,7 @@ class _DisplayMode extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<DisplayModeController>(builder: (logic) {
       var state = logic.state;
-      return LoadingWidgets(
+      return NFLoadingWidgets(
           loading: logic.state.loadingWallpaper,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
