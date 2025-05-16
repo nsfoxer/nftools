@@ -7,7 +7,9 @@ import 'package:nftools/pages/display_page.dart';
 import 'package:nftools/pages/home_page.dart';
 import 'package:nftools/pages/settings/page/settings_page.dart';
 import 'package:nftools/pages/sync_file_page.dart';
+import 'package:nftools/pages/utils/controller/qr_controller.dart';
 import 'package:nftools/pages/utils/controller/video_test_controller.dart';
+import 'package:nftools/pages/utils/page/qr_page.dart';
 import 'package:nftools/pages/utils/page/text_diff_page.dart';
 import 'package:nftools/pages/utils/page/text_tool_page.dart';
 import 'package:nftools/pages/utils/page/video_test_page.dart';
@@ -58,9 +60,13 @@ class RouterServiceData {
       "/utils/textTool": MenuData("/utils/textTool", FluentIcons.text_box, "文本工具", const TextToolPage(), [], () {
         Get.put<TextToolController>(TextToolController(), permanent: true);
       }),
-      "/utils/videoTest": MenuData("/utils/videoTest", FluentIcons.text_box, "video测试", VideoTestPage(), [], () {
-        Get.put<VideoTestController>(VideoTestController(), permanent: true);
-      })
+      "/utils/qr": MenuData("/utils/qr", FluentIcons.text_box, "二维码", const QrPage(), [], () {
+        Get.put<QrController>(QrController(), permanent: true);
+      }),
+
+      // "/utils/videoTest": MenuData("/utils/videoTest", FluentIcons.text_box, "video测试", VideoTestPage(), [], () {
+      //   Get.put<VideoTestController>(VideoTestController(), permanent: true);
+      // })
     }),
 
     "/settings": MenuData("/settings", Icons.settings, "设置", const SettingsPage(), [ServiceNameConstant.about, ServiceNameConstant.utils, ServiceNameConstant.autoStart], () {

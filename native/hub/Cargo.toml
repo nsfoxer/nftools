@@ -41,6 +41,7 @@ bytes = "1.9.0"
 tokio-rusqlite = { version = "0.6.0", features = ["bundled"] }
 auto-launch = "0.5.0"
 convert_case = "0.8.0"
+qrcode-generator = "5.0.0"
 
 [target."cfg(windows)".dependencies]
 ddc-winapi = "0.2.2"

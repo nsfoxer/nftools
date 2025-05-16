@@ -1,4 +1,4 @@
-use crate::messages::common::{BoolMsg, StringMsg};
+use crate::messages::common::{BoolMsg, DataMsg, StringMsg};
 use crate::service::service::ImmService;
 use std::ffi::OsStr;
 use std::path::PathBuf;
@@ -8,7 +8,10 @@ use crate::common::utils::{get_cache_dir, sha256};
 use crate::messages::utils::CompressLocalPicMsg;
 use crate::{async_func_notype, async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
+use qrcode_generator::QrCodeEcc;
 use tokio::fs;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 
 /// 工具类服务
 pub struct UtilsService {}
@@ -24,7 +27,11 @@ impl ImmService for UtilsService {
             func,
             req_data,
             compress_local_img,
-            CompressLocalPicMsg
+            CompressLocalPicMsg,
+            gen_text_qr_code,
+            StringMsg,
+            gen_file_qr_code,
+            StringMsg
         );
         async_func_notype!(self, func, network_status);
         func_typeno!(self, func, req_data, notify, StringMsg);
@@ -103,6 +110,35 @@ impl UtilsService {
         Ok(BoolMsg{
             value: response.is_ok(),
         })
+    }
+
+    // 对字符串生成二维码
+    async fn gen_text_qr_code(&self, msg: StringMsg) -> Result<DataMsg> {
+        // 如果数据长度超出二维码最大容量，则返回错误
+        if msg.value.as_bytes().len() > 2953 {
+            return Err(anyhow::anyhow!("数据长度超出二维码最大容量"));
+        }
+        let handle = tokio::task::spawn_blocking(move || -> Result<Vec<u8>> {
+            Ok(qrcode_generator::to_png_to_vec(msg.value, QrCodeEcc::Low, 1024)?)
+        });
+        let buf = handle.await??;
+        Ok(DataMsg{value: buf})
+    }
+    // 对文件生成二维码
+    async fn gen_file_qr_code(&self, msg: StringMsg) -> Result<DataMsg> {
+        let mut file = File::open(&msg.value).await?;
+        if file.metadata().await?.len() > 2953 {
+            return Err(anyhow::anyhow!("数据长度超出二维码最大容量"));
+        }
+        // 读取文件所有字节
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer).await?;
+        
+        let handle = tokio::task::spawn_blocking(move || -> Result<Vec<u8>> {
+           Ok(qrcode_generator::to_png_to_vec(buffer, QrCodeEcc::Low, 1024)?)
+        });
+        let buf = handle.await??;
+        Ok(DataMsg{value: buf})
     }
 }
 

@@ -32,3 +32,7 @@ pub struct BoolMsg {
 pub struct DoubleMsg  {
     pub value: f64,
 }
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct DataMsg  {
+    pub value: Vec<u8>,
+}
