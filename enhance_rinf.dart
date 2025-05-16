@@ -1,3 +1,5 @@
+// 排除该文件的代码分析
+// ignore_for_file: type=lint
 import 'dart:io';
 
 // 正则表达式用于匹配 @immutable 标记的类定义

@@ -110,7 +110,7 @@ class _StatisticItem extends StatelessWidget {
   final (String, String) data;
   final bool isTitle;
 
-  const _StatisticItem({super.key, required this.data, required this.isTitle});
+  const _StatisticItem({required this.data, required this.isTitle});
 
   @override
   Widget build(BuildContext context) {

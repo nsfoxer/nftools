@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/pages/utils/state/text_tool_state.dart';
@@ -107,9 +106,11 @@ class TextToolController extends GetxController {
   }
 
   void _jsonFormat(bool isMini){
-    final data;
+    dynamic data;
     try {
      data = _jsonDecoder.convert(state.textEditingController.text);
+     // 打印data的类型
+     info("data类型: ${data.runtimeType}");
     } catch (e) {
       error("JSON格式错误\n ${e.toString()}");
       return;

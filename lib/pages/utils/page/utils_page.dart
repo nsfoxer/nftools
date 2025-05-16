@@ -1,9 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/common/style.dart';
-import 'package:nftools/utils/nf_widgets.dart';
-
-import '../../../common/constants.dart';
 
 class UtilsPage extends StatelessWidget {
   const UtilsPage({super.key});
@@ -29,7 +26,7 @@ class UtilsPage extends StatelessWidget {
 }
 
 class _UtilsPage extends StatelessWidget {
-  const _UtilsPage({super.key, required this.url, required this.child});
+  const _UtilsPage({required this.url, required this.child});
 
   final String url;
   final Widget child;

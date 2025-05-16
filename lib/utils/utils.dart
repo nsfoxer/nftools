@@ -135,6 +135,3 @@ String _removeComments(String sql) {
   return sql;
 }
 
-bool _isSeparator(String char) {
-  return ' ,();'.contains(char);
-}
