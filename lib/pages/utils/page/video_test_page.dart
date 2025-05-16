@@ -5,7 +5,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:nftools/pages/utils/controller/video_test_controller.dart';
 
 class VideoTestPage extends StatelessWidget {
-  VideoTestPage({super.key});
+  const VideoTestPage({super.key});
 
 
   @override

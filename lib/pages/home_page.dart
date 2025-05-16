@@ -1,5 +1,4 @@
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:nftools/utils/nf_widgets.dart';
 
 import '../common/style.dart';
 
