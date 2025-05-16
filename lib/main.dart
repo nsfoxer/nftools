@@ -111,7 +111,6 @@ class _MainAppState extends State<MainApp>
     // 等待后端服务退出
     await $base_api.closeRust();
     finalizeRust(); // Shut down the `tokio` Rust runtime.
-    debugPrint("flutter stop");
     await windowManager.setPreventClose(false);
     await windowManager.close();
   }
@@ -214,7 +213,6 @@ class MainPage extends StatelessWidget {
             body: value.body,
             onTap: () {
               if (MyRouterConfig.currentUrl != value.url) {
-                debugPrint("onTap 1: ${value.url}");
                 context.replace(value.url);
               }
             }));
@@ -226,7 +224,6 @@ class MainPage extends StatelessWidget {
           body: value.body,
           onTap: () {
             if (MyRouterConfig.currentUrl != value.url) {
-              debugPrint("onTap 2: ${value.url}");
               context.replace(value.url);
             }
           },

@@ -17,7 +17,6 @@ class AiController extends GetxController {
 
   @override
   void onClose() {
-    debugPrint("onClose");
     state.dispose();
   }
 

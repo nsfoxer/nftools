@@ -10,14 +10,12 @@ class DisplayController extends GetxController {
 
   @override
   void onReady() {
-    debugPrint("display =======================");
     _init();
     super.onReady();
   }
 
   @override
   void onClose() {
-    debugPrint("display close =======================");
   }
 
   // 初始化数据

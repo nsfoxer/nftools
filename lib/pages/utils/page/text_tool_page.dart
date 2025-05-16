@@ -78,7 +78,6 @@ class TextToolPage extends StatelessWidget {
                                   itemCount: logic.state.data.length,
                                   itemBuilder:
                                       (BuildContext context, int index) {
-                                    debugPrint('build index: $index');
                                     return _StatisticItem(
                                         data: logic.state.data[index],
                                         isTitle: index == 0);
