@@ -214,7 +214,8 @@ class MainPage extends StatelessWidget {
             body: value.body,
             onTap: () {
               if (MyRouterConfig.currentUrl != value.url) {
-                context.push(value.url);
+                debugPrint("onTap 1: ${value.url}");
+                context.replace(value.url);
               }
             }));
         continue;
@@ -225,7 +226,8 @@ class MainPage extends StatelessWidget {
           body: value.body,
           onTap: () {
             if (MyRouterConfig.currentUrl != value.url) {
-              context.push(value.url);
+              debugPrint("onTap 2: ${value.url}");
+              context.replace(value.url);
             }
           },
           items: _buildPaneItem(value.children!.values.toList(), context)));

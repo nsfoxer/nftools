@@ -22,7 +22,8 @@ class UtilsPage extends StatelessWidget {
                 runSpacing: NFLayout.v1,
                 children: [
                   _UtilsPage(url: "/utils/diffText", child: Text("文本对比")),
-                  _UtilsPage(url: "/utils/textTool", child: Text("文本工具")),
+                  _UtilsPage(url: "/utils/textTool", child: Text("文本处理")),
+                  _UtilsPage(url: "/utils/qrCode", child: Text("二维码转换")),
                 ])));
   }
 }
@@ -41,6 +42,6 @@ class _UtilsPage extends StatelessWidget {
           height: 80,
           child: Center(child: child),
         ),
-        onPressed: () => context.go(url));
+        onPressed: () => context.replace(url));
   }
 }
