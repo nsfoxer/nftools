@@ -7,12 +7,9 @@ import 'package:nftools/pages/display_page.dart';
 import 'package:nftools/pages/home_page.dart';
 import 'package:nftools/pages/settings/page/settings_page.dart';
 import 'package:nftools/pages/sync_file_page.dart';
-import 'package:nftools/pages/utils/controller/qr_controller.dart';
-import 'package:nftools/pages/utils/controller/video_test_controller.dart';
 import 'package:nftools/pages/utils/page/qr_page.dart';
 import 'package:nftools/pages/utils/page/text_diff_page.dart';
 import 'package:nftools/pages/utils/page/text_tool_page.dart';
-import 'package:nftools/pages/utils/page/video_test_page.dart';
 
 import '../controller/ai_controller.dart';
 import '../controller/display_controller.dart';
@@ -23,10 +20,15 @@ import '../controller/system_mode_controller.dart';
 import '../pages/ai_page.dart';
 import '../pages/settings/controller/about_controller.dart';
 import '../pages/settings/controller/auto_start_controller.dart';
+import '../pages/utils/controller/qr_controller.dart';
 import '../pages/utils/controller/text_diff_controller.dart';
 import '../pages/utils/controller/text_tool_controller.dart';
 import '../pages/utils/page/utils_page.dart';
 
+/// 路由定义
+///
+/// 使用 `Get.put(xxx)` 注册路由， 则该controller持久性存在
+/// 使用 `Get.lazyPut(xxx)` 注册路由， 则该controller只在第一次使用时才会创建，且切换页面时会调用dispose
 @Immutable()
 class RouterServiceData {
   const RouterServiceData();
@@ -49,19 +51,20 @@ class RouterServiceData {
     }),
 
     "/ai": MenuData("/ai", Icons.chat, "AI对话", const AiPage(), [ServiceNameConstant.ai], () {
+      // 内存永久性
       Get.put<AiController>(AiController(), permanent: true);
     }),
 
     "/utils": MenuData("/utils", FluentIcons.toolbox, "工具", const UtilsPage(), [], () {
     }, children: {
       "/utils/diffText": MenuData("/utils/diffText", FluentIcons.diff_side_by_side, "文本对比", const TextDiffPage(), [], () {
-        Get.put<TextDiffController>(TextDiffController(), permanent: true);
+        Get.lazyPut<TextDiffController>(()=>TextDiffController(), fenix: true);
       }),
-      "/utils/textTool": MenuData("/utils/textTool", FluentIcons.text_box, "文本工具", const TextToolPage(), [], () {
-        Get.put<TextToolController>(TextToolController(), permanent: true);
+      "/utils/textTool": MenuData("/utils/textTool", FluentIcons.text_box, "文本处理", const TextToolPage(), [], () {
+        Get.lazyPut<TextToolController>(() => TextToolController(), fenix: true);
       }),
-      "/utils/qr": MenuData("/utils/qr", FluentIcons.text_box, "二维码", const QrPage(), [], () {
-        Get.put<QrController>(QrController(), permanent: true);
+      "/utils/qrCode": MenuData("/utils/qrCode", FluentIcons.q_r_code, "二维码转换", const QrPage(), [], () {
+        Get.lazyPut<QrController>(() =>QrController(), fenix: true);
       }),
 
       // "/utils/videoTest": MenuData("/utils/videoTest", FluentIcons.text_box, "video测试", VideoTestPage(), [], () {

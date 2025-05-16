@@ -15,6 +15,7 @@ class SyncFileController extends GetxController {
 
   @override
   void onReady() {
+    debugPrint("syncfile init =======================");
     _init();
     super.onReady();
   }
