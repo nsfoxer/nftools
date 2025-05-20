@@ -60,11 +60,13 @@ class NFCard extends StatelessWidget {
 class NFLoadingWidgets extends StatelessWidget {
   final Widget child;
   final bool loading;
+  final String hint;
 
   const NFLoadingWidgets({
     super.key,
     required this.child,
     required this.loading,
+    this.hint = "加载中...",
   });
 
   @override
@@ -80,9 +82,9 @@ class NFLoadingWidgets extends StatelessWidget {
           imageFilter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
           child: child,
         ),
-        const Column(
+        Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [ProgressRing(), NFLayout.vlineh1, Text("加载中...")],
+          children: [const ProgressRing(), NFLayout.vlineh1, Text(hint)],
         ),
       ],
     ));

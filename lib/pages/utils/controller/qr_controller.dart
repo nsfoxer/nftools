@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -28,10 +27,13 @@ class QrController extends GetxController {
   void _init() async {
     // 初始化监听器
     state.codeLineEditingController.addListener(() {
-      if (!state.isData2Qr || _lastText == state.codeLineEditingController.text) {
+      if (!state.isData2Qr ||
+          _lastText == state.codeLineEditingController.text) {
         return;
       }
-      EasyDebounce.debounce(PageWidgetNameConstant.qrCodeText, const Duration(milliseconds: 1000), () {
+      EasyDebounce.debounce(
+          PageWidgetNameConstant.qrCodeText, const Duration(milliseconds: 1000),
+          () {
         _lastText = state.codeLineEditingController.text;
         _generateText(state.codeLineEditingController.text);
       });
@@ -96,15 +98,23 @@ class QrController extends GetxController {
   void _detectImage(Uint8List imageData) async {
     state.qRData = null;
     state.imageDataForDecode = imageData;
+    state.isLoading = true;
     update();
     final data = await $api.detectQrCode(imageData);
     state.qRData = data;
+    state.isLoading = false;
+    // 如果只有一个二维码，则直接解析
+    if (data.value.isEmpty) {
+      info("未识别到二维码");
+    } else if (data.value.length == 1) {
+      handleQr(data.value[0]);
+    }
     update();
   }
 
   // 切换类型 文本转图 图转文本
   void switchType() {
-    state.isData2Qr = ! state.isData2Qr;
+    state.isData2Qr = !state.isData2Qr;
     reset();
   }
 
@@ -115,7 +125,6 @@ class QrController extends GetxController {
 
     // 2. 尝试转换数据为字符串
     state.fileData = e.data;
-    debug("${e.data.length}");
     try {
       // 转换为字符串
       final text = String.fromCharCodes(e.data);
@@ -129,7 +138,7 @@ class QrController extends GetxController {
   void handleFile() async {
     // 文件转换为二维码
     if (state.isData2Qr) {
-      final path = await _getLocalFile(FileType.any);
+      final path = await _getLocalFile(FileType.any, null);
       if (path == null) {
         return;
       }
@@ -152,8 +161,10 @@ class QrController extends GetxController {
   }
 
   // 获取本地文件
-  Future<String?> _getLocalFile(FileType fileType) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(type: fileType);
+  Future<String?> _getLocalFile(
+      FileType fileType, List<String>? allowedExtensions) async {
+    FilePickerResult? result = await FilePicker.platform
+        .pickFiles(type: fileType, allowedExtensions: allowedExtensions);
     return result?.files.single.path;
   }
 
@@ -175,7 +186,8 @@ class QrController extends GetxController {
 
   // 读取图片
   void readImage() async {
-    final path = await _getLocalFile(FileType.any);
+    final path = await _getLocalFile(
+        FileType.custom, ["webp", "jpg", "jpeg", "png", "bmp", "ico"]);
     if (path == null) {
       return;
     }
