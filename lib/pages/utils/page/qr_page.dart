@@ -6,7 +6,6 @@ import 'package:nftools/pages/utils/controller/qr_controller.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 
 import '../../../src/bindings/bindings.dart';
-import '../../../utils/log.dart';
 
 class QrPage extends StatelessWidget {
   const QrPage({super.key});
@@ -49,45 +48,53 @@ class QrPage extends StatelessWidget {
                 children: [
                   Expanded(
                       flex: 1,
-                      child: Column(
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: NFCodeEditor(
-                                wordWrap: true,
-                                readOnly: !logic.state.isData2Qr,
-                                hint: "请输入要转换的文本",
-                                controller:
-                                    logic.state.codeLineEditingController),
-                          ),
-                          Expanded(
-                              flex: 1,
-                              child: NFCardContent(
-                                  child: GestureDetector(
-                                onTap: () => logic.handleFile(),
-                                child: MouseRegion(
-                                  cursor: SystemMouseCursors.click,
-                                  child: Center(child: () {
-                                    final path = logic.state.filePath != null
-                                        ? "\n(${logic.state.filePath})"
-                                        : "";
-                                    if (logic.state.isData2Qr) {
-                                      return Text("选取要转换的文件$path",
-                                          textAlign: TextAlign.center);
-                                    }
-                                    if (logic.state.fileData.isEmpty) {
-                                      return const Text("暂未解析出数据");
-                                    }
-                                    return Text("点击保存解析出的数据$path",
-                                        textAlign: TextAlign.center);
-                                  }()),
-                                ),
-                              )))
-                        ],
-                      )),
-                  Icon(logic.state.isData2Qr
-                      ? FluentIcons.double_chevron_right8
-                      : FluentIcons.double_chevron_left8),
+                      child: NFLoadingWidgets(
+                          loading: !logic.state.isData2Qr && logic.state.isLoading,
+                          hint: "识别中",
+                          child: Column(
+                            children: [
+                              Expanded(
+                                flex: 1,
+                                child: NFCodeEditor(
+                                    wordWrap: true,
+                                    readOnly: !logic.state.isData2Qr,
+                                    hint: logic.state.isData2Qr
+                                        ? "请输入要转换的文本"
+                                        : "暂未解析出文本",
+                                    controller:
+                                        logic.state.codeLineEditingController),
+                              ),
+                              Expanded(
+                                  flex: 1,
+                                  child: NFCardContent(
+                                      child: GestureDetector(
+                                    onTap: () => logic.handleFile(),
+                                    child: MouseRegion(
+                                      cursor: SystemMouseCursors.click,
+                                      child: Center(child: () {
+                                        final path =
+                                            logic.state.filePath != null
+                                                ? "\n(${logic.state.filePath})"
+                                                : "";
+                                        if (logic.state.isData2Qr) {
+                                          return Text("选取要转换的文件$path",
+                                              textAlign: TextAlign.center);
+                                        }
+                                        if (logic.state.fileData.isEmpty) {
+                                          return const Text("暂未解析出数据");
+                                        }
+                                        return Text("点击保存解析出的数据$path",
+                                            textAlign: TextAlign.center);
+                                      }()),
+                                    ),
+                                  )))
+                            ],
+                          ))),
+                  IconButton(
+                      icon: logic.state.isData2Qr
+                          ? const Icon(FluentIcons.double_chevron_right8)
+                          : const Icon(FluentIcons.double_chevron_left8),
+                      onPressed: () => logic.switchType()),
                   NFLayout.hlineh2,
                   Expanded(
                       flex: 1,
@@ -105,62 +112,61 @@ class QrPage extends StatelessWidget {
                                         )));
                         }
                         // 图片识别
-                        if (logic.state.imageDataForDecode.isEmpty) {
-                          return NFCardContent(
-                              child: Shortcuts(
-                                  shortcuts: {
-                                LogicalKeySet(LogicalKeyboardKey.control,
-                                        LogicalKeyboardKey.keyV):
-                                    _SubmitIntent(logic)
-                              },
-                                  child: Actions(
-                                      actions: {
-                                        _SubmitIntent:
-                                            CallbackAction<_SubmitIntent>(
-                                                onInvoke:
-                                                    (_SubmitIntent intent) {
-                                          intent.logic.decodePasteboardImage();
-                                          return null;
-                                        })
-                                      },
-                                      child: GestureDetector(
-                                          onTap: () async {
-                                            logic.readImage();
-                                          },
-                                          child: Focus(
-                                            focusNode: logic.state.imageFocus,
-                                            autofocus: true,
-                                            child: MouseRegion(
-                                              onEnter: (event) {
-                                                logic.state.imageFocus
-                                                    .requestFocus();
-                                              },
-                                              cursor: SystemMouseCursors.click,
-                                              child: const Center(
-                                                child: Text("选择图片或ctrl+v粘贴"),
-                                              ),
-                                            ),
-                                          )))));
+                        Widget display = const Text("选择图片或ctrl+v粘贴");
+                        if (logic.state.imageDataForDecode.isNotEmpty) {
+                          display = LayoutBuilder(builder:
+                              (BuildContext context,
+                                  BoxConstraints constraints) {
+                            List<Positioned> list = _buildQrCodeData(
+                                logic.state.qRData,
+                                constraints.maxWidth,
+                                constraints.maxHeight,
+                                context,
+                                logic);
+                            return Stack(children: [
+                              Container(
+                                  color: Colors.blue,
+                                  child: Image(
+                                      fit: BoxFit.contain,
+                                      image: MemoryImage(
+                                          logic.state.imageDataForDecode))),
+                              ...list,
+                            ]);
+                          });
                         }
-
-                        return LayoutBuilder(builder:
-                            (BuildContext context, BoxConstraints constraints) {
-                          List<Positioned> list = _buildQrCodeData(
-                              logic.state.qRData,
-                              constraints.maxWidth,
-                              constraints.maxHeight,
-                              context,
-                              logic);
-                          return Stack(children: [
-                            Container(
-                                color: Colors.blue,
-                                child: Image(
-                                    fit: BoxFit.contain,
-                                    image: MemoryImage(
-                                        logic.state.imageDataForDecode))),
-                            ...list,
-                          ]);
-                        });
+                        return NFCardContent(
+                            child: Shortcuts(
+                                shortcuts: {
+                              LogicalKeySet(LogicalKeyboardKey.control,
+                                  LogicalKeyboardKey.keyV): _SubmitIntent(logic)
+                            },
+                                child: Actions(
+                                    actions: {
+                                      _SubmitIntent:
+                                          CallbackAction<_SubmitIntent>(
+                                              onInvoke: (_SubmitIntent intent) {
+                                        intent.logic.decodePasteboardImage();
+                                        return null;
+                                      })
+                                    },
+                                    child: GestureDetector(
+                                        onTap: () async {
+                                          logic.readImage();
+                                        },
+                                        child: Focus(
+                                          focusNode: logic.state.imageFocus,
+                                          autofocus: true,
+                                          child: MouseRegion(
+                                            onEnter: (event) {
+                                              logic.state.imageFocus
+                                                  .requestFocus();
+                                            },
+                                            cursor: SystemMouseCursors.click,
+                                            child: Center(
+                                              child: display,
+                                            ),
+                                          ),
+                                        )))));
                       }()),
                 ],
               )),
@@ -173,18 +179,21 @@ class QrPage extends StatelessWidget {
       double maxHeight,
       BuildContext context,
       QrController logic) {
-    // 1. 为空时直接返回
-    if (qrCodeData == null) {
+    // 1. 为空或不超过1个时直接返回
+    if (qrCodeData == null || qrCodeData.value.length < 2) {
       return [];
     }
 
-    // 2. 计算缩放比例 选择较小的缩放比例
-    final wRatio = maxWidth / qrCodeData.imageWidth;
-    final hRatio = maxHeight / qrCodeData.imageHeight;
-    var ratio = wRatio < hRatio ? wRatio : hRatio;
-    debug("${qrCodeData.imageWidth} ${maxWidth}  ${qrCodeData.imageHeight} $maxHeight $wRatio $hRatio");
-    if (maxWidth > qrCodeData.imageWidth && maxHeight > qrCodeData.imageHeight) {
+    // 2. 有多个时，需要画出每个二维码位置
+    //  计算缩放比例
+    final double ratio;
+    if (maxWidth > qrCodeData.imageWidth &&
+        maxHeight > qrCodeData.imageHeight) {
       ratio = 1;
+    } else {
+      final wRatio = maxWidth / qrCodeData.imageWidth;
+      final hRatio = maxHeight / qrCodeData.imageHeight;
+      ratio = wRatio < hRatio ? wRatio : hRatio;
     }
 
     // 3. 构建
