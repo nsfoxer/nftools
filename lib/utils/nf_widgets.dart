@@ -244,3 +244,32 @@ class NFCodeEditor extends StatelessWidget {
     ]));
   }
 }
+
+// 高亮组件
+class NFHighlight extends StatelessWidget {
+  final Color? color;
+  final bool isLight;
+  final Widget child;
+
+  const NFHighlight({super.key, required this.isLight, this.color, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    List<BoxShadow>? boxShadow;
+    final color = this.color ?? FluentTheme.of(context).accentColor.normal;
+    if (isLight) {
+      boxShadow = [
+        BoxShadow(
+            color: color.withValues(alpha: 0.2),
+            spreadRadius: 0.1,
+            blurRadius: 10)
+      ];
+    }
+    return Container(
+      padding: const EdgeInsets.all(NFLayout.v3),
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(1), boxShadow: boxShadow),
+      child: child,
+    );
+  }
+}

@@ -5,9 +5,10 @@ use std::path::PathBuf;
 use std::time::UNIX_EPOCH;
 
 use crate::common::utils::{get_cache_dir, sha256};
-use crate::messages::utils::CompressLocalPicMsg;
+use crate::messages::utils::{CompressLocalPicMsg, QrCodeDataMsg, QrCodeDataMsgList};
 use crate::{async_func_notype, async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
+use image::DynamicImage;
 use qrcode_generator::QrCodeEcc;
 use tokio::fs;
 use tokio::fs::File;
@@ -31,6 +32,10 @@ impl ImmService for UtilsService {
             gen_text_qr_code,
             StringMsg,
             gen_file_qr_code,
+            StringMsg,
+            detect_qr_code,
+            DataMsg,
+            detect_file_qr_code,
             StringMsg
         );
         async_func_notype!(self, func, network_status);
@@ -140,6 +145,47 @@ impl UtilsService {
         let buf = handle.await??;
         Ok(DataMsg{value: buf})
     }
+
+    // 检测二维码(内存)
+    async fn detect_qr_code(&self, msg: DataMsg) -> Result<QrCodeDataMsgList> {
+        let img = image::load_from_memory(&msg.value)?;
+        let handle = tokio::task::spawn_blocking(move || -> Result<QrCodeDataMsgList> {
+            Self::detect_qr(img)
+        });
+        handle.await?
+    }
+
+    // 检测二维码(内存)
+    async fn detect_file_qr_code(&self, msg: StringMsg) -> Result<QrCodeDataMsgList> {
+        let handle = tokio::task::spawn_blocking(move || -> Result<QrCodeDataMsgList> {
+            let img = image::open(&msg.value)?;
+            Self::detect_qr(img)
+        });
+        handle.await?
+    }
+    
+    // 检测二维码
+    fn detect_qr(img: DynamicImage) -> Result<QrCodeDataMsgList> {
+        let img_gray = img.into_luma8();
+        let mut decoder = quircs::Quirc::default();
+        let codes = decoder.identify(img_gray.width() as usize, img_gray.height() as usize, &img_gray);
+
+        let mut result = Vec::new();
+        for code in codes {
+            let code = code?;
+            let data = code.decode()?;
+            result.push(QrCodeDataMsg {
+                tl: (code.corners[0].x, code.corners[0].y),
+                tr: (code.corners[1].x, code.corners[1].y),
+                br: (code.corners[2].x, code.corners[2].y),
+                bl: (code.corners[3].x, code.corners[3].y),
+                data: data.payload,
+            });
+        }
+        
+        Ok(QrCodeDataMsgList{value: result, image_width: img_gray.width(), image_height: img_gray.height()})
+    }
+    
 }
 
 #[allow(unused_imports)]
