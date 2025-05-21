@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:nftools/pages/utils/state/qr_encode_state.dart';
 import 'package:nftools/src/bindings/signals/signals.dart';
@@ -96,6 +95,7 @@ class QrController extends GetxController {
   }
 
   void _detectImage(Uint8List imageData) async {
+    state.codeLineEditingController.text = "";
     state.qRData = null;
     state.imageDataForDecode = imageData;
     state.isLoading = true;
