@@ -42,6 +42,7 @@ bool isDark(BuildContext context) {
   return View.of(context).platformDispatcher.platformBrightness.isDark;
 }
 
+// 主题主色
 Color primaryColor(BuildContext context) {
   return FluentTheme.of(context).accentColor.normal;
 }

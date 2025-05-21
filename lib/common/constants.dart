@@ -20,6 +20,4 @@ class PageWidgetNameConstant {
   static const String textDiffTextPrettyDiffText = "textDiffPagePrettyDiffText";
   static const String textToolPageStatistic = "textToolPageStatistic";
   static const String qrCodeText = "qrCodeText";
-
-
 }

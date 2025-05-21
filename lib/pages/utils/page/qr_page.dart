@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/pages/utils/controller/qr_controller.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 
 import '../../../src/bindings/bindings.dart';
@@ -49,7 +50,8 @@ class QrPage extends StatelessWidget {
                   Expanded(
                       flex: 1,
                       child: NFLoadingWidgets(
-                          loading: !logic.state.isData2Qr && logic.state.isLoading,
+                          loading:
+                              !logic.state.isData2Qr && logic.state.isLoading,
                           hint: "识别中",
                           child: Column(
                             children: [
@@ -101,14 +103,24 @@ class QrPage extends StatelessWidget {
                       child: () {
                         // 是展示图片结果
                         if (logic.state.isData2Qr) {
+                          final provider = MemoryImage(logic.state.imageData);
                           return NFLoadingWidgets(
                               loading: logic.state.isLoading,
                               child: Center(
                                   child: logic.state.imageData.isEmpty
                                       ? const Text("二维码")
                                       : Image(
-                                          image: MemoryImage(
-                                              logic.state.imageData),
+                                          image: provider,
+                                          loadingBuilder:
+                                              (ctx, child, loadingProgress) {
+                                            if (loadingProgress == null) {
+                                              // 图片加载完成后清除缓存
+                                              provider.evict().then((success) {
+                                                if (success) debug('图片已从缓存中移除');
+                                              });
+                                            }
+                                            return child;
+                                          },
                                         )));
                         }
                         // 图片识别
@@ -123,13 +135,23 @@ class QrPage extends StatelessWidget {
                                 constraints.maxHeight,
                                 context,
                                 logic);
+                            final provider = MemoryImage(logic.state.imageDataForDecode);
                             return Stack(children: [
                               Container(
                                   color: Colors.blue,
                                   child: Image(
                                       fit: BoxFit.contain,
-                                      image: MemoryImage(
-                                          logic.state.imageDataForDecode))),
+                                      image: provider,
+                                      loadingBuilder:
+                                          (ctx, child, loadingProgress) {
+                                        if (loadingProgress == null) {
+                                          // 图片加载完成后清除缓存
+                                         provider.evict().then((success) {
+                                            if (success) debug('图片已从缓存中移除');
+                                          });
+                                        }
+                                        return child;
+                                      })),
                               ...list,
                             ]);
                           });
