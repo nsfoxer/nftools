@@ -516,10 +516,10 @@ packages:
     dependency: "direct main"
     description:
       name: rinf
-      sha256: "082011e294e85470d2acfb027ec9b7e912539328eb50dab8f5df49514d1cbf02"
+      sha256: "22d6f61db3999fef1455cd37417045a4a3c9bebec4ab9a84fdeebea9f2fc57fa"
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "8.2.0"
+    version: "8.3.0"
   safe_local_storage:
     dependency: transitive
     description:
