@@ -1,5 +1,4 @@
 import 'package:easy_debounce/easy_debounce.dart';
-import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/src/bindings/bindings.dart';
 import 'package:nftools/state/display_state.dart';
