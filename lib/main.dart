@@ -14,7 +14,7 @@ import 'package:nftools/src/bindings/bindings.dart';
 import 'package:nftools/utils/utils.dart';
 import 'package:rinf/rinf.dart';
 import 'package:tray_manager/tray_manager.dart';
-import 'package:video_player_media_kit/video_player_media_kit.dart';
+//import 'package:video_player_media_kit/video_player_media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 
 Future<void> _init() async {
@@ -23,10 +23,10 @@ Future<void> _init() async {
   initMsg();
 
   // 2. 初始化video
-  VideoPlayerMediaKit.ensureInitialized(
-    windows: Platform.isWindows,
-    linux: Platform.isLinux,
-  );
+  //VideoPlayerMediaKit.ensureInitialized(
+  //  windows: Platform.isWindows,
+  //  linux: Platform.isLinux,
+  //);
 
   // 2，初始化 window manager
   WidgetsFlutterBinding.ensureInitialized();

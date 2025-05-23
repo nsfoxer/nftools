@@ -7,6 +7,7 @@ import 'package:nftools/pages/display_page.dart';
 import 'package:nftools/pages/home_page.dart';
 import 'package:nftools/pages/settings/page/settings_page.dart';
 import 'package:nftools/pages/sync_file_page.dart';
+import 'package:nftools/pages/test/page/test_page.dart';
 import 'package:nftools/pages/utils/page/qr_page.dart';
 import 'package:nftools/pages/utils/page/text_diff_page.dart';
 import 'package:nftools/pages/utils/page/text_tool_page.dart';
@@ -66,10 +67,13 @@ class RouterServiceData {
       "/utils/qrCode": MenuData("/utils/qrCode", FluentIcons.q_r_code, "二维码转换", const QrPage(), [], () {
         Get.lazyPut<QrController>(() =>QrController(), fenix: true);
       }),
-
       // "/utils/videoTest": MenuData("/utils/videoTest", FluentIcons.text_box, "video测试", VideoTestPage(), [], () {
       //   Get.put<VideoTestController>(VideoTestController(), permanent: true);
       // })
+    }),
+
+    "/test": MenuData("/test", FluentIcons.test_case, "测试", TestPage(), [], () {
+      // Get.lazyPut<TextDiffController>(()=>TextDiffController(), fenix: true);
     }),
 
     "/settings": MenuData("/settings", Icons.settings, "设置", const SettingsPage(), [ServiceNameConstant.about, ServiceNameConstant.utils, ServiceNameConstant.autoStart], () {
