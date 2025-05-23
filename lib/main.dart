@@ -167,16 +167,15 @@ class _MainAppState extends State<MainApp>
     final routerLogic = Get.find<RouterController>();
     var bgColor = m.resources.solidBackgroundFillColorTertiary;
     return GetMaterialApp.router(
-      themeMode: ThemeMode.dark,
+      themeMode: isDark(context) ? ThemeMode.dark : ThemeMode.light,
       theme: FlexThemeData.light(
           primary: primaryColor,
-          background: bgColor,
           surface: bgColor,
           fontFamily: fonts),
       darkTheme: FlexThemeData.dark(
           primary: primaryColor,
-          background: bgColor,
           surface: bgColor,
+          primaryLightRef: primaryColor,
           fontFamily: fonts),
       title: Constants.appName,
       debugShowCheckedModeBanner: false,

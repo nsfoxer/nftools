@@ -12,21 +12,21 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  rinf: ^8.3.0
+  rinf: ^8.3.1
   get: ^4.6.6
   fixnum: ^1.1.0
   cupertino_icons: ^1.0.8
   easy_debounce: ^2.0.3
-  flex_color_scheme: ^7.3.1
-  fluentui_system_icons: 1.1.260
-  fluent_ui: 4.11.3
-  go_router: ^14.3.0
+  flex_color_scheme: ^8.2.0
+  fluentui_system_icons: ^1.1.273
+  fluent_ui: ^4.12.0
+  go_router: ^15.1.2
   graphic: ^2.5.0
-  intl: ^0.19.0
+  intl: 0.20.2
   window_manager: ^0.4.3
   tray_manager: 0.5.0
   data_table_2: ^2.5.15
-  file_picker: ^8.1.4
+  file_picker: ^10.1.9
   flutter_markdown: ^0.7.4+3
   markdown_widget: ^2.3.2+6
   url_launcher: ^6.3.1
@@ -47,7 +47,7 @@ dependencies:
 #  media_kit_libs_video: ^1.0.6
 
 dev_dependencies:
-  flutter_lints: ^3.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true
