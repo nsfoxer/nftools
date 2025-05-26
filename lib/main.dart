@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
@@ -14,6 +15,7 @@ import 'package:nftools/src/bindings/bindings.dart';
 import 'package:nftools/utils/utils.dart';
 import 'package:rinf/rinf.dart';
 import 'package:tray_manager/tray_manager.dart';
+
 //import 'package:video_player_media_kit/video_player_media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -133,7 +135,7 @@ class _MainAppState extends State<MainApp>
   }
 
   @override
-  void didChangePlatformBrightness() async{
+  void didChangePlatformBrightness() async {
     if (Platform.isLinux) {
       await Future.delayed(const Duration(seconds: 5));
     }
@@ -148,7 +150,7 @@ class _MainAppState extends State<MainApp>
     final Map<String, Color> swatch = {
       "normal": primaryColor,
     };
-    var fonts = "oppo_sans";
+    final fonts = "oppo_sans";
 
     var m = FluentThemeData(
         brightness: Brightness.light,
@@ -165,13 +167,11 @@ class _MainAppState extends State<MainApp>
           accentColor: AccentColor.swatch(swatch));
     }
     final routerLogic = Get.find<RouterController>();
-    var bgColor = m.resources.solidBackgroundFillColorTertiary;
+    final bgColor = m.resources.solidBackgroundFillColorTertiary;
     return GetMaterialApp.router(
       themeMode: isDark(context) ? ThemeMode.dark : ThemeMode.light,
       theme: FlexThemeData.light(
-          primary: primaryColor,
-          surface: bgColor,
-          fontFamily: fonts),
+          primary: primaryColor, surface: bgColor, fontFamily: fonts),
       darkTheme: FlexThemeData.dark(
           primary: primaryColor,
           surface: bgColor,

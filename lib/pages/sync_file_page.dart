@@ -14,12 +14,11 @@ import 'package:nftools/utils/utils.dart';
 
 import '../src/bindings/bindings.dart';
 
-
 class SyncFilePage extends StatelessWidget {
   const SyncFilePage({super.key});
 
   void _showAccountSetting(BuildContext context) async {
-    var typography = FluentTheme.of(context).typography;
+    final typography = FluentTheme.of(context).typography;
     var color = primaryColor(context);
     await showDialog<String>(
         context: context,
@@ -134,8 +133,8 @@ class SyncFilePage extends StatelessWidget {
   }
 
   void _showAddSyncDir(BuildContext context) async {
-    var typography = FluentTheme.of(context).typography;
-    var color = primaryColor(context);
+    final typography = FluentTheme.of(context).typography;
+    final color = primaryColor(context);
     await showDialog(
         context: context,
         builder: (context) => GetBuilder<SyncFileController>(builder: (logic) {
@@ -210,7 +209,7 @@ class SyncFilePage extends StatelessWidget {
   }
 
   void _showSelectTimer(BuildContext context) async {
-    var typography = FluentTheme.of(context).typography;
+    final typography = FluentTheme.of(context).typography;
     await showDialog(
         barrierDismissible: true,
         context: context,
@@ -239,8 +238,8 @@ class SyncFilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var typography = FluentTheme.of(context).typography;
-    var table = GetBuilder<SyncFileController>(builder: (logic) {
+    final typography = FluentTheme.of(context).typography;
+    final table = GetBuilder<SyncFileController>(builder: (logic) {
       return NFLoadingWidgets(
         loading: logic.state.isLoading,
         child: PaginatedDataTable2(
