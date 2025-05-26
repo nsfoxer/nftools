@@ -7,7 +7,6 @@ import 'package:nftools/pages/display_page.dart';
 import 'package:nftools/pages/home_page.dart';
 import 'package:nftools/pages/settings/page/settings_page.dart';
 import 'package:nftools/pages/sync_file_page.dart';
-import 'package:nftools/pages/test/page/test_page.dart';
 import 'package:nftools/pages/utils/page/qr_page.dart';
 import 'package:nftools/pages/utils/page/text_diff_page.dart';
 import 'package:nftools/pages/utils/page/text_tool_page.dart';
@@ -72,9 +71,9 @@ class RouterServiceData {
       // })
     }),
 
-    "/test": MenuData("/test", FluentIcons.test_case, "测试", TestPage(), [], () {
+    // "/test": MenuData("/test", FluentIcons.test_case, "测试", TestPage(), [], () {
       // Get.lazyPut<TextDiffController>(()=>TextDiffController(), fenix: true);
-    }),
+    // }),
 
     "/settings": MenuData("/settings", Icons.settings, "设置", const SettingsPage(), [ServiceNameConstant.about, ServiceNameConstant.utils, ServiceNameConstant.autoStart], () {
       Get.lazyPut<AutoStartController>(() => AutoStartController(), fenix: true);
