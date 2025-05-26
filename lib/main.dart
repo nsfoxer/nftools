@@ -12,6 +12,7 @@ import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/router_controller.dart';
 import 'package:nftools/router/router.dart';
 import 'package:nftools/src/bindings/bindings.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/utils.dart';
 import 'package:rinf/rinf.dart';
 import 'package:tray_manager/tray_manager.dart';
@@ -168,13 +169,26 @@ class _MainAppState extends State<MainApp>
     }
     final routerLogic = Get.find<RouterController>();
     final bgColor = m.resources.solidBackgroundFillColorTertiary;
+
     return GetMaterialApp.router(
       themeMode: isDark(context) ? ThemeMode.dark : ThemeMode.light,
       theme: FlexThemeData.light(
-          primary: primaryColor, surface: bgColor, fontFamily: fonts),
+          colorScheme: $me.ColorScheme.fromSwatch(
+              brightness: Brightness.light,
+              accentColor: primaryColor,
+              backgroundColor: bgColor,
+              cardColor: bgColor),
+          primary: primaryColor,
+          surface: bgColor,
+          fontFamily: fonts),
       darkTheme: FlexThemeData.dark(
           primary: primaryColor,
           surface: bgColor,
+          colorScheme: $me.ColorScheme.fromSwatch(
+              brightness: Brightness.dark,
+              accentColor: primaryColor,
+              backgroundColor: bgColor,
+              cardColor: bgColor),
           primaryLightRef: primaryColor,
           fontFamily: fonts),
       title: Constants.appName,

@@ -20,6 +20,7 @@ import '../controller/system_mode_controller.dart';
 import '../pages/ai_page.dart';
 import '../pages/settings/controller/about_controller.dart';
 import '../pages/settings/controller/auto_start_controller.dart';
+import '../pages/test/page/test_page.dart';
 import '../pages/utils/controller/qr_controller.dart';
 import '../pages/utils/controller/text_diff_controller.dart';
 import '../pages/utils/controller/text_tool_controller.dart';
@@ -71,9 +72,9 @@ class RouterServiceData {
       // })
     }),
 
-    // "/test": MenuData("/test", FluentIcons.test_case, "测试", TestPage(), [], () {
+    "/test": MenuData("/test", FluentIcons.test_case, "测试", TestPage(), [], () {
       // Get.lazyPut<TextDiffController>(()=>TextDiffController(), fenix: true);
-    // }),
+    }),
 
     "/settings": MenuData("/settings", Icons.settings, "设置", const SettingsPage(), [ServiceNameConstant.about, ServiceNameConstant.utils, ServiceNameConstant.autoStart], () {
       Get.lazyPut<AutoStartController>(() => AutoStartController(), fenix: true);
