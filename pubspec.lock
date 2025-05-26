@@ -436,10 +436,10 @@ packages:
     dependency: "direct main"
     description:
       name: rinf
-      sha256: "348a112d13c06beb551de437b0569d764eaab323ec3a176034ad898cf863e03c"
+      sha256: "664ec8b029f97d7325b4fc26365d7aa19d05259771a25acf1c08f24c1ebca148"
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "8.3.2"
+    version: "8.4.0"
   screen_retriever:
     dependency: transitive
     description:
@@ -665,10 +665,10 @@ packages:
     dependency: transitive
     description:
       name: vector_graphics_compiler
-      sha256: "1b4b9e706a10294258727674a340ae0d6e64a7231980f9f9a3d12e4b42407aad"
+      sha256: "557a315b7d2a6dbb0aaaff84d857967ce6bdc96a63dc6ee2a57ce5a6ee5d3331"
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "1.1.16"
+    version: "1.1.17"
   vector_math:
     dependency: transitive
     description:

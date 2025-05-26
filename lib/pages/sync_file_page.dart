@@ -245,6 +245,7 @@ class SyncFilePage extends StatelessWidget {
         child: PaginatedDataTable2(
           controller: logic.state.pageController,
           hidePaginator: true,
+          dividerThickness: 0.5,
           empty: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -259,7 +260,7 @@ class SyncFilePage extends StatelessWidget {
           ),
           rowsPerPage: 7,
           minWidth: 800,
-          fixedLeftColumns: 1,
+          fixedLeftColumns: 0,
           lmRatio: 1.6,
           columns: [
             DataColumn2(label: Text("操作", style: typography.bodyStrong)),
@@ -383,7 +384,7 @@ class SourceData extends $me.DataTableSource {
 
   @override
   $me.DataRow? getRow(int index) {
-    var typography = FluentTheme.of(context).typography;
+    final typography = FluentTheme.of(context).typography;
     var file = fileList[index];
     return DataRow2(cells: [
       $me.DataCell(
