@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:easy_debounce/easy_debounce.dart';
+import 'package:easy_debounce/easy_throttle.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:nftools/pages/utils/state/qr_encode_state.dart';
@@ -22,6 +23,21 @@ class QrController extends GetxController {
   void onInit() {
     super.onInit();
     _init();
+  }
+
+  @override
+  void update([List<Object>? ids, bool condition = true]) {
+    // 默认参数
+    if (ids == null && condition) {
+      // 节流
+      EasyThrottle.throttle(
+          "QrController", const Duration(milliseconds: 100),
+          () {
+            super.update();
+          });
+    } else {
+      super.update(ids, condition);
+    }
   }
 
   void _init() async {
