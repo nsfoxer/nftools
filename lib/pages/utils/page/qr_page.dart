@@ -127,7 +127,7 @@ class QrPage extends StatelessWidget {
                         }
                         // 图片识别
                         Widget display = const Text("选择图片或ctrl+v粘贴");
-                        if (logic.state.imageDataForDecode.isNotEmpty) {
+                        if (logic.state.imageDataForDecodeShow != null) {
                           display = LayoutBuilder(builder:
                               (BuildContext context,
                                   BoxConstraints constraints) {
@@ -137,10 +137,7 @@ class QrPage extends StatelessWidget {
                                 constraints.maxHeight,
                                 context,
                                 logic);
-                            ImageProvider<Object> provider = MemoryImage(logic.state.imageDataForDecode);
-                            if (logic.state.imageDataForDecodeShow != null) {
-                              provider = FileImage(File(logic.state.imageDataForDecodeShow!.localFile));
-                            }
+                             final provider = FileImage(File(logic.state.imageDataForDecodeShow!));
                             return Stack(children: [
                               Container(
                                   color: Colors.blue,

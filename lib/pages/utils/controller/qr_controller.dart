@@ -102,7 +102,6 @@ class QrController extends GetxController {
     state.imageDataForDecodeShow = null;
     state.codeLineEditingController.text = "";
     state.qRData = null;
-    state.imageDataForDecode = imageData;
     state.isLoading = true;
     update();
     final QrCodeDataMsgList data;
@@ -192,7 +191,6 @@ class QrController extends GetxController {
     state.codeLineEditingController.text = "";
     _lastText = "";
     state.fileData = [];
-    state.imageDataForDecode = Uint8List(0);
     state.filePath = null;
     state.imageDataForDecodeShow = null;
     update();
@@ -214,10 +212,12 @@ class QrController extends GetxController {
   void _compressPic(String localPic) async{
     try {
       final result = await $api.compressLocalFile(localPic, 800, 600);
-      state.imageDataForDecodeShow = result;
+      state.imageDataForDecodeShow = result.localFile;
     } catch (e) {
       warn("压缩图片失败: $e");
+      state.imageDataForDecodeShow = localPic;
+    } finally {
+      update();
     }
-    update();
   }
 }
