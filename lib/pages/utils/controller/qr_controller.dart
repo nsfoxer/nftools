@@ -30,7 +30,7 @@ class QrController extends GetxController {
     // 默认参数
     if (ids == null && condition) {
       // 节流
-      EasyThrottle.throttle(
+      EasyDebounce.debounce(
           "QrController", const Duration(milliseconds: 100),
           () {
             super.update();
