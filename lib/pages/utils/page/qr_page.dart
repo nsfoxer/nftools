@@ -201,12 +201,12 @@ class QrPage extends StatelessWidget {
       double maxHeight,
       BuildContext context,
       QrController logic) {
-    // 1. 为空或不超过1个时直接返回
-    if (qrCodeData == null || qrCodeData.value.length < 2) {
+    // 1. 为空时直接返回
+    if (qrCodeData == null || qrCodeData.value.isEmpty) {
       return [];
     }
 
-    // 2. 有多个时，需要画出每个二维码位置
+    // 2.需要画出每个二维码位置
     //  计算缩放比例
     final double ratio;
     if (maxWidth > qrCodeData.imageWidth &&

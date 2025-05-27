@@ -12,7 +12,6 @@ import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/router_controller.dart';
 import 'package:nftools/router/router.dart';
 import 'package:nftools/src/bindings/bindings.dart';
-import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/utils.dart';
 import 'package:rinf/rinf.dart';
 import 'package:tray_manager/tray_manager.dart';
