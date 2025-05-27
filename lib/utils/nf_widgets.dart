@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
+import 'package:list_ext/list_ext.dart';
+import 'package:meta/meta.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/utils/utils.dart';
 import 'package:re_editor/re_editor.dart';
@@ -247,7 +249,7 @@ class NFCodeEditor extends StatelessWidget {
   }
 }
 
-// 高亮组件
+// 高亮组件 start
 class NFHighlight extends StatelessWidget {
   final Color? color;
   final bool isLight;
@@ -275,3 +277,95 @@ class NFHighlight extends StatelessWidget {
     );
   }
 }
+// 高亮组件 end
+
+// 表格组件  start
+class NFTable<T> extends StatefulWidget {
+  final double minWidth;
+  final List<T> data;
+  final List<NFHeader> header;
+  final NFRow Function(BuildContext context, int index, List<T> data)  itemBuilder;
+
+  const NFTable({super.key, required this.minWidth, required this.data, required this.header, required this.itemBuilder});
+
+  @override
+  State<NFTable<T>> createState() => _NFTableState<T>();
+}
+
+class _NFTableState<T> extends State<NFTable<T>> {
+
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor =
+        (DividerTheme.of(context).decoration as BoxDecoration?)?.color ??
+            Colors.teal;
+
+    final table = ListView.builder(
+        itemCount: widget.data.length + 1,
+        itemBuilder: (context, index) {
+          // 标题
+          if (index == 0) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: widget.header
+                  .map((e) =>
+                  Expanded(flex: e.flex, child: Center(child: e.child)))
+                  .toList(),
+            );
+          }
+          // 表数据
+          index = index - 1;
+          final row = widget.itemBuilder(context, index, widget.data);
+          assert(row.children.length == widget.header.length, "row长度与header长度不一致");
+          return ListTile.selectable(
+            title: Container(),
+            subtitle: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: row.children
+                  .mapIndex((e, i) => Expanded(flex: widget.header[i].flex, child: e))
+                  .toList(),
+            ),
+            shape: Border(bottom: BorderSide(width: 1, color: borderColor)),
+            margin: EdgeInsets.all(0),
+            onSelectionChange: (v) {},
+          );
+        });
+
+    return Scrollbar(
+        controller: _scrollController,
+        child: SingleChildScrollView(
+            controller: _scrollController,
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(width: 1000, child: table)));
+  }
+}
+
+@Immutable()
+class NFHeader {
+  final int flex;
+  final Widget child;
+
+  const NFHeader({required this.flex, required this.child});
+}
+
+@Immutable()
+class NFRow {
+  final List<Widget> children;
+
+  const NFRow({required this.children});
+}
+// 表格组件  end

@@ -245,7 +245,6 @@ class SyncFilePage extends StatelessWidget {
         child: PaginatedDataTable2(
           controller: logic.state.pageController,
           hidePaginator: true,
-          dividerThickness: 0.5,
           empty: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
