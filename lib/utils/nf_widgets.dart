@@ -292,13 +292,15 @@ class NFTable<T> extends StatefulWidget {
   final List<NFHeader> header;
   final Widget? empty;
   final NFDataTableSource source;
+  // 构造原型
+  final NFRow? prototypeItem;
 
   const NFTable(
       {super.key,
       required this.minWidth,
       required this.header,
       this.empty,
-      required this.source});
+      required this.source, this.prototypeItem});
 
   @override
   State<NFTable<T>> createState() => _NFTableState<T>();
@@ -333,6 +335,11 @@ class _NFTableState<T> extends State<NFTable<T>> {
 
     // 构建表格
     final table = ListView.builder(
+      prototypeItem: widget.prototypeItem != null ? ListTile(title:SizedBox(), subtitle: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: widget.prototypeItem!.children,
+      ),) : null,
         itemCount: widget.source.itemCount == null
             ? null
             : widget.source.itemCount! + 1,

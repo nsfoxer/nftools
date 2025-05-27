@@ -254,6 +254,7 @@ class SyncFilePage extends StatelessWidget {
             ],
           ),
           minWidth: 800,
+          prototypeItem: NFRow(children: [Text("Some", style: typography.bodyStrong,)]),
           header: [
             NFHeader(flex: 1, child: Text("操作", style: typography.bodyStrong)),
             NFHeader(
