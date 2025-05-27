@@ -20,10 +20,8 @@ class QrEncodeState {
   // true: 数据转二维码 false: 二维码转数据
   bool isData2Qr = true;
 
-  // 待识别的图片数据
-  Uint8List imageDataForDecode = Uint8List(0);
   // 展示的图片数据
-  CompressLocalPicRspMsg? imageDataForDecodeShow;
+  String? imageDataForDecodeShow;
 
   // 图片焦点
   FocusNode imageFocus = FocusNode();
