@@ -5,10 +5,10 @@ use std::path::PathBuf;
 use std::time::UNIX_EPOCH;
 
 use crate::common::utils::{get_cache_dir, sha256};
-use crate::messages::utils::{CompressLocalPicMsg, QrCodeDataMsg, QrCodeDataMsgList};
+use crate::messages::utils::{CompressLocalPicMsg, CompressLocalPicRspMsg, QrCodeDataMsg, QrCodeDataMsgList};
 use crate::{async_func_notype, async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
-use image::DynamicImage;
+use image::{DynamicImage, ImageReader};
 use qrcode_generator::QrCodeEcc;
 use tokio::fs;
 use tokio::fs::File;
@@ -54,7 +54,7 @@ impl UtilsService {
     /// 压缩图片
     /// local_img: 本地图片路径
     /// 返回： 压缩后的本地图片路径
-    async fn compress_local_img(&self, local_img: CompressLocalPicMsg) -> Result<StringMsg> {
+    async fn compress_local_img(&self, local_img: CompressLocalPicMsg) -> Result<CompressLocalPicRspMsg> {
         // 1. 计算img的cache file
         let metadata = fs::metadata(&local_img.local_file).await?;
         let time = metadata.modified()?;
@@ -79,13 +79,18 @@ impl UtilsService {
 
         // 2. 如果cache存在，则直接返回
         if cache_path.exists() {
-            return Ok(StringMsg {
-                value: cache_path.to_str().unwrap().to_string(),
+            // 读取图片宽高
+            let img = cache_path.to_str().unwrap().to_string();
+            let (width, height) = Self::get_img_size(&img)?;
+            return Ok(CompressLocalPicRspMsg {
+                local_file: img,
+                width,
+                height,
             });
         }
 
         // 3. 压缩
-        let handle = tokio::task::spawn_blocking(move || -> Result<PathBuf> {
+        let handle = tokio::task::spawn_blocking(move || -> Result<(PathBuf, u32, u32)> {
             let img = image::ImageReader::open(&local_img.local_file)?.with_guessed_format()?.decode()?;
             let cimg = img.resize(
                 local_img.width,
@@ -93,13 +98,24 @@ impl UtilsService {
                 image::imageops::FilterType::Lanczos3,
             );
             cimg.save(&cache_path)?;
-            Ok(cache_path)
+            Ok((cache_path, cimg.width(), cimg.height()))
         });
         let r = handle.await??;
 
-        Ok(StringMsg {
-            value: r.to_str().unwrap().to_string(),
+        Ok(CompressLocalPicRspMsg {
+            local_file: r.0.to_str().unwrap().to_string(),
+            width: r.1,
+            height: r.2,
         })
+    }
+    
+    // 获取图片尺寸
+    fn get_img_size(img: &str) -> Result<(u32, u32)> {
+        // 1. 打开图片
+        let img = ImageReader::open(img)?.with_guessed_format()?.decode()?;
+        
+        // 2. 获取图片尺寸
+        Ok((img.width(), img.height()))
     }
 
     /// 桌面通知
@@ -203,7 +219,7 @@ mod test {
         let instant = Instant::now();
         let r = service
             .compress_local_img(CompressLocalPicMsg {
-                local_file: r"C:\Users\12618\Pictures\wallpaper\wallhaven-p97klp_2560x1440.png"
+                local_file: "C:\\Users\\12618\\AppData\\Local\\Temp\\1748333211708.png"
                     .to_string(),
                 width: 300,
                 height: 200,
@@ -211,7 +227,7 @@ mod test {
             .await
             .unwrap();
         let r2 = instant.elapsed().as_millis();
-        eprintln!("{:?} {r2}", r.value);
+        eprintln!("{:?} {r2}", r.local_file);
     }
 
 }

@@ -5,6 +5,8 @@ import 'package:nftools/src/bindings/bindings.dart';
 import 'package:nftools/state/display_mode_state.dart';
 import 'package:nftools/api/display_api.dart' as $api;
 
+import '../utils/log.dart';
+
 class DisplayModeController extends GetxController {
   final state = DisplayModeState();
 
@@ -31,7 +33,8 @@ class DisplayModeController extends GetxController {
 
   Future<String?> _tryCompressImage(String imageFile) async{
     try {
-      return await compressLocalFile(imageFile, 300, 200);
+      final result = await compressLocalFile(imageFile, 300, 200);
+      return result.localFile;
     } catch(ignore) {
       return imageFile;
     }
