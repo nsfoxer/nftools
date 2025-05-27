@@ -215,14 +215,9 @@ class QrPage extends StatelessWidget {
     // 2.需要画出每个二维码位置
     //  计算缩放比例
     final double ratio;
-    if (maxWidth > qrCodeData.imageWidth &&
-        maxHeight > qrCodeData.imageHeight) {
-      ratio = 1;
-    } else {
-      final wRatio = maxWidth / qrCodeData.imageWidth;
-      final hRatio = maxHeight / qrCodeData.imageHeight;
-      ratio = wRatio < hRatio ? wRatio : hRatio;
-    }
+    final wRatio = maxWidth / qrCodeData.imageWidth;
+    final hRatio = maxHeight / qrCodeData.imageHeight;
+    ratio = wRatio < hRatio ? wRatio : hRatio;
 
     // 3. 构建
     final color =
