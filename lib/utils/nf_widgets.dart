@@ -171,7 +171,12 @@ class NFCodeEditor extends StatelessWidget {
   final bool wordWrap;
   final String? hint;
 
-  NFCodeEditor({super.key, required this.controller, this.readOnly, this.wordWrap = false, this.hint});
+  NFCodeEditor(
+      {super.key,
+      required this.controller,
+      this.readOnly,
+      this.wordWrap = false,
+      this.hint});
 
   @override
   Widget build(BuildContext context) {
@@ -223,27 +228,28 @@ class NFCodeEditor extends StatelessWidget {
             child: Obx(() => SizedBox(
                 height: 30,
                 width: 30,
-                child: isDisplay.isFalse ? Container(): Tooltip(
-                  message: "美化",
-                  child: IconButton(
-                      icon: Icon(FluentIcons.auto_enhance_on,
-                          size: typography.caption?.fontSize),
-                      onPressed: () {
-                        bool success = true;
-                        try {
-                          final data = formatJson(controller.text);
-                          controller.text = data;
-                        } catch (ignored) {
-                          // ignored
-                          success = false;
-                        }
-                        if (!success) {
-                          final data = formatSql(controller.text);
-                          controller.text = data;
-                        }
-
-                      }),
-                ))),
+                child: isDisplay.isFalse
+                    ? Container()
+                    : Tooltip(
+                        message: "美化",
+                        child: IconButton(
+                            icon: Icon(FluentIcons.auto_enhance_on,
+                                size: typography.caption?.fontSize),
+                            onPressed: () {
+                              bool success = true;
+                              try {
+                                final data = formatJson(controller.text);
+                                controller.text = data;
+                              } catch (ignored) {
+                                // ignored
+                                success = false;
+                              }
+                              if (!success) {
+                                final data = formatSql(controller.text);
+                                controller.text = data;
+                              }
+                            }),
+                      ))),
           )),
     ]));
   }
@@ -255,7 +261,8 @@ class NFHighlight extends StatelessWidget {
   final bool isLight;
   final Widget child;
 
-  const NFHighlight({super.key, required this.isLight, this.color, required this.child});
+  const NFHighlight(
+      {super.key, required this.isLight, this.color, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -282,18 +289,22 @@ class NFHighlight extends StatelessWidget {
 // 表格组件  start
 class NFTable<T> extends StatefulWidget {
   final double minWidth;
-  final List<T> data;
   final List<NFHeader> header;
-  final NFRow Function(BuildContext context, int index, List<T> data)  itemBuilder;
+  final Widget? empty;
+  final NFDataTableSource source;
 
-  const NFTable({super.key, required this.minWidth, required this.data, required this.header, required this.itemBuilder});
+  const NFTable(
+      {super.key,
+      required this.minWidth,
+      required this.header,
+      this.empty,
+      required this.source});
 
   @override
   State<NFTable<T>> createState() => _NFTableState<T>();
 }
 
 class _NFTableState<T> extends State<NFTable<T>> {
-
   late final ScrollController _scrollController;
 
   @override
@@ -310,33 +321,51 @@ class _NFTableState<T> extends State<NFTable<T>> {
 
   @override
   Widget build(BuildContext context) {
+    // 空数据
+    if (widget.source.isEmpty) {
+      return Center(child: widget.empty ?? Container());
+    }
+
+    // 边框颜色 === divider的颜色
     final borderColor =
         (DividerTheme.of(context).decoration as BoxDecoration?)?.color ??
             Colors.teal;
 
+    // 构建表格
     final table = ListView.builder(
-        itemCount: widget.data.length + 1,
+        itemCount: widget.source.itemCount == null
+            ? null
+            : widget.source.itemCount! + 1,
         itemBuilder: (context, index) {
           // 标题
           if (index == 0) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: widget.header
-                  .map((e) =>
-                  Expanded(flex: e.flex, child: Center(child: e.child)))
-                  .toList(),
-            );
+            return ListTile(
+                title: SizedBox(),
+                subtitle: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: widget.header
+                      .map((e) =>
+                          Expanded(flex: e.flex, child: Center(child: e.child)))
+                      .toList(),
+                ));
           }
           // 表数据
           index = index - 1;
-          final row = widget.itemBuilder(context, index, widget.data);
-          assert(row.children.length == widget.header.length, "row长度与header长度不一致");
+          final row = widget.source.getRow(context, index);
+          assert(
+              row.children.length == widget.header.length, "row长度与header长度不一致");
           return ListTile.selectable(
-            title: Container(),
+            title: SizedBox(),
             subtitle: Row(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: row.children
-                  .mapIndex((e, i) => Expanded(flex: widget.header[i].flex, child: e))
+                  .mapIndex((e, i) => Expanded(
+                      flex: widget.header[i].flex,
+                      child: Center(
+                        child: Center(child: e),
+                      )))
                   .toList(),
             ),
             shape: Border(bottom: BorderSide(width: 1, color: borderColor)),
@@ -345,13 +374,32 @@ class _NFTableState<T> extends State<NFTable<T>> {
           );
         });
 
-    return Scrollbar(
-        controller: _scrollController,
-        child: SingleChildScrollView(
+    // 添加水平滚动
+    return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+      if (constraints.maxWidth < widget.minWidth) {
+        return Scrollbar(
             controller: _scrollController,
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(width: 1000, child: table)));
+            child: SingleChildScrollView(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(width: widget.minWidth, child: table)));
+      }
+      return table;
+    });
   }
+}
+
+// 表格数据源
+abstract class NFDataTableSource {
+  // item长度
+  int? get itemCount;
+
+  // 是否为空
+  bool get isEmpty;
+
+  // 获取一行
+  NFRow getRow(BuildContext context, int index);
 }
 
 @Immutable()

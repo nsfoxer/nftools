@@ -31,7 +31,6 @@ class SyncFileState {
   // add file local
   TextEditingController addSyncDirController = TextEditingController();
 
-  PaginatorController pageController = PaginatorController();
 
   int timer = 0;
 
@@ -41,7 +40,6 @@ class SyncFileState {
     passwdController.dispose();
     tagController.dispose();
     addSyncDirController.dispose();
-    pageController.dispose();
   }
 
 }
