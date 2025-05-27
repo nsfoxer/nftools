@@ -1,9 +1,7 @@
 import 'dart:io';
 
-import 'package:data_table_2/data_table_2.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/common/style.dart';
@@ -242,9 +240,7 @@ class SyncFilePage extends StatelessWidget {
     final table = GetBuilder<SyncFileController>(builder: (logic) {
       return NFLoadingWidgets(
         loading: logic.state.isLoading,
-        child: PaginatedDataTable2(
-          controller: logic.state.pageController,
-          hidePaginator: true,
+        child: NFTable(
           empty: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -257,26 +253,17 @@ class SyncFilePage extends StatelessWidget {
               Text("无数据", style: typography.body),
             ],
           ),
-          rowsPerPage: 7,
           minWidth: 800,
-          fixedLeftColumns: 0,
-          lmRatio: 1.6,
-          columns: [
-            DataColumn2(label: Text("操作", style: typography.bodyStrong)),
-            DataColumn2(
-                label: Text("本地", style: typography.bodyStrong),
-                size: ColumnSize.L),
-            DataColumn2(
-                label: Text("标签", style: typography.bodyStrong),
-                size: ColumnSize.M),
-            DataColumn2(
-                label: Text("状态", style: typography.bodyStrong),
-                size: ColumnSize.S),
-            DataColumn2(
-                label: Text("新增 删除 变更", style: typography.bodyStrong),
-                size: ColumnSize.M),
+          header: [
+            NFHeader(flex: 1, child: Text("操作", style: typography.bodyStrong)),
+            NFHeader(
+                flex: 1, child: Text("本地路径", style: typography.bodyStrong)),
+            NFHeader(flex: 1, child: Text("标签", style: typography.bodyStrong)),
+            NFHeader(flex: 1, child: Text("状态", style: typography.bodyStrong)),
+            NFHeader(
+                flex: 1, child: Text("新增 删除 变更", style: typography.bodyStrong))
           ],
-          source: SourceData(logic.state.fileList, logic, context),
+          source: _DataSource(logic.state.fileList, logic),
         ),
       );
     });
@@ -323,39 +310,115 @@ class SyncFilePage extends StatelessWidget {
         }),
       ),
       content: table,
-      bottomBar: GetBuilder<SyncFileController>(builder: (logic) {
-        return Padding(
-            padding: const EdgeInsets.fromLTRB(0, 0, 15, 3),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  "第${logic.currentPage()}页 - 共${logic.pageCount()}页",
-                  style: typography.caption,
-                ),
-                NFLayout.hlineh3,
-                Tooltip(
-                    message: "上一页",
-                    child: IconButton(
-                        icon: const Icon(FluentIcons.chevron_left_med),
-                        onPressed: logic.currentPage() == 1
-                            ? null
-                            : () {
-                                logic.prevPage();
-                              })),
-                NFLayout.hlineh3,
-                Tooltip(
-                    message: "下一页",
-                    child: IconButton(
-                        icon: const Icon(FluentIcons.chevron_right_med),
-                        onPressed: logic.currentPage() == logic.pageCount()
-                            ? null
-                            : () {
-                                logic.nextPage();
-                              })),
-              ],
-            ));
-      }),
+    );
+  }
+}
+
+// 数据表格源
+class _DataSource extends NFDataTableSource {
+  final List<FileMsg> fileList;
+  final SyncFileController logic;
+
+  _DataSource(this.fileList, this.logic);
+
+  @override
+  NFRow getRow(BuildContext context, int index) {
+    final typography = FluentTheme.of(context).typography;
+    final file = fileList[index];
+    List<Widget> row = [];
+    row.add(_buildOperate(context, file));
+    row.add(Tooltip(
+        message: file.localDir,
+        child: Text(
+          file.localDir,
+          overflow: TextOverflow.ellipsis,
+          style: typography.caption,
+          maxLines: 2,
+        )));
+    row.add(Tooltip(
+        message: file.tag,
+        child: Text(
+          file.tag,
+          overflow: TextOverflow.ellipsis,
+          style: typography.caption,
+          maxLines: 2,
+        )));
+    row.add(() {
+      var desc = "";
+      switch (file.status) {
+        case FileStatusEnumMsg.download:
+          desc = "待下载";
+          break;
+        case FileStatusEnumMsg.synced:
+          desc = "已同步";
+          break;
+        case FileStatusEnumMsg.upload:
+          desc = "待上传";
+          break;
+      }
+      return Text(
+        desc,
+        style: typography.caption,
+      );
+    }());
+    row.add(Text(
+      "${file.add}        ${file.del}        ${file.modify}",
+      style: typography.caption,
+    ));
+    return NFRow(children: row);
+  }
+
+  @override
+  bool get isEmpty => fileList.isEmpty;
+
+  @override
+  int? get itemCount => fileList.length;
+
+  Widget _buildOperate(BuildContext context, FileMsg file) {
+    // 远端无记录，直接删除
+    if (file.remoteDir.isEmpty) {
+      return Tooltip(
+          message: "无远端记录，删除同步记录。\n(此操作不会对实际文件产生影响)",
+          child: FilledButton(
+              child: const Text("删除"),
+              onPressed: () {
+                logic.deleteLocalDir(file.localDir);
+              }));
+    }
+    // 本地无记录，添加本地文件
+    if (file.localDir.isEmpty) {
+      return Tooltip(
+          message: "无本地同步文件夹，新增本地文件夹以建立同步关系。\n(本地文件夹要求为空文件夹)",
+          child: Button(
+              child: const Text("添加同步"),
+              onPressed: () async {
+                var dirPath = await _addLocalDir();
+                if (dirPath != null) {
+                  logic.addLocalDir(dirPath, file.remoteDir);
+                }
+              }));
+    }
+    // 一般操作
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Button(
+            onPressed: file.status == FileStatusEnumMsg.synced
+                ? null
+                : () async {
+                    await logic.syncDir(file.remoteDir);
+                  },
+            child: const Text("同步")),
+        NFLayout.hlineh3,
+        FilledButton(
+            child: const Text("删除"),
+            onPressed: () async {
+              if (await confirmDialog(
+                  context, "确认删除", "此操作不会删除本地文件，但会导致远端服务器上文件全部删除!!！")) {
+                logic.deleteRemoteDir(file.remoteDir);
+              }
+            }),
+      ],
     );
   }
 }
@@ -372,115 +435,4 @@ Future<String?> _addLocalDir() async {
     directoryPath += "/";
   }
   return directoryPath;
-}
-
-class SourceData extends $me.DataTableSource {
-  SourceData(this.fileList, this.logic, this.context);
-
-  final List<FileMsg> fileList;
-  final SyncFileController logic;
-  final BuildContext context;
-
-  @override
-  $me.DataRow? getRow(int index) {
-    final typography = FluentTheme.of(context).typography;
-    var file = fileList[index];
-    return DataRow2(cells: [
-      $me.DataCell(
-        () {
-          // 远端无记录，直接删除
-          if (file.remoteDir.isEmpty) {
-            return Tooltip(
-                message: "无远端记录，删除同步记录。\n(此操作不会对实际文件产生影响)",
-                child: FilledButton(
-                    child: const Text("删除"),
-                    onPressed: () {
-                      logic.deleteLocalDir(file.localDir);
-                    }));
-          }
-          // 本地无记录，添加本地文件
-          if (file.localDir.isEmpty) {
-            return Tooltip(
-                message: "无本地同步文件夹，新增本地文件夹以建立同步关系。\n(本地文件夹要求为空文件夹)",
-                child: Button(
-                    child: const Text("添加同步"),
-                    onPressed: () async {
-                      var dirPath = await _addLocalDir();
-                      if (dirPath != null) {
-                        logic.addLocalDir(dirPath, file.remoteDir);
-                      }
-                    }));
-          }
-          // 一般操作
-          return Row(
-            children: [
-              Button(
-                  onPressed: file.status == FileStatusEnumMsg.synced
-                      ? null
-                      : () async {
-                          await logic.syncDir(file.remoteDir);
-                        },
-                  child: const Text("同步")),
-              NFLayout.hlineh3,
-              FilledButton(
-                  child: const Text("删除"),
-                  onPressed: () async {
-                    if (await confirmDialog(
-                        context, "确认删除", "此操作不会删除本地文件，但会导致远端服务器上文件全部删除!!！")) {
-                      logic.deleteRemoteDir(file.remoteDir);
-                    }
-                  }),
-            ],
-          );
-        }(),
-      ),
-      $me.DataCell(Tooltip(
-          message: file.localDir,
-          child: Text(
-            file.localDir,
-            overflow: TextOverflow.ellipsis,
-            style: typography.caption,
-            maxLines: 2,
-          ))),
-      $me.DataCell(Tooltip(
-          message: file.tag,
-          child: Text(
-            file.tag,
-            overflow: TextOverflow.ellipsis,
-            style: typography.caption,
-            maxLines: 2,
-          ))),
-      $me.DataCell(() {
-        var desc = "";
-        switch (file.status) {
-          case FileStatusEnumMsg.download:
-            desc = "待下载";
-            break;
-          case FileStatusEnumMsg.synced:
-            desc = "已同步";
-            break;
-          case FileStatusEnumMsg.upload:
-            desc = "待上传";
-            break;
-        }
-        return Text(
-          desc,
-          style: typography.caption,
-        );
-      }()),
-      $me.DataCell(Text(
-        "${file.add}        ${file.del}        ${file.modify}",
-        style: typography.caption,
-      )),
-    ]);
-  }
-
-  @override
-  bool get isRowCountApproximate => false;
-
-  @override
-  int get rowCount => fileList.length;
-
-  @override
-  int get selectedRowCount => 0;
 }

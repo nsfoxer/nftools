@@ -154,39 +154,6 @@ class SyncFileController extends GetxController {
   }
 
   // === page ===
-  // 下一页
-  void nextPage() {
-    state.pageController.goToNextPage();
-    update();
-  }
-
-  // 上一页
-  void prevPage() {
-    state.pageController.goToPreviousPage();
-    update();
-  }
-
-  // 获取总页数
-  int pageCount() {
-    final rowCount = state.fileList.length;
-    if (rowCount == 0) {
-      return 1;
-    }
-    int page = rowCount ~/ state.pageController.rowsPerPage;
-    if (rowCount % state.pageController.rowsPerPage != 0) {
-      page += 1;
-    }
-    return page;
-  }
-
-  // 获取当前页码
-  int currentPage() {
-    final rowCount = state.fileList.length;
-    if (rowCount == 0 || state.pageController.currentRowIndex == 0) {
-      return 1;
-    }
-    return (rowCount ~/ state.pageController.currentRowIndex) + 1;
-  }
 
   // 设置定时器
   void setTimer(int? v) {
