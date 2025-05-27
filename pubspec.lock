@@ -17,6 +17,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.13.0"
+  boolean_selector:
+    dependency: transitive
+    description:
+      name: boolean_selector
+      sha256: "8aab1771e1243a5063b8b0ff68042d67334e3feab9e95b9490f9a6ebf73b42ea"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "2.1.2"
   characters:
     dependency: transitive
     description:
@@ -288,6 +296,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "5.1.1"
+  list_ext:
+    dependency: "direct main"
+    description:
+      name: list_ext
+      sha256: a38869a6911830f39ace7534972d01e573e17917955b26215e54d5797eb8d5cd
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.6"
   logger:
     dependency: "direct main"
     description:
@@ -320,6 +336,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.3.2+8"
+  matcher:
+    dependency: transitive
+    description:
+      name: matcher
+      sha256: dc58c723c3c24bf8d3e2d3ad3f2f9d7bd9cf43ec6feaa64181775e60190153f2
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.12.17"
   material_color_utilities:
     dependency: transitive
     description:
@@ -408,6 +432,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.1.0"
+  quiver:
+    dependency: transitive
+    description:
+      name: quiver
+      sha256: ea0b925899e64ecdfbf9c7becb60d5b50e706ade44a85b2363be2a22d88117d2
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "3.2.2"
   re_editor:
     dependency: "direct main"
     description:
@@ -525,6 +557,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "7.0.0"
+  stack_trace:
+    dependency: transitive
+    description:
+      name: stack_trace
+      sha256: "8b27215b45d22309b5cddda1aa2b19bdfec9df0e765f2de506401c071d38d1b1"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.12.1"
   stream_channel:
     dependency: transitive
     description:
@@ -549,6 +589,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.2.2"
+  test_api:
+    dependency: transitive
+    description:
+      name: test_api
+      sha256: "522f00f556e73044315fa4585ec3270f1808a4b186c936e612cab0b565ff1e00"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.7.6"
   tray_manager:
     dependency: "direct main"
     description:

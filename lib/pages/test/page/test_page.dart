@@ -5,11 +5,11 @@ class TestPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldPage.withPadding(
-      header: PageHeader(
-        title: Text('测试页面'),
-      ),
-      content: Container(),
-    );
+    return Container();
   }
+
+
+
 }
+
+
