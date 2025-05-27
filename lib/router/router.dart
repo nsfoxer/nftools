@@ -72,9 +72,9 @@ class RouterServiceData {
       // })
     }),
 
-    "/test": MenuData("/test", FluentIcons.test_case, "测试", TestPage(), [], () {
+    // "/test": MenuData("/test", FluentIcons.test_case, "测试", TestPage(), [], () {
       // Get.lazyPut<TextDiffController>(()=>TextDiffController(), fenix: true);
-    }),
+    // }),
 
     "/settings": MenuData("/settings", Icons.settings, "设置", const SettingsPage(), [ServiceNameConstant.about, ServiceNameConstant.utils, ServiceNameConstant.autoStart], () {
       Get.lazyPut<AutoStartController>(() => AutoStartController(), fenix: true);
