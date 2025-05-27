@@ -15,10 +15,10 @@ const String _detectQrCode = "detect_qr_code";
 const String _detectFileQrCode = "detect_file_qr_code";
 
 // 压缩本地图片
-Future<String> compressLocalFile(String localFile, int width, int height) async {
+Future<CompressLocalPicRspMsg> compressLocalFile(String localFile, int width, int height) async {
   var data = await sendRequest<CompressLocalPicMsg>
     (_service, _compressLocalPic, CompressLocalPicMsg(localFile: localFile, width: width, height: height));
-  return StringMsg.bincodeDeserialize(data).value;
+  return CompressLocalPicRspMsg.bincodeDeserialize(data);
 }
 
 // 桌面通知

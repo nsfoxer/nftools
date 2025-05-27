@@ -1,4 +1,5 @@
 
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:fluent_ui/fluent_ui.dart';
@@ -21,6 +22,8 @@ class QrEncodeState {
 
   // 待识别的图片数据
   Uint8List imageDataForDecode = Uint8List(0);
+  // 展示的图片数据
+  CompressLocalPicRspMsg? imageDataForDecodeShow;
 
   // 图片焦点
   FocusNode imageFocus = FocusNode();

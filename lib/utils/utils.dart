@@ -1,8 +1,11 @@
 // 时间操作
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 
 Future<int> measureDelay(Future<void> Function() func) async {
   var watch = Stopwatch()..start();
@@ -136,3 +139,11 @@ String _removeComments(String sql) {
   return sql;
 }
 
+// 保存数据到临时文件
+Future<File> saveBytesToTempFile(List<int> bytes, {String? fileExtension}) async {
+    final directory = await getTemporaryDirectory();
+    final path = join(directory.path, '${DateTime.now().millisecondsSinceEpoch}.${fileExtension??'tmp'}');
+    // 时间戳生成文件名
+    final file = File(path);
+    return await file.writeAsBytes(bytes);
+}

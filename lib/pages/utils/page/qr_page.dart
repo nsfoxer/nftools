@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -135,12 +137,16 @@ class QrPage extends StatelessWidget {
                                 constraints.maxHeight,
                                 context,
                                 logic);
-                            final provider = MemoryImage(logic.state.imageDataForDecode);
+                            ImageProvider<Object> provider = MemoryImage(logic.state.imageDataForDecode);
+                            if (logic.state.imageDataForDecodeShow != null) {
+                              provider = FileImage(File(logic.state.imageDataForDecodeShow!.localFile));
+                            }
                             return Stack(children: [
                               Container(
                                   color: Colors.blue,
                                   child: Image(
                                       fit: BoxFit.contain,
+                                      alignment: Alignment.center,
                                       image: provider,
                                       loadingBuilder:
                                           (ctx, child, loadingProgress) {

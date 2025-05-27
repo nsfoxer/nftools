@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:nftools/pages/utils/state/qr_encode_state.dart';
 import 'package:nftools/src/bindings/signals/signals.dart';
+import 'package:nftools/utils/utils.dart';
 import 'package:pasteboard/pasteboard.dart';
 
 import '../../../common/constants.dart';
@@ -91,16 +92,28 @@ class QrController extends GetxController {
       warn("未获取到剪贴板中图像");
       return;
     }
+    // 压缩图片
+    final file = await saveBytesToTempFile(image, fileExtension: "png");
+    _compressPic(file.path);
     _detectImage(image);
   }
 
   void _detectImage(Uint8List imageData) async {
+    state.imageDataForDecodeShow = null;
     state.codeLineEditingController.text = "";
     state.qRData = null;
     state.imageDataForDecode = imageData;
     state.isLoading = true;
     update();
-    final data = await $api.detectQrCode(imageData);
+    final QrCodeDataMsgList data;
+    try {
+      data = await $api.detectQrCode(imageData);
+    } catch (e) {
+      state.isLoading = false;
+      warn("识别二维码失败: $e");
+      update();
+      return;
+    }
     state.qRData = data;
     state.isLoading = false;
     // 如果只有一个二维码，则直接解析
@@ -181,10 +194,11 @@ class QrController extends GetxController {
     state.fileData = [];
     state.imageDataForDecode = Uint8List(0);
     state.filePath = null;
+    state.imageDataForDecodeShow = null;
     update();
   }
 
-  // 读取图片
+  // 探测本地图片的二维码
   void readImage() async {
     final path = await _getLocalFile(
         FileType.custom, ["webp", "jpg", "jpeg", "png", "bmp", "ico"]);
@@ -193,6 +207,17 @@ class QrController extends GetxController {
     }
     final file = File(path);
     final bytes = await file.readAsBytes();
+    _compressPic(path);
     _detectImage(bytes);
+  }
+
+  void _compressPic(String localPic) async{
+    try {
+      final result = await $api.compressLocalFile(localPic, 800, 600);
+      state.imageDataForDecodeShow = result;
+    } catch (e) {
+      warn("压缩图片失败: $e");
+    }
+    update();
   }
 }
