@@ -9,6 +9,7 @@ use crate::messages::utils::{CompressLocalPicMsg, CompressLocalPicRspMsg, QrCode
 use crate::{async_func_notype, async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
 use image::{DynamicImage, ImageReader};
+use log::error;
 use qrcode_generator::QrCodeEcc;
 use tokio::fs;
 use tokio::fs::File;
@@ -183,23 +184,25 @@ impl UtilsService {
     // 检测二维码
     fn detect_qr(img: DynamicImage) -> Result<QrCodeDataMsgList> {
         let img_gray = img.into_luma8();
-        let mut decoder = quircs::Quirc::default();
-        let codes = decoder.identify(img_gray.width() as usize, img_gray.height() as usize, &img_gray);
-
+        let mut img = rqrr::PreparedImage::prepare(img_gray);
+        let grids = img.detect_grids();
         let mut result = Vec::new();
-        for code in codes {
-            let code = code?;
-            let data = code.decode()?;
+        for grid in grids {
+            let mut buf = Vec::<u8>::new();
+            let bounds = grid.bounds;
+            if grid.decode_to(&mut buf).is_err() {
+                continue;
+            }
             result.push(QrCodeDataMsg {
-                tl: (code.corners[0].x, code.corners[0].y),
-                tr: (code.corners[1].x, code.corners[1].y),
-                br: (code.corners[2].x, code.corners[2].y),
-                bl: (code.corners[3].x, code.corners[3].y),
-                data: data.payload,
+                tl: (bounds[0].x, bounds[0].y),
+                tr: (bounds[1].x, bounds[1].y),
+                br: (bounds[2].x, bounds[2].y),
+                bl: (bounds[3].x, bounds[3].y),
+                data: buf,
             });
         }
         
-        Ok(QrCodeDataMsgList{value: result, image_width: img_gray.width(), image_height: img_gray.height()})
+        Ok(QrCodeDataMsgList{value: result, image_width: img.width() as u32, image_height: img.height() as u32})
     }
     
 }
