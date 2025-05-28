@@ -1,8 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:easy_debounce/easy_debounce.dart';
-import 'package:easy_debounce/easy_throttle.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:nftools/pages/utils/state/qr_encode_state.dart';
@@ -31,7 +31,7 @@ class QrController extends GetxController {
     if (ids == null && condition) {
       // 节流
       EasyDebounce.debounce(
-          "QrController", const Duration(milliseconds: 100),
+          "QrController", const Duration(milliseconds: 50),
           () {
             super.update();
           });
@@ -155,7 +155,7 @@ class QrController extends GetxController {
     state.fileData = e.data;
     try {
       // 转换为字符串
-      final text = String.fromCharCodes(e.data);
+      final text = utf8.decode(e.data);
       state.codeLineEditingController.text = text;
     } catch (ignored) {
       // 转换为文件
