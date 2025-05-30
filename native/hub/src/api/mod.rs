@@ -1,6 +1,6 @@
 pub mod api;
 
-use rinf::{DartSignal, DartSignalBinary, RustSignalBinary};
+use rinf::{DartSignalBinary, RustSignalBinary};
 use serde::{Deserialize, Serialize};
 
 // 基础请求

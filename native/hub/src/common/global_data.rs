@@ -1,7 +1,7 @@
 use crate::common::utils::get_config_dir;
 use anyhow::Result;
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::path::PathBuf;
 use tokio_rusqlite::{params, Connection};
 

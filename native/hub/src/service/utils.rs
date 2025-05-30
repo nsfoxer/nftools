@@ -9,7 +9,6 @@ use crate::messages::utils::{CompressLocalPicMsg, CompressLocalPicRspMsg, QrCode
 use crate::{async_func_notype, async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
 use image::{DynamicImage, ImageReader};
-use log::error;
 use qrcode_generator::QrCodeEcc;
 use tokio::fs;
 use tokio::fs::File;

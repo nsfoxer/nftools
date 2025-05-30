@@ -311,6 +311,25 @@ impl BaiduAiService {
         if info.trim().is_empty() {
             return Ok(None);
         }
+        let mut result = String::new();
+        let infos = info.split("\n");
+        for info in infos {
+            if info.trim().is_empty() {
+                continue;
+            }
+            let data = Self::_parser_rsp(info, model)?;
+            if data.is_none() {
+                continue;
+            }
+            result.push_str(data.unwrap().content.as_str());
+        }
+       Ok(Some(BaiduAiRspMsg { content: result }))
+    }
+
+    fn _parser_rsp(
+        info: &str,
+        model: AiModelEnum,
+    ) -> Result<Option<BaiduAiRspMsg>> {
         if !info.starts_with("data:") {
             if model == AiModelEnum::Spark {
                 let error = serde_json::from_str::<SparkAiErrorRsp>(&info)?;
@@ -330,7 +349,6 @@ impl BaiduAiService {
             if info.trim() == "data: [DONE]" || info.trim().is_empty() {
                 return Ok(None);
             }
-            debug_print!("{}", info);
             let rsp: SparkAiRsp = serde_json::from_str(
                 info.trim()
                     .trim_start_matches("data:")
@@ -499,10 +517,18 @@ impl BaiduAiService {
 }
 
 mod test {
+    use log::error;
+    use crate::service::ai::SparkAiRsp;
+
     #[test]
     fn string() {
-        let s = "本是同根生，相煎何太急";
-        let s = s.chars().take(38).collect::<String>();
-        eprintln!("{s}");
+        let info = r#"data: {"code":0,"message":"Success","sid":"cha000b6739@dx1971f518f069a4b532","id":"cha000b6739@dx1971f518f069a4b532","created":1748577130,"choices":[{"delta":{"role":"assistant","content":"科学原理，他们成功"},"index":0}]}"#;
+        
+        let rsp: SparkAiRsp = serde_json::from_str(
+            info.trim()
+                .trim_start_matches("data:")
+                .trim_end_matches("data: [DONE]"),
+        ).unwrap();
+        error!("{}", rsp.message);
     }
 }
