@@ -4,18 +4,20 @@ import 'package:go_router/go_router.dart';
 import 'package:nftools/state/router_state.dart';
 
 import '../api/base.dart' as $api;
+import '../api/display_api.dart';
 import '../main.dart';
 import '../router/router.dart';
 
 class RouterController extends GetxController {
   final routerState = RouterState();
+  Color primaryColor = Colors.blue;
 
   // 已初始化过的服务
   final Set<String> _alreadyInitService = {};
 
   @override
-  void onInit() async {
-    super.onInit();
+  void onReady() async {
+    super.onReady();
     await _init();
   }
 
@@ -43,6 +45,8 @@ class RouterController extends GetxController {
       }
     }
     routerState.router = _generateRouter();
+
+    updatePrimaryColor();
   }
 
   // 生成路由
@@ -115,6 +119,12 @@ class RouterController extends GetxController {
   int calculateIndex(BuildContext context) {
     final local = GoRouterState.of(context).uri.toString();
     return routerState.urlData.indexOf(local);
+  }
+
+  /// 更新主题颜色
+  void updatePrimaryColor() async {
+    primaryColor = await getSystemColor();
+    update();
   }
 
 }
