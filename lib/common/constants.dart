@@ -1,6 +1,7 @@
 class Constants {
   const Constants();
   static const String appName = "nftools";
+  static const String appNameTest = "nftools (test)";
 }
 
 class ServiceNameConstant {

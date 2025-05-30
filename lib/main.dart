@@ -2,11 +2,11 @@ import 'dart:io';
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as $me;
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
-import 'package:nftools/api/display_api.dart';
 import 'package:nftools/api/base.dart' as $base_api;
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/router_controller.dart';
@@ -63,7 +63,6 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp>
     with WindowListener, TrayListener, WidgetsBindingObserver {
-  Color primaryColor = Colors.blue;
 
   @override
   void initState() {
@@ -78,9 +77,6 @@ class _MainAppState extends State<MainApp>
 
   void _init() async {
     await windowManager.setPreventClose(true);
-    // 等待后端服务启动
-    await Future.delayed(const Duration(milliseconds: 500));
-    primaryColor = await getSystemColor();
     setState(() {});
   }
 
@@ -139,16 +135,21 @@ class _MainAppState extends State<MainApp>
     if (Platform.isLinux) {
       await Future.delayed(const Duration(seconds: 5));
     }
-    primaryColor = await getSystemColor();
-    setState(() {});
-
+    Get.find<RouterController>().updatePrimaryColor();
     super.didChangePlatformBrightness();
   }
 
   @override
   Widget build(BuildContext context) {
+    return GetBuilder<RouterController>(
+       builder:  (routerLogic) => _build(context, routerLogic)
+    );
+  }
+
+  Widget _build(BuildContext context, RouterController routerLogic) {
+    final primaryColor = routerLogic.primaryColor;
     final Map<String, Color> swatch = {
-      "normal": primaryColor,
+      "normal":  primaryColor,
     };
     final fonts = "oppo_sans";
 
@@ -166,7 +167,6 @@ class _MainAppState extends State<MainApp>
               const TooltipThemeData(waitDuration: Duration(milliseconds: 300)),
           accentColor: AccentColor.swatch(swatch));
     }
-    final routerLogic = Get.find<RouterController>();
     final bgColor = m.resources.solidBackgroundFillColorTertiary;
 
     return GetMaterialApp.router(
@@ -364,7 +364,7 @@ Future<void> initSystemTray() async {
   // We first init the systray menu
   await trayManager.setIcon(path);
   if (Platform.isWindows) {
-    await trayManager.setToolTip(Constants.appName);
+    await trayManager.setToolTip(kReleaseMode? Constants.appName: Constants.appNameTest);
   }
   Menu menu = Menu(
     items: [
