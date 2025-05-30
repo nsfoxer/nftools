@@ -5,9 +5,10 @@ import 'package:nftools/src/bindings/bindings.dart';
 import 'package:nftools/state/display_mode_state.dart';
 import 'package:nftools/api/display_api.dart' as $api;
 
+import '../utils/extension.dart';
 import '../utils/log.dart';
 
-class DisplayModeController extends GetxController {
+class DisplayModeController extends GetxController with GetxUpdateMixin {
   final state = DisplayModeState();
 
   @override

@@ -1,9 +1,13 @@
 // 时间操作
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:easy_debounce/easy_debounce.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:go_router/go_router.dart';
+import 'package:meta/meta.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -146,4 +150,76 @@ Future<File> saveBytesToTempFile(List<int> bytes, {String? fileExtension}) async
     // 时间戳生成文件名
     final file = File(path);
     return await file.writeAsBytes(bytes);
+}
+
+/// 增强版节流器
+class NFDebounce {
+  static final Map<String, TimerInfo> _operations = {};
+
+  /// 节流增强版: 添加最大计时器, 超过最大时间后, 即使仍被节流,仍旧触发执行
+  /// [tag] 标签
+  /// [duration] 节流时间
+  /// [maxDuration] 最大时间, 超过后, 即使仍被节流, 也会触发执行
+  /// [onExecute] 执行函数
+  static void debounce(
+      String tag,
+      Duration duration,
+      Duration maxDuration,
+      VoidCallback onExecute,
+      ) {
+    // 参数验证
+    if (duration <= Duration.zero) {
+      warn("duration[$duration] 必须大于零, 直接执行");
+      onExecute();
+      return;
+    }
+
+    if (maxDuration <= duration) {
+      warn("maxDuration[$maxDuration] 必须大于 duration[$duration], 使用 duration");
+      maxDuration = duration * 2; // 默认设为 duration 的两倍
+    }
+
+    // 移除之前的定时器
+    final previous = _operations[tag];
+    previous?.debounceTimer.cancel();
+
+    // 创建新的计时器
+    final Timer debounceTimer = Timer(duration, () {
+      // 防抖定时器触发时，取消最大定时器
+      _operations[tag]?.maxTimer.cancel();
+      _operations.remove(tag);
+      debug("$tag 防抖时间已到, 执行操作");
+      onExecute();
+    });
+
+    // 创建新的最大定时器
+    final Timer maxTimer = previous?.maxTimer ??
+      Timer(maxDuration, () {
+        // 最大定时器触发时，取消防抖定时器
+        _operations[tag]?.debounceTimer.cancel();
+        _operations.remove(tag);
+        debug("$tag 最大时间已到, 执行操作");
+        onExecute();
+    });
+
+    // 存储新的定时器
+    _operations[tag] = TimerInfo(debounceTimer, maxTimer);
+  }
+
+  // 清理所有定时器
+  static void cancelAll() {
+    _operations.forEach((_, info) {
+      info.debounceTimer.cancel();
+      info.maxTimer.cancel();
+    });
+    _operations.clear();
+  }
+}
+
+@Immutable()
+class TimerInfo {
+  final Timer debounceTimer;
+  final Timer maxTimer;
+
+  TimerInfo(this.debounceTimer, this.maxTimer);
 }

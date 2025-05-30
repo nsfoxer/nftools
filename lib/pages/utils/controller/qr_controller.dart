@@ -12,9 +12,10 @@ import 'package:pasteboard/pasteboard.dart';
 
 import '../../../common/constants.dart';
 import '../../../api/utils.dart' as $api;
+import '../../../utils/extension.dart';
 import '../../../utils/log.dart';
 
-class QrController extends GetxController {
+class QrController extends GetxController with GetxUpdateMixin {
   QrEncodeState state = QrEncodeState();
 
   String _lastText = "";
@@ -23,21 +24,6 @@ class QrController extends GetxController {
   void onInit() {
     super.onInit();
     _init();
-  }
-
-  @override
-  void update([List<Object>? ids, bool condition = true]) {
-    // 默认参数
-    if (ids == null && condition) {
-      // 节流
-      EasyDebounce.debounce(
-          "QrController", const Duration(milliseconds: 50),
-          () {
-            super.update();
-          });
-    } else {
-      super.update(ids, condition);
-    }
   }
 
   void _init() async {

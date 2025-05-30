@@ -6,8 +6,9 @@ import 'package:nftools/state/sync_file_state.dart';
 import 'package:nftools/utils/log.dart';
 
 import '../src/bindings/bindings.dart';
+import '../utils/extension.dart';
 
-class SyncFileController extends GetxController {
+class SyncFileController extends GetxController with GetxUpdateMixin {
   final state = SyncFileState();
 
   Timer? _timer;

@@ -5,8 +5,9 @@ import 'package:nftools/api/ai.dart' as $api;
 
 import '../src/bindings/bindings.dart';
 import '../state/ai_state.dart';
+import '../utils/extension.dart';
 
-class AiController extends GetxController {
+class AiController extends GetxController with GetxUpdateMixin {
   final state = AiState();
 
   @override
