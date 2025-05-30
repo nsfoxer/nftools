@@ -1,7 +1,9 @@
 import 'package:get/get.dart';
 import 'package:nftools/state/main_page_state.dart';
 
-class MainPageController extends GetxController {
+import '../utils/extension.dart';
+
+class MainPageController extends GetxController with GetxUpdateMixin {
   final MainPageState pageState = MainPageState();
 
   void selectPage(int v) {

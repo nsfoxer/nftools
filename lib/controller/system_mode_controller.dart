@@ -2,7 +2,9 @@ import 'package:get/get.dart';
 import 'package:nftools/api/display_api.dart' as $api;
 import 'package:nftools/state/system_mode_state.dart';
 
-class SystemModeController extends GetxController {
+import '../utils/extension.dart';
+
+class SystemModeController extends GetxController with GetxUpdateMixin {
   final state = SystemModeState();
 
   @override

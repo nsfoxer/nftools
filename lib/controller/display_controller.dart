@@ -4,7 +4,9 @@ import 'package:nftools/src/bindings/bindings.dart';
 import 'package:nftools/state/display_state.dart';
 import 'package:nftools/api/display_api.dart' as $api;
 
-class DisplayController extends GetxController {
+import '../utils/extension.dart';
+
+class DisplayController extends GetxController with GetxUpdateMixin {
   final state = DisplayState();
 
   @override

@@ -84,7 +84,6 @@ Stream<Uint8List> sendRequestStream<T extends ApiSerializable>(
 
 // 处理流式响应
 void _handleStream(RustSignalPack<BaseResponse> data) {
-  debug("handleStream: ${data.message.id}");
   final rsp = data.message;
   var controller = _reqStreamMap[rsp.id];
   if (controller == null) {
