@@ -20,11 +20,14 @@ struct VersionInfo {
     package_server: String,
     // 当前版本的更新记录
     record: String,
+    // 最新版
+    #[serde(default)]
+    latest: bool,
 }
 
 /// 关于 服务
 pub struct AboutService {
-    version_info: Option<VersionInfo>,
+    version_info: Option<Vec<VersionInfo>>,
 }
 
 const NAME: &str = "AboutService";
@@ -50,16 +53,20 @@ impl AboutService {
     /// 检查新版本
     async fn check_updates(&mut self) -> Result<StringMsg> {
         self.get_version_info(true).await?;
-        let version = self.version_info.as_ref().unwrap().version.clone();
-        Ok(StringMsg { value: version })
+        let versions = self.version_info.as_ref().unwrap();
+        let version = versions.iter().rfind(|x|x.latest).ok_or(anyhow::anyhow!("无法获取最新版本"))?;
+        Ok(StringMsg { value: version.version.clone() })
     }
 
     /// 获取更新信息
     async fn record(&mut self) -> Result<StringMsg> {
         self.get_version_info(false).await?;
-        let version_info = self.version_info.as_ref().unwrap();
+        let current_version = self.version()?.value; 
+        let versions = self.version_info.as_ref().unwrap();
         
-        Ok(StringMsg { value: version_info.record.clone() })
+        let version = versions.iter().rfind(|x|x.version == current_version).ok_or(anyhow::anyhow!("无法获取当前版本信息"))?;
+        
+        Ok(StringMsg { value: version.record.clone() })
     }
 
     /// 下载和安装最新版
@@ -70,9 +77,11 @@ impl AboutService {
         }
 
         // 下载
+        let versions = self.version_info.as_ref().unwrap();
+        let version = versions.iter().rfind(|x|x.latest).ok_or(anyhow::anyhow!("无法获取最新版本"))?;
         let mut path = get_cache_dir()?;
         path.push("installed-nftools.exe");
-        let rsp = reqwest::get(&self.version_info.as_ref().unwrap().package_server).await?;
+        let rsp = reqwest::get(&version.package_server).await?;
         if !rsp.status().is_success() {
             return Err(anyhow::anyhow!(
                 "下载文件失败。响应码:{}",

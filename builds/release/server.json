@@ -1,5 +1,14 @@
-{
+[
+  {
   "package_server": "https://gitee.com/muwuren/nftools/releases/download/v0.1.4/nftools-install.exe",
   "version": "v0.1.4",
-  "record": "- 主页添加描述\n- 新增文本处理工具\n- 升级rinf版本，弃用protoc，转为bincode"
-}
+  "record": "- 主页添加描述\n- 新增文本处理工具\n- 升级rinf版本，弃用protoc，转为bincode",
+  "latest": false
+  },
+  {
+    "package_server": "https://gitee.com/muwuren/nftools/releases/download/v0.1.5/nftools-install.exe",
+    "version": "v0.1.5",
+    "record": "- 新增二维码识别及扫描\n- 优化页面刷新频率\n- 修复可能存在无法正常打开问题\n- 升级flutter版本至 v3.29.0",
+    "latest": true
+  }
+]
