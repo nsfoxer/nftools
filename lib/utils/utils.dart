@@ -188,7 +188,6 @@ class NFDebounce {
       // 防抖定时器触发时，取消最大定时器
       _operations[tag]?.maxTimer.cancel();
       _operations.remove(tag);
-      debug("$tag 防抖时间已到, 执行操作");
       onExecute();
     });
 
@@ -198,7 +197,6 @@ class NFDebounce {
         // 最大定时器触发时，取消防抖定时器
         _operations[tag]?.debounceTimer.cancel();
         _operations.remove(tag);
-        debug("$tag 最大时间已到, 执行操作");
         onExecute();
     });
 

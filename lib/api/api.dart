@@ -58,7 +58,6 @@ Future<Uint8List> sendRequest<T extends ApiSerializable >(
     func: func,
     isStream: false,
   ).sendSignalToRust(request?.bincodeSerialize() ?? Uint8List(0));
-  debug("sendRequest: id: $id service: $service func: $func");
   // 返回
   return completer.future;
 }
