@@ -210,6 +210,10 @@ impl UtilsService {
 mod test {
     use std::time::SystemTime;
     use futures_util::{StreamExt, TryStreamExt};
+    use image::open;
+    use opencv::core::{MatTrait, Vector};
+    use opencv::imgcodecs;
+    use opencv::prelude::{Mat, MatTraitConst};
     use serde::Deserialize;
     use crate::messages::utils::CompressLocalPicMsg;
     use crate::service::utils::UtilsService;
@@ -230,6 +234,82 @@ mod test {
             .unwrap();
         let r2 = instant.elapsed().as_millis();
         eprintln!("{:?} {r2}", r.local_file);
+    }
+
+    #[test]
+    fn img() {
+        // 1. 读取图片 img数据为BGR通道
+        let img = opencv::imgcodecs::imread(r#"C:\Users\12618\Desktop\1682405980883837.png"#, imgcodecs::IMREAD_COLOR).unwrap();
+        if img.empty() {
+            panic!("Could not read the image");
+        }
+
+        // 2. 使用grab_cut进行分割
+        // 创建掩码
+        let mut mask: Mat = Mat::new_rows_cols_with_default(img.rows(), img.cols(), opencv::core::CV_8UC1, opencv::core::Scalar::from(0)).unwrap();
+        // 定义矩形区域
+        let rect = opencv::core::Rect::new(267, 136, 514, 825);
+        let mut bgd_model = Mat::new_rows_cols_with_default(1, 65, opencv::core::CV_64FC1, opencv::core::Scalar::from(0.0)).unwrap();
+        let mut fgd_model = Mat::new_rows_cols_with_default(1, 65, opencv::core::CV_64FC1, opencv::core::Scalar::from(0.0)).unwrap();
+
+        // 执行GrabCut分割 结果存在mask中 0:背景 1:前景 2:可能的前景 3:可能的背景
+        opencv::imgproc::grab_cut(
+            &img,
+            &mut mask,
+            rect,
+            &mut bgd_model,
+            &mut fgd_model,
+            5,
+            opencv::imgproc::GrabCutModes::GC_INIT_WITH_RECT.into(),
+        ).unwrap();
+
+        // 3. 将mask中0和2的像素值设置为0(透明)，1和3的像素值设置为255(不透明)
+        let mut background_mask = Mat::default();
+        // 比较mask中的值是否等于0.0，如果等于0.0，则将对应位置的值设置为255，否则设置为0.0
+        opencv::core::compare(
+            &mask,
+            &opencv::core::Scalar::all(0.0),
+            &mut background_mask,
+            opencv::core::CmpTypes::CMP_EQ.into(),
+        ).unwrap();
+        // 比较mask中的值是否等于2.0，如果等于2.0，则将对应位置的值设置为255，否则设置为0.0
+        let mut temp_mask = Mat::default();
+        opencv::core::compare(
+            &mask,
+            &opencv::core::Scalar::all(2.0),
+            &mut temp_mask,
+            opencv::core::CmpTypes::CMP_EQ.into(),
+        ).unwrap();
+        // 背景掩码
+        let mut background = Mat::default();
+        // 合并 0.0和2.0的像素值为 背景
+        opencv::core::bitwise_or(&background_mask, &temp_mask, &mut background, &Mat::default()).unwrap();
+        let mut foreground = Mat::default();
+        // 对背景取反获得前景
+        opencv::core::bitwise_not(&background, &mut foreground, &Mat::default()).unwrap();
+        // 将mask的背景为0(透明)，前景设置为255(不透明)
+        mask.set_to(&opencv::core::Scalar::all(0.0), &background).unwrap();
+        mask.set_to(&opencv::core::Scalar::all(255.0), &foreground).unwrap();
+
+        // 4. 将mask和img合并 得到新的图片
+        let mut result = Mat::new_rows_cols_with_default(img.rows(), img.cols(), opencv::core::CV_8UC4 , opencv::core::Scalar::from(0)).unwrap();
+        let mut reverse_mask = Mat::default();
+
+        // 对mask取反
+        opencv::core::bitwise_not(&mask, &mut reverse_mask, &Mat::default()).unwrap();
+        for i in 0..3 {
+            // 分别提取出BGR
+            let mut tmp = Mat::default();
+            opencv::core::extract_channel(&img, &mut tmp, i).unwrap();
+            // 再分别将BGR和mask合并，非掩码部分设置为0
+            tmp.set_to(&opencv::core::Scalar::all(0.0), &reverse_mask).unwrap();
+            // 分别将BGR数据复制到result的BGR通道
+            opencv::core::mix_channels(&tmp, &mut result, &[0, i]).unwrap();
+        }
+        // 设置透明通道
+        opencv::core::mix_channels(&mask, &mut result, &[0, 3]).unwrap();
+
+        imgcodecs::imwrite(r"C:\Users\12618\Desktop\tmp.png", &result, &opencv::core::Vector::new()).unwrap();
     }
 
 }
