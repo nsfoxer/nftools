@@ -6,35 +6,13 @@ import 'dart:ui' as ui;
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
+import 'package:nftools/utils/utils.dart';
 
 class GlslPage extends StatefulWidget {
   const GlslPage({super.key});
 
   @override
   State<GlslPage> createState() => _GlslPageState();
-}
-
-Future<ui.Image> loadImageFromProvider(ImageProvider provider) async {
-  final ImageStream stream = provider.resolve(ImageConfiguration.empty);
-
-  // 使用Completer等待图像加载完成
-  final Completer<ui.Image> completer = Completer<ui.Image>();
-  final ImageStreamListener listener = ImageStreamListener(
-        (ImageInfo imageInfo, bool synchronousCall) {
-      completer.complete(imageInfo.image);
-    },
-    onError: (dynamic exception, StackTrace? stackTrace) {
-      completer.completeError(exception, stackTrace);
-    },
-  );
-
-  stream.addListener(listener);
-
-  try {
-    return await completer.future;
-  } finally {
-    stream.removeListener(listener);
-  }
 }
 
 class _GlslPageState extends State<GlslPage> {
@@ -59,7 +37,7 @@ class _GlslPageState extends State<GlslPage> {
   }
   
   void _init() async {
-    _image = await loadImageFromProvider(FileImage(File(r"C:\Users\12618\Pictures\wallpaper\wallhaven-vq5rol_2560x1440.png")));
+    _image = (await getImageInfoFromProvider(FileImage(File(r"C:\Users\12618\Pictures\wallpaper\wallhaven-vq5rol_2560x1440.png")))).image;
     setState(() {});
   }
 
