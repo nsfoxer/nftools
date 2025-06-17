@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
@@ -21,6 +22,7 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
 
   // 是否正在绘制矩形
   bool _isDrawing = false;
+
 
   /// 当前操作
   void operate(ImgToolEnum imgToolEnum) {
@@ -263,6 +265,29 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
   void resetSelf() {
     _imgRect = Rect.zero;
     _isDrawing = false;
+  }
+
+  /// 下载结果
+  void saveResult() async {
+    if (state.dstImage == null) {
+      return;
+    }
+    final file = File(state.dstImage!.originalPath);
+    final bytes = await file.readAsBytes();
+    FilePicker.platform.saveFile(
+      dialogTitle: "保存图像",
+      type: FileType.image,
+      bytes: bytes,
+    );
+    info("保存图像成功");
+  }
+
+  /// 复制结果至剪贴板
+  void copyResult() async {
+    final file = File(state.dstImage!.originalPath);
+    final bytes = await file.readAsBytes();
+    Pasteboard.writeImage(bytes);
+    info("复制图像成功");
   }
 }
 

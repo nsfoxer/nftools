@@ -47,25 +47,27 @@ class ImgToolPage extends StatelessWidget {
                       .toList());
             }),
             NFLayout.vlineh0,
-            Expanded(
-                child: GetBuilder<ImgToolController>(builder: (logic) {
-                  return NFLoadingWidgets(loading: logic.state.isLoading, child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start, children: [
-                    Expanded(
-                      flex: 3,
-                      child: ImgOperateArea(),
-                    ),
-                    NFLayout.hlineh2,
-                    IconButton(
-                        icon: Icon(FluentIcons.double_chevron_right8),
-                        onPressed: imgLogic.convert),
-                    NFLayout.hlineh2,
-                    Expanded(
-                      flex: 2,
-                      child: ImgDisplay(),
-                    ),
-                  ]));
-                }))
+            Expanded(child: GetBuilder<ImgToolController>(builder: (logic) {
+              return NFLoadingWidgets(
+                  loading: logic.state.isLoading,
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: ImgOperateArea(),
+                        ),
+                        NFLayout.hlineh2,
+                        IconButton(
+                            icon: Icon(FluentIcons.double_chevron_right8),
+                            onPressed: imgLogic.convert),
+                        NFLayout.hlineh2,
+                        Expanded(
+                          flex: 2,
+                          child: ImgDisplay(),
+                        ),
+                      ]));
+            }))
           ]),
     );
   }
@@ -187,12 +189,42 @@ class ImgDisplay extends StatelessWidget {
       if (logic.state.dstImage == null) {
         return Center(child: Text("输出图片"));
       }
-      return NFCardContent(
-          child: Center(
-              child: Image(
-                image: logic.state.dstImage!.displayImg,
-                fit: BoxFit.contain,
-              )));
+      return Column(mainAxisAlignment: MainAxisAlignment.start, children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Tooltip(
+              message: "保存图片",
+              child: IconButton(
+                  icon: Icon(FluentIcons.save),
+                  onPressed: logic.saveResult),
+            ),
+            NFLayout.hlineh3,
+            Tooltip(
+              message: "复制图片",
+              child: IconButton(
+                  icon: Icon(FluentIcons.copy),
+                  onPressed: logic.copyResult),
+            )
+          ],
+        ),
+        Expanded(
+            child: Center(
+                child: Container(
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: primaryColor(context).withValues(alpha: 0.5),
+                            spreadRadius: 5,
+                            blurRadius: 20,
+                          ),
+                        ]),
+                    child: Image(
+                      image: logic.state.dstImage!.displayImg,
+                      fit: BoxFit.contain,
+                    )))),
+      ]);
     });
   }
 }
