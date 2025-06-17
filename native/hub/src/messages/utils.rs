@@ -47,3 +47,10 @@ pub struct QrCodeDataMsgList  {
     // 图像高度
     pub image_height: u32,
 }
+
+/// 分割背景图片请求
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct SplitBackgroundImgMsg {
+    pub src_img: String,
+    
+}

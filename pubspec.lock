@@ -288,6 +288,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "4.9.0"
+  keymap:
+    dependency: "direct main"
+    description:
+      name: keymap
+      sha256: fe9e0afa27555cb42a156b155913a9f1e34317aeee440066124c2d3c54491abb
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.0.5"
   lints:
     dependency: transitive
     description:

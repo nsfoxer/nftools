@@ -3,7 +3,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:easy_debounce/easy_debounce.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meta/meta.dart';
@@ -220,4 +219,38 @@ class TimerInfo {
   final Timer maxTimer;
 
   TimerInfo(this.debounceTimer, this.maxTimer);
+}
+
+/// 获取image信息
+Future<ImageInfo> getImageInfoFromProvider(ImageProvider provider) async {
+  final ImageStream stream = provider.resolve(ImageConfiguration.empty);
+
+  // 使用Completer等待图像加载完成
+  final Completer<ImageInfo> completer = Completer<ImageInfo>();
+  final ImageStreamListener listener = ImageStreamListener(
+        (ImageInfo imageInfo, bool synchronousCall) {
+      completer.complete(imageInfo);
+    },
+    onError: (dynamic exception, StackTrace? stackTrace) {
+      completer.completeError(exception, stackTrace);
+    },
+  );
+
+  stream.addListener(listener);
+
+  try {
+    return await completer.future;
+  } finally {
+    stream.removeListener(listener);
+  }
+}
+
+/// 判断rect是否太小
+bool isRectTooSmall(Rect rect, double minSize) {
+  if (rect.isEmpty) {
+    return true;
+  }
+  final width = rect.width;
+  final height = rect.height;
+  return width < minSize || height < minSize;
 }

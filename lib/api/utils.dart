@@ -13,6 +13,7 @@ const String _genTextQrCode = "gen_text_qr_code";
 const String _genFileQrCode = "gen_file_qr_code";
 const String _detectQrCode = "detect_qr_code";
 const String _detectFileQrCode = "detect_file_qr_code";
+const String _spiltBackground = "split_background";
 
 // 压缩本地图片
 Future<CompressLocalPicRspMsg> compressLocalFile(String localFile, int width, int height) async {
@@ -59,3 +60,12 @@ Future<QrCodeDataMsgList> detectFileQrCode(String path) async {
     (_service, _detectFileQrCode, StringMsg(value: path));
   return QrCodeDataMsgList.bincodeDeserialize(result);
 }
+
+/// 背景分割
+/// 分割图片的主体部分
+Future<String> splitBackground(String srcImg) async {
+  final result = await sendRequest<StringMsg>
+    (_service, _spiltBackground, StringMsg(value: srcImg));
+  return StringMsg.bincodeDeserialize(result).value;
+}
+
