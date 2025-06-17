@@ -16,7 +16,8 @@ class ImgToolPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final imgLogic = Get.find<ImgToolController>();
     return ScaffoldPage.withPadding(
-      header: PageHeader(title: Text("图片工具"),
+      header: PageHeader(
+        title: Text("图片工具"),
         commandBar: CommandBar(
           mainAxisAlignment: MainAxisAlignment.end,
           primaryItems: [
@@ -24,6 +25,11 @@ class ImgToolPage extends StatelessWidget {
               icon: Icon(FluentIcons.waitlist_confirm),
               label: Text("转换"),
               onPressed: imgLogic.convert,
+            ),
+            CommandBarButton(
+              icon: Icon(FluentIcons.clear),
+              label: Text("重置"),
+              onPressed: imgLogic.reset,
             ),
           ],
         ),
@@ -42,20 +48,24 @@ class ImgToolPage extends StatelessWidget {
             }),
             NFLayout.vlineh0,
             Expanded(
-                child:
-                    Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-              Expanded(
-                flex: 3,
-                child: ImgOperateArea(),
-              ),
-                      NFLayout.hlineh2,
-              IconButton(icon: Icon(FluentIcons.double_chevron_right8), onPressed: imgLogic.convert),
-              NFLayout.hlineh2,
-              Expanded(
-                flex: 2,
-                child: ImgDisplay(),
-              ),
-            ]))
+                child: GetBuilder<ImgToolController>(builder: (logic) {
+                  return NFLoadingWidgets(loading: logic.state.isLoading, child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start, children: [
+                    Expanded(
+                      flex: 3,
+                      child: ImgOperateArea(),
+                    ),
+                    NFLayout.hlineh2,
+                    IconButton(
+                        icon: Icon(FluentIcons.double_chevron_right8),
+                        onPressed: imgLogic.convert),
+                    NFLayout.hlineh2,
+                    Expanded(
+                      flex: 2,
+                      child: ImgDisplay(),
+                    ),
+                  ]));
+                }))
           ]),
     );
   }
@@ -70,7 +80,9 @@ class _EditButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Button(
-      onPressed: logic.state.imgToolEnum != textToolEnum ?  () => logic.operate(textToolEnum) : null,
+      onPressed: logic.state.operationEnum != textToolEnum
+          ? () => logic.operate(textToolEnum)
+          : null,
       child: Text(textToolEnum.desc),
     );
   }
@@ -102,20 +114,21 @@ class ImgOperateArea extends StatelessWidget {
                       child: LayoutBuilder(
                         builder:
                             (BuildContext context, BoxConstraints constraints) {
-                          if (logic.state.srcImgInfo == null) {
+                          if (logic.state.srcImage == null) {
                             return Text("选择图片或ctrl+v粘贴");
                           }
                           logic.resetImageRect(
                             constraints.maxWidth,
                             constraints.maxHeight,
-                            logic.state.srcImgInfo!.info.image.width.toDouble(),
-                            logic.state.srcImgInfo!.info.image.height
+                            logic.state.srcImage!.displayImgInfo.image.width
+                                .toDouble(),
+                            logic.state.srcImage!.displayImgInfo.image.height
                                 .toDouble(),
                           );
                           return Stack(
                             children: [
                               Image(
-                                image: logic.state.srcImgInfo!.img,
+                                image: logic.state.srcImage!.displayImg,
                                 fit: BoxFit.contain,
                                 width: constraints.maxWidth,
                                 height: constraints.maxHeight,
@@ -140,7 +153,7 @@ class ImgOperateArea extends StatelessWidget {
   /// @param context 上下文
   /// 仅当为背景分割时显示
   Widget _buildImgRect(ImgToolController logic, BuildContext context) {
-    if (logic.state.imgToolEnum != ImgToolEnum.backgroundSplit) {
+    if (logic.state.operationEnum != ImgToolEnum.backgroundSplit) {
       return Container();
     }
     final pColor = primaryColor(context);
@@ -170,8 +183,16 @@ class ImgDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text("结果"),
-    );
+    return GetBuilder<ImgToolController>(builder: (logic) {
+      if (logic.state.dstImage == null) {
+        return Center(child: Text("输出图片"));
+      }
+      return NFCardContent(
+          child: Center(
+              child: Image(
+                image: logic.state.dstImage!.displayImg,
+                fit: BoxFit.contain,
+              )));
+    });
   }
 }

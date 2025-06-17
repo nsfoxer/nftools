@@ -12,7 +12,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  rinf: ^8.3.1
+  rinf: ^8.4.0
   get: ^4.6.6
   fixnum: ^1.1.0
   cupertino_icons: ^1.0.8

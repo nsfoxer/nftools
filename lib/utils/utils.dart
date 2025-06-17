@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meta/meta.dart';
+import 'package:nftools/api/utils.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -55,6 +56,7 @@ Color primaryColor(BuildContext context) {
 
 const JsonDecoder _jsonDecoder = JsonDecoder();
 const JsonEncoder _jsonPrettyEncoder = JsonEncoder.withIndent('  ');
+
 String formatJson(String json) {
   final data = _jsonDecoder.convert(json);
   return _jsonPrettyEncoder.convert(data);
@@ -63,7 +65,17 @@ String formatJson(String json) {
 String formatSql(String sql) {
   // 定义 SQL 关键字，用于换行和缩进
   final keywords = [
-    'SELECT', 'FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'HAVING', 'JOIN', 'LEFT JOIN', 'RIGHT JOIN', 'INNER JOIN', 'UNION'
+    'SELECT',
+    'FROM',
+    'WHERE',
+    'GROUP BY',
+    'ORDER BY',
+    'HAVING',
+    'JOIN',
+    'LEFT JOIN',
+    'RIGHT JOIN',
+    'INNER JOIN',
+    'UNION'
   ];
 
   // 移除 SQL 语句中的注释
@@ -122,7 +134,7 @@ String formatSql(String sql) {
         formatted += '$word\n';
       } else {
         // 普通单词，添加空格连接
-        if (formatted.isNotEmpty &&!formatted.endsWith('\n')) {
+        if (formatted.isNotEmpty && !formatted.endsWith('\n')) {
           formatted += ' ';
         }
         formatted += word;
@@ -143,12 +155,14 @@ String _removeComments(String sql) {
 }
 
 // 保存数据到临时文件
-Future<File> saveBytesToTempFile(List<int> bytes, {String? fileExtension}) async {
-    final directory = await getTemporaryDirectory();
-    final path = join(directory.path, '${DateTime.now().millisecondsSinceEpoch}.${fileExtension??'tmp'}');
-    // 时间戳生成文件名
-    final file = File(path);
-    return await file.writeAsBytes(bytes);
+Future<File> saveBytesToTempFile(List<int> bytes,
+    {String? fileExtension}) async {
+  final directory = await getTemporaryDirectory();
+  final path = join(directory.path,
+      '${DateTime.now().millisecondsSinceEpoch}.${fileExtension ?? 'tmp'}');
+  // 时间戳生成文件名
+  final file = File(path);
+  return await file.writeAsBytes(bytes);
 }
 
 /// 增强版节流器
@@ -161,11 +175,11 @@ class NFDebounce {
   /// [maxDuration] 最大时间, 超过后, 即使仍被节流, 也会触发执行
   /// [onExecute] 执行函数
   static void debounce(
-      String tag,
-      Duration duration,
-      Duration maxDuration,
-      VoidCallback onExecute,
-      ) {
+    String tag,
+    Duration duration,
+    Duration maxDuration,
+    VoidCallback onExecute,
+  ) {
     // 参数验证
     if (duration <= Duration.zero) {
       warn("duration[$duration] 必须大于零, 直接执行");
@@ -192,12 +206,12 @@ class NFDebounce {
 
     // 创建新的最大定时器
     final Timer maxTimer = previous?.maxTimer ??
-      Timer(maxDuration, () {
-        // 最大定时器触发时，取消防抖定时器
-        _operations[tag]?.debounceTimer.cancel();
-        _operations.remove(tag);
-        onExecute();
-    });
+        Timer(maxDuration, () {
+          // 最大定时器触发时，取消防抖定时器
+          _operations[tag]?.debounceTimer.cancel();
+          _operations.remove(tag);
+          onExecute();
+        });
 
     // 存储新的定时器
     _operations[tag] = TimerInfo(debounceTimer, maxTimer);
@@ -228,7 +242,7 @@ Future<ImageInfo> getImageInfoFromProvider(ImageProvider provider) async {
   // 使用Completer等待图像加载完成
   final Completer<ImageInfo> completer = Completer<ImageInfo>();
   final ImageStreamListener listener = ImageStreamListener(
-        (ImageInfo imageInfo, bool synchronousCall) {
+    (ImageInfo imageInfo, bool synchronousCall) {
       completer.complete(imageInfo);
     },
     onError: (dynamic exception, StackTrace? stackTrace) {
@@ -253,4 +267,50 @@ bool isRectTooSmall(Rect rect, double minSize) {
   final width = rect.width;
   final height = rect.height;
   return width < minSize || height < minSize;
+}
+
+/// NFImage 图片信息
+/// 会对本地大图片进行压缩,以优化展示
+/// 如果压缩失败,会回退到原始图片
+@Immutable()
+class NFImage {
+  /// 展示的图片
+  final ImageProvider<Object> displayImg;
+
+  /// 图片信息
+  final ImageInfo displayImgInfo;
+
+  /// 压缩后的图片路径
+  final String displayPath;
+
+  /// 原始的图片路径
+  final String originalPath;
+
+  NFImage(
+      {required this.displayImg,
+      required this.displayImgInfo,
+      required this.displayPath,
+      required this.originalPath});
+
+  static Future<NFImage> fromOriginalPath(String originalPath) async {
+    // 1. 压缩图片
+    String compressedPath;
+    try {
+      compressedPath =
+          (await compressLocalFile(originalPath, 600, 400)).localFile;
+    } catch (e) {
+      error("压缩图片失败: $e");
+      compressedPath = originalPath;
+    }
+    // 2. 加载图片
+    final displayImg = FileImage(File(compressedPath));
+    final displayImgInfo = await getImageInfoFromProvider(displayImg);
+
+    // 3. 返回数据
+    return NFImage(
+        displayImg: displayImg,
+        displayImgInfo: displayImgInfo,
+        displayPath: compressedPath,
+        originalPath: originalPath);
+  }
 }
