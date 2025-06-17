@@ -63,9 +63,9 @@ Future<QrCodeDataMsgList> detectFileQrCode(String path) async {
 
 /// 背景分割
 /// 分割图片的主体部分
-Future<String> splitBackground(String srcImg) async {
-  final result = await sendRequest<StringMsg>
-    (_service, _spiltBackground, StringMsg(value: srcImg));
+Future<String> splitBackground(SplitBackgroundImgMsg imgMsg) async {
+  final result = await sendRequest
+    (_service, _spiltBackground, imgMsg);
   return StringMsg.bincodeDeserialize(result).value;
 }
 

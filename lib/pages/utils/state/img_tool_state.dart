@@ -1,27 +1,34 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:meta/meta.dart';
 
+import '../../../utils/utils.dart';
 import '../controller/img_tool_controller.dart';
 
 class ImgToolState {
   // 要处理的图片地址
-  ImgInfo? srcImgInfo;
+  NFImage? srcImage;
 
   // 当前操作
-  ImgToolEnum? imgToolEnum;
+  ImgToolEnum? operationEnum;
 
   // 矩形标注框
   AnnotationBox annotationBox = AnnotationBox.zero();
-}
 
-@Immutable()
-class ImgInfo {
-  // 图片路径
-  final ImageProvider<Object> img;
-  // 图片信息
-  final ImageInfo info;
+  // 输出图像
+  NFImage? dstImage;
 
-  const ImgInfo({required this.img, required this.info});
+  // 是否正在处理
+  bool isLoading = false;
+
+  void reset({bool notResetOperation = false}) {
+    srcImage = null;
+    annotationBox = AnnotationBox.zero();
+    dstImage = null;
+    isLoading = false;
+    if (!notResetOperation) {
+      operationEnum = null;
+    }
+  }
 }
 
 /// 标注框
