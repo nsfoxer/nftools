@@ -1,14 +1,17 @@
+use std::io::{Read, Write};
 use crate::messages::common::{BoolMsg, DataMsg, StringMsg};
 use crate::service::service::ImmService;
 use std::ffi::OsStr;
 use std::path::PathBuf;
-use std::time::UNIX_EPOCH;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::common::utils::{get_cache_dir, sha256};
-use crate::messages::utils::{CompressLocalPicMsg, CompressLocalPicRspMsg, QrCodeDataMsg, QrCodeDataMsgList};
+use crate::messages::utils::{CompressLocalPicMsg, CompressLocalPicRspMsg, QrCodeDataMsg, QrCodeDataMsgList, SplitBackgroundImgMsg};
 use crate::{async_func_notype, async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
 use image::{DynamicImage, ImageReader};
+use opencv::core::{Mat, MatTrait, MatTraitConst, Vector};
+use opencv::imgcodecs;
 use qrcode_generator::QrCodeEcc;
 use tokio::fs;
 use tokio::fs::File;
@@ -36,7 +39,9 @@ impl ImmService for UtilsService {
             detect_qr_code,
             DataMsg,
             detect_file_qr_code,
-            StringMsg
+            StringMsg,
+            split_background,
+            SplitBackgroundImgMsg
         );
         async_func_notype!(self, func, network_status);
         func_typeno!(self, func, req_data, notify, StringMsg);
@@ -204,10 +209,129 @@ impl UtilsService {
         Ok(QrCodeDataMsgList{value: result, image_width: img.width() as u32, image_height: img.height() as u32})
     }
     
+    /// 分割背景图片
+    async fn split_background(&self, msg: SplitBackgroundImgMsg) -> Result<StringMsg> {
+        let handle = tokio::task::spawn_blocking(move || -> Result<StringMsg> {
+            Self::split_background_img(msg)
+        });
+        handle.await?
+    }
+}
+
+impl UtilsService {
+    /// 分割背景图片
+    /// return: 分割后的图片路径
+    fn split_background_img(msg: SplitBackgroundImgMsg) -> Result<StringMsg> {
+        // 1. 读取图片 img数据为BGR通道
+        let img = imgcodecs::imdecode(&Mat::from_slice(&Self::read_file(&msg.src_img)?)?, imgcodecs::IMREAD_COLOR)?;
+        if img.empty() {
+           return Err(anyhow::anyhow!("读取图片【{}】数据大小为空", msg.src_img));
+        }
+
+        // 2. 使用grab_cut进行分割
+        // 创建掩码
+        let mut mask: Mat = Mat::new_rows_cols_with_default(img.rows(), img.cols(), opencv::core::CV_8UC1, opencv::core::Scalar::from(0))?;
+        // 定义矩形区域
+        let rect = calculate_rect(msg.left_x, msg.left_y, msg.width, msg.height, img.cols(), img.rows());
+        let mut bgd_model = Mat::new_rows_cols_with_default(1, 65, opencv::core::CV_64FC1, opencv::core::Scalar::from(0.0))?;
+        let mut fgd_model = Mat::new_rows_cols_with_default(1, 65, opencv::core::CV_64FC1, opencv::core::Scalar::from(0.0))?;
+
+        // 执行GrabCut分割 结果存在mask中 0:背景 1:前景 2:可能的前景 3:可能的背景
+        opencv::imgproc::grab_cut(
+            &img,
+            &mut mask,
+            rect,
+            &mut bgd_model,
+            &mut fgd_model,
+            10,
+            opencv::imgproc::GrabCutModes::GC_INIT_WITH_RECT.into(),
+        )?;
+
+        // 3. 将mask中0和2的像素值设置为0(透明)，1和3的像素值设置为255(不透明)
+        let mut background_mask = Mat::default();
+        // 比较mask中的值是否等于0.0，如果等于0.0，则将对应位置的值设置为255，否则设置为0.0
+        opencv::core::compare(
+            &mask,
+            &opencv::core::Scalar::all(0.0),
+            &mut background_mask,
+            opencv::core::CmpTypes::CMP_EQ.into(),
+        )?;
+        // 比较mask中的值是否等于2.0，如果等于2.0，则将对应位置的值设置为255，否则设置为0.0
+        let mut temp_mask = Mat::default();
+        opencv::core::compare(
+            &mask,
+            &opencv::core::Scalar::all(2.0),
+            &mut temp_mask,
+            opencv::core::CmpTypes::CMP_EQ.into(),
+        ).unwrap();
+        // 背景掩码
+        let mut background = Mat::default();
+        // 合并 0.0和2.0的像素值为 背景
+        opencv::core::bitwise_or(&background_mask, &temp_mask, &mut background, &Mat::default())?;
+        let mut foreground = Mat::default();
+        // 对背景取反获得前景
+        opencv::core::bitwise_not(&background, &mut foreground, &Mat::default())?;
+        // 将mask的背景为0(透明)，前景设置为255(不透明)
+        mask.set_to(&opencv::core::Scalar::all(0.0), &background)?;
+        mask.set_to(&opencv::core::Scalar::all(255.0), &foreground)?;
+
+        // 4. 将mask和img合并 得到新的图片
+        let mut result = Mat::new_rows_cols_with_default(img.rows(), img.cols(), opencv::core::CV_8UC4 , opencv::core::Scalar::from(0))?;
+        let mut reverse_mask = Mat::default();
+
+        // 对mask取反
+        opencv::core::bitwise_not(&mask, &mut reverse_mask, &Mat::default())?;
+        for i in 0..3 {
+            // 分别提取出BGR
+            let mut tmp = Mat::default();
+            opencv::core::extract_channel(&img, &mut tmp, i).unwrap();
+            // 再分别将BGR和mask合并，非掩码部分设置为0
+            tmp.set_to(&opencv::core::Scalar::all(0.0), &reverse_mask)?;
+            // 分别将BGR数据复制到result的BGR通道
+            opencv::core::mix_channels(&tmp, &mut result, &[0, i])?;
+        }
+        // 设置透明通道
+        opencv::core::mix_channels(&mask, &mut result, &[0, 3])?;
+        let result_path = generate_path("png")?;
+        let result_path = result_path.to_str().ok_or_else(|| anyhow::anyhow!("转换路径识别"))?;
+        // 保存结果图片
+        let mut buf = Vector::new();
+        imgcodecs::imencode("png", &result, &mut buf, &opencv::core::Vector::new())?;
+        let mut file = std::fs::File::create(&result_path)?;
+        file.write_all(buf.as_slice())?;
+
+        Ok(StringMsg {
+            value: result_path.to_string(),
+        })
+    }
+
+    fn read_file(filename: &str) -> Result<Vec<u8>> {
+        let mut file = std::fs::File::open(filename)?;
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf)?;
+        Ok(buf)
+    }
+}
+
+fn calculate_rect(left: f64, top: f64, width:f64, height:f64, img_width: i32, img_height: i32) -> opencv::core::Rect {
+    let left = left * img_width as f64;
+    let top = top * img_height as f64;
+    let width = width * img_width as f64;
+    let height = height * img_height as f64;
+    return opencv::core::Rect::new(left as i32, top as i32, width as i32, height as i32);
+}
+
+fn generate_path(suffix: &str) -> Result<PathBuf> {
+    let mut path = get_cache_dir()?;
+    let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
+    path.push(format!("{}.{}", now.as_millis(), suffix));    
+    Ok(path)
 }
 
 #[allow(unused_imports)]
 mod test {
+    use std::fs::File;
+    use std::io::Read;
     use std::time::SystemTime;
     use futures_util::{StreamExt, TryStreamExt};
     use image::open;
@@ -234,6 +358,17 @@ mod test {
             .unwrap();
         let r2 = instant.elapsed().as_millis();
         eprintln!("{:?} {r2}", r.local_file);
+    }
+
+    #[test]
+    fn img2() {
+        let file = r#"C:\Users\12618\Pictures\微信图片_20241125100610.jpg"#;
+        let mut file = File::open(file).unwrap();
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf).unwrap();
+
+        let img = imgcodecs::imdecode(&Mat::from_slice(&buf).unwrap(), imgcodecs::IMREAD_COLOR).unwrap();
+        assert!(!img.empty());
     }
 
     #[test]

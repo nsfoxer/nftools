@@ -52,5 +52,8 @@ pub struct QrCodeDataMsgList  {
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]
 pub struct SplitBackgroundImgMsg {
     pub src_img: String,
-    
+    pub left_x: f64,
+    pub left_y: f64,
+    pub width: f64,
+    pub height: f64,
 }
