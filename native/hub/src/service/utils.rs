@@ -296,7 +296,7 @@ impl UtilsService {
         let result_path = result_path.to_str().ok_or_else(|| anyhow::anyhow!("转换路径识别"))?;
         // 保存结果图片
         let mut buf = Vector::new();
-        imgcodecs::imencode("png", &result, &mut buf, &opencv::core::Vector::new())?;
+        imgcodecs::imencode(".png", &result, &mut buf, &opencv::core::Vector::new())?;
         let mut file = std::fs::File::create(&result_path)?;
         file.write_all(buf.as_slice())?;
 
