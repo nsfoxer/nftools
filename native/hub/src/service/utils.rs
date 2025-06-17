@@ -10,7 +10,7 @@ use crate::messages::utils::{CompressLocalPicMsg, CompressLocalPicRspMsg, QrCode
 use crate::{async_func_notype, async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
 use image::{DynamicImage, ImageReader};
-use opencv::core::{Mat, MatTrait, MatTraitConst, Vector};
+use opencv::core::{Mat, MatTrait, MatTraitConst, Point, Vector};
 use opencv::imgcodecs;
 use qrcode_generator::QrCodeEcc;
 use tokio::fs;
@@ -263,7 +263,7 @@ impl UtilsService {
             &opencv::core::Scalar::all(2.0),
             &mut temp_mask,
             opencv::core::CmpTypes::CMP_EQ.into(),
-        ).unwrap();
+        )?;
         // 背景掩码
         let mut background = Mat::default();
         // 合并 0.0和2.0的像素值为 背景
@@ -275,8 +275,14 @@ impl UtilsService {
         mask.set_to(&opencv::core::Scalar::all(0.0), &background)?;
         mask.set_to(&opencv::core::Scalar::all(255.0), &foreground)?;
 
+        // 裁剪透明区域
+        let (image, mask) = match trim_photo(&img, &mask)? {
+            Some(r)=>r,
+            None => (img.into(), mask.into()),
+        };
+        
         // 4. 将mask和img合并 得到新的图片
-        let mut result = Mat::new_rows_cols_with_default(img.rows(), img.cols(), opencv::core::CV_8UC4 , opencv::core::Scalar::from(0))?;
+        let mut result = Mat::new_rows_cols_with_default(image.rows(), image.cols(), opencv::core::CV_8UC4 , opencv::core::Scalar::from(0))?;
         let mut reverse_mask = Mat::default();
 
         // 对mask取反
@@ -284,7 +290,7 @@ impl UtilsService {
         for i in 0..3 {
             // 分别提取出BGR
             let mut tmp = Mat::default();
-            opencv::core::extract_channel(&img, &mut tmp, i).unwrap();
+            opencv::core::extract_channel(&image, &mut tmp, i)?;
             // 再分别将BGR和mask合并，非掩码部分设置为0
             tmp.set_to(&opencv::core::Scalar::all(0.0), &reverse_mask)?;
             // 分别将BGR数据复制到result的BGR通道
@@ -294,9 +300,10 @@ impl UtilsService {
         opencv::core::mix_channels(&mask, &mut result, &[0, 3])?;
         let result_path = generate_path("png")?;
         let result_path = result_path.to_str().ok_or_else(|| anyhow::anyhow!("转换路径识别"))?;
+        
         // 保存结果图片
         let mut buf = Vector::new();
-        imgcodecs::imencode(".png", &result, &mut buf, &opencv::core::Vector::new())?;
+        imgcodecs::imencode(".png", &result, &mut buf, &Vector::new())?;
         let mut file = std::fs::File::create(&result_path)?;
         file.write_all(buf.as_slice())?;
 
@@ -318,7 +325,7 @@ fn calculate_rect(left: f64, top: f64, width:f64, height:f64, img_width: i32, im
     let top = top * img_height as f64;
     let width = width * img_width as f64;
     let height = height * img_height as f64;
-    return opencv::core::Rect::new(left as i32, top as i32, width as i32, height as i32);
+    opencv::core::Rect::new(left as i32, top as i32, width as i32, height as i32)
 }
 
 fn generate_path(suffix: &str) -> Result<PathBuf> {
@@ -326,6 +333,42 @@ fn generate_path(suffix: &str) -> Result<PathBuf> {
     let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
     path.push(format!("{}.{}", now.as_millis(), suffix));    
     Ok(path)
+}
+
+pub fn trim_photo<'a>(image: &'a Mat, alpha_channel: &'a Mat) -> Result<Option<(opencv::boxed_ref::BoxedRef<'a, Mat>, opencv::boxed_ref::BoxedRef<'a, Mat>)>> {
+    let bounding_rect = find_non_transparent_bbox(alpha_channel)?;
+    let result = match bounding_rect { Some(rect) => {
+       
+        Some((image.roi(rect)?, alpha_channel.roi(rect)?))
+    }, None => {None}};
+
+    Ok(result)
+}
+
+fn find_non_transparent_bbox(alpha_channel: &Mat) -> Result<Option<opencv::core::Rect>> {
+    let mut mask = Mat::default();
+    opencv::imgproc::threshold(alpha_channel, &mut mask, 0.0, 255.0, opencv::imgproc::ThresholdTypes::THRESH_BINARY.into())?;
+
+    let mut non_zero_points: Vector<Point> = Vector::new();
+    opencv::core::find_non_zero(&mask, &mut non_zero_points)?;
+    if non_zero_points.is_empty() {
+        return Ok(None);
+    }
+
+    // 计算边界
+    let mut min_x = i32::MAX;
+    let mut min_y = i32::MAX;
+    let mut max_x = i32::MIN;
+    let mut max_y = i32::MIN;
+    for point in non_zero_points.iter() {
+        min_x = min_x.min(point.x);
+        min_y = min_y.min(point.y);
+        max_x = max_x.max(point.x);
+        max_y = max_y.max(point.y);
+    }
+    let width = (max_x - min_x + 1).max(1);
+    let height = (max_y - min_y +1).max(1);
+    Ok(Some(opencv::core::Rect::new(min_x, min_y, width, height)))
 }
 
 #[allow(unused_imports)]
@@ -339,8 +382,8 @@ mod test {
     use opencv::imgcodecs;
     use opencv::prelude::{Mat, MatTraitConst};
     use serde::Deserialize;
-    use crate::messages::utils::CompressLocalPicMsg;
-    use crate::service::utils::UtilsService;
+    use crate::messages::utils::{CompressLocalPicMsg, SplitBackgroundImgMsg};
+    use crate::service::utils::{trim_photo, UtilsService};
     use tokio::time::Instant;
 
     #[tokio::test]
@@ -362,13 +405,15 @@ mod test {
 
     #[test]
     fn img2() {
-        let file = r#"C:\Users\12618\Pictures\微信图片_20241125100610.jpg"#;
-        let mut file = File::open(file).unwrap();
-        let mut buf = Vec::new();
-        file.read_to_end(&mut buf).unwrap();
-
-        let img = imgcodecs::imdecode(&Mat::from_slice(&buf).unwrap(), imgcodecs::IMREAD_COLOR).unwrap();
-        assert!(!img.empty());
+        let req = SplitBackgroundImgMsg{
+            src_img: r"C:\Users\12618\Desktop\tmp\118.jpg".to_string(),
+            left_x: 0.5,
+            left_y: 0.5,
+            width: 0.1,
+            height: 0.1,
+        };
+        let r = UtilsService::split_background_img(req).unwrap();
+        eprintln!("{:?}", r);
     }
 
     #[test]
