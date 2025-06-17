@@ -239,7 +239,7 @@ mod test {
     #[test]
     fn img() {
         // 1. 读取图片 img数据为BGR通道
-        let img = opencv::imgcodecs::imread(r#"C:\Users\12618\Desktop\1682405980883837.png"#, imgcodecs::IMREAD_COLOR).unwrap();
+        let img = opencv::imgcodecs::imread(r#"C:\Users\12618\Desktop\tmp\118.jpg"#, imgcodecs::IMREAD_COLOR).unwrap();
         if img.empty() {
             panic!("Could not read the image");
         }
@@ -248,7 +248,7 @@ mod test {
         // 创建掩码
         let mut mask: Mat = Mat::new_rows_cols_with_default(img.rows(), img.cols(), opencv::core::CV_8UC1, opencv::core::Scalar::from(0)).unwrap();
         // 定义矩形区域
-        let rect = opencv::core::Rect::new(267, 136, 514, 825);
+        let rect = opencv::core::Rect::new(25, 15, 408, 122);
         let mut bgd_model = Mat::new_rows_cols_with_default(1, 65, opencv::core::CV_64FC1, opencv::core::Scalar::from(0.0)).unwrap();
         let mut fgd_model = Mat::new_rows_cols_with_default(1, 65, opencv::core::CV_64FC1, opencv::core::Scalar::from(0.0)).unwrap();
 
@@ -259,7 +259,7 @@ mod test {
             rect,
             &mut bgd_model,
             &mut fgd_model,
-            5,
+            10,
             opencv::imgproc::GrabCutModes::GC_INIT_WITH_RECT.into(),
         ).unwrap();
 
@@ -309,7 +309,7 @@ mod test {
         // 设置透明通道
         opencv::core::mix_channels(&mask, &mut result, &[0, 3]).unwrap();
 
-        imgcodecs::imwrite(r"C:\Users\12618\Desktop\tmp.png", &result, &opencv::core::Vector::new()).unwrap();
+        imgcodecs::imwrite(r"C:\Users\12618\Desktop\tmp\tmp.png", &result, &opencv::core::Vector::new()).unwrap();
     }
 
 }

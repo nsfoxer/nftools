@@ -21,6 +21,7 @@ class UtilsPage extends StatelessWidget {
                   _UtilsPage(url: "/utils/diffText", child: Text("文本对比")),
                   _UtilsPage(url: "/utils/textTool", child: Text("文本处理")),
                   _UtilsPage(url: "/utils/qrCode", child: Text("二维码转换")),
+                  _UtilsPage(url: "/utils/imgTool", child: Text("图像操作")),
                 ])));
   }
 }
