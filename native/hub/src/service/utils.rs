@@ -9,9 +9,12 @@ use crate::common::utils::{get_cache_dir, sha256};
 use crate::messages::utils::{CompressLocalPicMsg, CompressLocalPicRspMsg, QrCodeDataMsg, QrCodeDataMsgList, SplitBackgroundImgMsg};
 use crate::{async_func_notype, async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
+use futures_util::pending;
 use image::{DynamicImage, ImageReader};
-use opencv::core::{Mat, MatTrait, MatTraitConst, Point, Vector};
+use log::info;
+use opencv::core::{Mat, MatTrait, MatTraitConst, Point, Size, Vector};
 use opencv::imgcodecs;
+use opencv::imgproc::InterpolationFlags::INTER_LINEAR;
 use qrcode_generator::QrCodeEcc;
 use tokio::fs;
 use tokio::fs::File;
@@ -219,14 +222,25 @@ impl UtilsService {
 }
 
 impl UtilsService {
+
+    /// 下采样缩放比例
+    const DOWN_SAMPLE_SCALE: i32 = 4;
+
     /// 分割背景图片
     /// return: 分割后的图片路径
     fn split_background_img(msg: SplitBackgroundImgMsg) -> Result<StringMsg> {
         // 1. 读取图片 img数据为BGR通道
-        let img = imgcodecs::imdecode(&Mat::from_slice(&Self::read_file(&msg.src_img)?)?, imgcodecs::IMREAD_COLOR)?;
-        if img.empty() {
+        let original_img = imgcodecs::imdecode(&Mat::from_slice(&Self::read_file(&msg.src_img)?)?, imgcodecs::IMREAD_COLOR)?;
+        if original_img.empty() {
            return Err(anyhow::anyhow!("读取图片【{}】数据大小为空", msg.src_img));
         }
+
+        // 下采样
+        let mut downsample = Mat::default();
+        let (is_downsample, mut img) = if original_img.rows() > 1000 && original_img.cols() > 1000 {
+            opencv::imgproc::resize(&original_img, &mut downsample, Size::new(original_img.cols()/Self::DOWN_SAMPLE_SCALE, original_img.rows()/Self::DOWN_SAMPLE_SCALE), 0.0, 0.0, INTER_LINEAR.into())?;
+            (true, &downsample)
+        } else {(false, &original_img)};
 
         // 2. 使用grab_cut进行分割
         // 创建掩码
@@ -243,7 +257,7 @@ impl UtilsService {
             rect,
             &mut bgd_model,
             &mut fgd_model,
-            10,
+            5,
             opencv::imgproc::GrabCutModes::GC_INIT_WITH_RECT.into(),
         )?;
 
@@ -275,10 +289,19 @@ impl UtilsService {
         mask.set_to(&opencv::core::Scalar::all(0.0), &background)?;
         mask.set_to(&opencv::core::Scalar::all(255.0), &foreground)?;
 
+        // 如果是下采样，则需要恢复到原图大小
+        if is_downsample {
+            info!("下采样");
+            let mut big_mask = Mat::default();
+            opencv::imgproc::resize(&mask, &mut big_mask, Size::new(original_img.cols(), original_img.rows()), 0.0, 0.0, INTER_LINEAR.into())?;
+            mask = big_mask;
+            img = &original_img;
+        }
+
         // 裁剪透明区域
-        let (image, mask) = match trim_photo(&img, &mask)? {
+        let (image, mask) = match trim_photo(img, &mask)? {
             Some(r)=>r,
-            None => (img.into(), mask.into()),
+            None => (img.clone().into(), mask.into()),
         };
         
         // 4. 将mask和img合并 得到新的图片
@@ -335,10 +358,15 @@ fn generate_path(suffix: &str) -> Result<PathBuf> {
     Ok(path)
 }
 
+///  裁剪透明区域
+/// image: 原始图片
+/// alpha_channel: 透明通道
 pub fn trim_photo<'a>(image: &'a Mat, alpha_channel: &'a Mat) -> Result<Option<(opencv::boxed_ref::BoxedRef<'a, Mat>, opencv::boxed_ref::BoxedRef<'a, Mat>)>> {
     let bounding_rect = find_non_transparent_bbox(alpha_channel)?;
     let result = match bounding_rect { Some(rect) => {
-       
+        println!("original image box: {:?}", image);
+        println!("original image box: {:?}", alpha_channel);
+        println!("original bounding box: {:?}", rect);
         Some((image.roi(rect)?, alpha_channel.roi(rect)?))
     }, None => {None}};
 
@@ -406,7 +434,7 @@ mod test {
     #[test]
     fn img2() {
         let req = SplitBackgroundImgMsg{
-            src_img: r"C:\Users\12618\Desktop\tmp\118.jpg".to_string(),
+            src_img: r"/home/nsfoxer/图片/壁纸/【哲风壁纸】动画角色-尼克-朱迪.png".to_string(),
             left_x: 0.5,
             left_y: 0.5,
             width: 0.1,
