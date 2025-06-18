@@ -5,6 +5,7 @@ use log::{error, info};
 use rinf::{DartSignalPack, RustSignalBinary};
 use std::ops::DerefMut;
 use std::sync::Arc;
+use anyhow::anyhow;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::Mutex;
 use crate::api::{BaseRequest, BaseResponse};

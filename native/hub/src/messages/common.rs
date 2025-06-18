@@ -19,10 +19,6 @@ pub struct UintFiveMsg {
     pub value: u32,
     
 }
-// #[derive(Debug, Serialize, Deserialize, SignalPiece)]
-// pub struct Uint64Msg  {
-//     pub value: u64,
-// }
 
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]
 pub struct BoolMsg {
