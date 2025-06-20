@@ -44,6 +44,7 @@ convert_case = "0.8.0"
 qrcode-generator = "5.0.0"
 rqrr = "0.9.3"
 opencv = { version = "0.94.4" }
+simple-log = "2.3.0"
 
 [target."cfg(windows)".dependencies]
 ddc-winapi = "0.2.2"

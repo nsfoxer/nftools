@@ -8,24 +8,53 @@ mod service;
 mod messages;
 
 use crate::api::api::ApiService;
-use crate::common::utils::notify;
+use crate::common::utils::{get_cache_dir, notify};
 use crate::common::*;
 use crate::service::display::display_os::{DisplayLight, DisplayMode};
 use anyhow::anyhow;
 use common::global_data::GlobalData;
 use std::path::PathBuf;
 use convert_case::{Case, Casing};
+use log::{error, info};
 use rinf::{dart_shutdown, DartSignalBinary, RustSignalBinary};
+use simple_log::LogConfigBuilder;
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use tokio;
 use crate::api::BaseRequest;
 
 rinf::write_interface!();
 
+fn init_log() -> Result<()> {
+    let mut log_file = get_cache_dir()?;
+
+    log_file.push("nftools.log");
+    let config  = LogConfigBuilder::builder()
+        .path(log_file.to_str().unwrap_or_default().to_string())
+        .size(1*100)
+        .roll_count(100)
+        .time_format("%Y-%m-%d %H:%M:%S.%f") //E.g:%H:%M:%S.%f
+        .level("info")?
+        .output_file()
+        .output_console()
+        .build();
+    simple_log::new(config)?;
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
-    tokio::spawn(base_request());
+    if let Err(e) = init_log() {
+        eprintln!("日志初始化失败: {}", e);
+    }
+    info!("后端初始化开始");
+    tokio::spawn(async {
+        if let Err(e) = base_request().await {
+            error!("后端启动失败: {}", e);
+        }
+    });
     dart_shutdown().await;
+    info!("APP停止");
 }
 
 async fn base_request() -> Result<()> {
@@ -44,7 +73,7 @@ async fn base_request() -> Result<()> {
             // close处理
             if signal.message.func == "close" {
                 close_signal = Some(api.close(signal).await);
-                log::info!("服务已全部停止");
+                info!("服务已全部停止");
                 break;
             }
             // api其他情况处理
@@ -54,13 +83,15 @@ async fn base_request() -> Result<()> {
         // 通常服务处理
         api.handle(signal);
     }
+    info!("后端服务已停止");
 
     // 尝试删除lock
     if let Some(path) = path {
         tokio::fs::remove_file(path)
             .await
-            .unwrap_or_else(|e| eprintln!("{}", e));
+            .unwrap_or_else(|e| error!("{}", e));
     }
+    info!("成功删除lock文件");
 
     // 回应关闭信息
     if let Some(close_signal) = close_signal {
