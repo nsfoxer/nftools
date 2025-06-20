@@ -105,7 +105,6 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
       state.annotationBoxRect = Rect.zero;
       return;
     }
-    debug("start");
     // 判断是否在标注框dot区域内
     final (dotTopRect, dotBottomRect, dotLeftRect, dotRightRect) =
         annotationBoxRectToDot();
@@ -123,7 +122,6 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
       _isDrawing = true;
       // 记录初始位置
       state.annotationBoxRect = Rect.fromLTWH(position.dx, position.dy, 0, 0);
-      debug("开始绘制矩形");
     }
   }
 
@@ -227,7 +225,6 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
 
   /// 从文件中获取图像
   void setFileImg(TapUpDetails details) async {
-    debug("setFileImg");
     if (!_imgRect.isEmpty && _imgRect.contains(details.localPosition)) {
       return;
     }
@@ -268,7 +265,6 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
 
   /// 背景分割
   void _convertBackgroundSplit() async {
-    debug("message: _convertBackgroundSplit");
     if (state.srcImage == null) {
       info("未选择图片");
       return;
@@ -281,9 +277,6 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
 
     _startLoading();
     final imgRect = _annotationBoxToImageRelativeRect();
-    debug("坐标: ${state.annotationBoxRect}");
-    debug("坐标: ${_imgRect}");
-    debug("比例坐标: $imgRect");
     final String result;
     try {
       result = await $api.splitBackground(SplitBackgroundImgMsg(
@@ -307,7 +300,6 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
     final top = (state.annotationBoxRect.top - _imgRect.top) / _imgRect.height;
     final width = state.annotationBoxRect.width / _imgRect.width;
     final height = state.annotationBoxRect.height / _imgRect.height;
-    debug("left: $left, top: $top, width: $width, height: $height");
     return Rect.fromLTWH(left, top, width, height);
   }
 
