@@ -11,8 +11,8 @@ class ImgToolState {
   // 当前操作
   ImgToolEnum? operationEnum;
 
-  // 矩形标注框
-  AnnotationBox annotationBox = AnnotationBox.zero();
+  // 屏幕坐标矩形框
+  Rect annotationBoxRect = Rect.zero;
 
   // 输出图像
   NFImage? dstImage;
@@ -22,25 +22,11 @@ class ImgToolState {
 
   void reset({bool notResetOperation = false}) {
     srcImage = null;
-    annotationBox = AnnotationBox.zero();
     dstImage = null;
+    annotationBoxRect = Rect.zero;
     isLoading = false;
     if (!notResetOperation) {
       operationEnum = null;
     }
   }
-}
-
-/// 标注框
-/// 标注框的起始坐标和结束坐标
-/// 数据为img的相对坐标 取值为 [0,1]
-@Immutable()
-class AnnotationBox {
-  final Offset startPosition;
-  final Offset endPosition;
-
-  const AnnotationBox({required this.startPosition, required this.endPosition});
-
-  const AnnotationBox.zero() : this(startPosition: Offset.zero, endPosition: Offset.zero);
-
 }
