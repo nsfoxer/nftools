@@ -22,7 +22,7 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
 
   // 是否正在绘制矩形
   bool _isDrawing = false;
-
+  _OperationEnum? _operationEnum;
 
   /// 当前操作
   void operate(ImgToolEnum imgToolEnum) {
@@ -63,11 +63,38 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
   /// 设置画矩形的结束位置
   /// @param endPosition 结束位置
   void _setDrawEndRect(Offset endPosition) {
-    final position = _screenToImageRelativePosition(endPosition);
-    state.annotationBox = AnnotationBox(
-        startPosition: state.annotationBox.startPosition,
-        endPosition: position);
+    final rect = state.annotationBoxRect;
+    final left = min(rect.left, endPosition.dx).clamp(_imgRect.left, _imgRect.right);
+    final top = min(rect.top, endPosition.dy).clamp(_imgRect.top, _imgRect.bottom);
+    final right = max(rect.right, endPosition.dx).clamp(_imgRect.left, _imgRect.right);
+    final bottom = max(rect.bottom, endPosition.dy).clamp(_imgRect.top, _imgRect.bottom);
+    state.annotationBoxRect = Rect.fromLTRB(left, top, right, bottom);
     update([PageWidgetNameConstant.drawRect]);
+  }
+
+  final _dotSize = 10.0;
+
+  (Rect, Rect, Rect, Rect) annotationBoxRectToDot() {
+    if (state.annotationBoxRect.isEmpty) {
+      return (Rect.zero, Rect.zero, Rect.zero, Rect.zero);
+    }
+    final width = state.annotationBoxRect.width;
+    final height = state.annotationBoxRect.height;
+    final dx = state.annotationBoxRect.left;
+    final dy = state.annotationBoxRect.top;
+    final topRect = Rect.fromCenter(
+        center: Offset(dx + width / 2, dy), width: _dotSize, height: _dotSize);
+    final bottomRect = Rect.fromCenter(
+        center: Offset(dx + width / 2, dy + height),
+        width: _dotSize,
+        height: _dotSize);
+    final leftRect = Rect.fromCenter(
+        center: Offset(dx, dy + height / 2), width: _dotSize, height: _dotSize);
+    final rightRect = Rect.fromCenter(
+        center: Offset(dx + width, dy + height / 2),
+        width: _dotSize,
+        height: _dotSize);
+    return (topRect, bottomRect, leftRect, rightRect);
   }
 
   /// 处理图像的拖动开始事件
@@ -75,73 +102,112 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
     final position = details.localPosition;
     // 判断是否在图像区域内
     if (!_imgRect.contains(position)) {
-      state.annotationBox = AnnotationBox.zero();
+      state.annotationBoxRect = Rect.zero;
       return;
     }
-    _isDrawing = true;
-    // 记录初始位置
-    final startOffest = _screenToImageRelativePosition(position);
-    state.annotationBox = AnnotationBox(
-      startPosition: startOffest,
-      endPosition: startOffest,
-    );
+    debug("start");
+    // 判断是否在标注框dot区域内
+    final (dotTopRect, dotBottomRect, dotLeftRect, dotRightRect) =
+        annotationBoxRectToDot();
+    if (dotLeftRect.contains(position)) {
+      _operationEnum = _OperationEnum.left;
+    } else if (dotRightRect.contains(position)) {
+      _operationEnum = _OperationEnum.right;
+    } else if (dotTopRect.contains(position)) {
+      _operationEnum = _OperationEnum.top;
+    } else if (dotBottomRect.contains(position)) {
+      _operationEnum = _OperationEnum.bottom;
+    } else {
+      // 不在标注框dot区域内，开始绘制矩形
+      _operationEnum = null;
+      _isDrawing = true;
+      // 记录初始位置
+      state.annotationBoxRect = Rect.fromLTWH(position.dx, position.dy, 0, 0);
+      debug("开始绘制矩形");
+    }
   }
 
   /// 处理图像的拖动更新事件
   void handlePanUpdate(DragUpdateDetails details) {
+    if (_handleDot(details.localPosition)) {
+      update([PageWidgetNameConstant.drawRect]);
+      return;
+    }
+
     if (!_isDrawing) {
-      state.annotationBox = AnnotationBox.zero();
+      state.annotationBoxRect = Rect.zero;
       return;
     }
     _setDrawEndRect(details.localPosition);
+  }
+
+  // 是否已处理
+  bool _handleDot(Offset position) {
+    if (_operationEnum == null) {
+      return false;
+    }
+
+    switch (_operationEnum) {
+      case _OperationEnum.left:
+        final dx =
+            position.dx.clamp(_imgRect.left, state.annotationBoxRect.right);
+        position = Offset(dx, position.dy);
+        state.annotationBoxRect = Rect.fromLTWH(
+            position.dx,
+            state.annotationBoxRect.top,
+            state.annotationBoxRect.width +
+                state.annotationBoxRect.left -
+                position.dx,
+            state.annotationBoxRect.height);
+        break;
+      case _OperationEnum.right:
+        final dx =
+            position.dx.clamp(state.annotationBoxRect.left, _imgRect.right);
+        state.annotationBoxRect = Rect.fromLTWH(
+            state.annotationBoxRect.left,
+            state.annotationBoxRect.top,
+            dx - state.annotationBoxRect.left,
+            state.annotationBoxRect.height);
+        break;
+      case _OperationEnum.top:
+        final dy =
+            position.dy.clamp(_imgRect.top, state.annotationBoxRect.bottom);
+        state.annotationBoxRect = Rect.fromLTWH(
+            state.annotationBoxRect.left,
+            dy,
+            state.annotationBoxRect.width,
+            state.annotationBoxRect.height + state.annotationBoxRect.top - dy);
+        break;
+      case _OperationEnum.bottom:
+        final dy =
+            position.dy.clamp(state.annotationBoxRect.top, _imgRect.bottom);
+        state.annotationBoxRect = Rect.fromLTWH(
+            state.annotationBoxRect.left,
+            state.annotationBoxRect.top,
+            state.annotationBoxRect.width,
+            dy - state.annotationBoxRect.top);
+        break;
+      default:
+        break;
+    }
+    return true;
   }
 
   /// 处理图像的拖动结束事件
   void handlePanEnd(DragEndDetails details) {
+    if (_handleDot(details.localPosition)) {
+      _operationEnum = null;
+      update([PageWidgetNameConstant.drawRect]);
+      return;
+    }
+
+    _operationEnum = null;
     if (!_isDrawing) {
-      state.annotationBox = AnnotationBox.zero();
+      state.annotationBoxRect = Rect.zero;
       return;
     }
     _isDrawing = false;
     _setDrawEndRect(details.localPosition);
-  }
-
-  /// 计算屏幕坐标在图像坐标中的位置
-  Offset _screenToImageRelativePosition(Offset screenOffset) {
-    final x = (screenOffset.dx - _imgRect.left) / _imgRect.width;
-    final y = (screenOffset.dy - _imgRect.top) / _imgRect.height;
-    return Offset(x.clamp(0.0, 1.0), y.clamp(0.0, 1.0));
-  }
-
-  /// 标注框为屏幕坐标 single
-  Offset _imageRelativePositionToScreen(Offset annotationOffset) {
-    if (_imgRect.isEmpty) {
-      return Offset.zero;
-    }
-    final x = _imgRect.left + annotationOffset.dx * _imgRect.width;
-    final y = _imgRect.top + annotationOffset.dy * _imgRect.height;
-    return Offset(x, y);
-  }
-
-  /// 转换注释框为屏幕坐标
-  Rect annotationBoxToScreenRect() {
-    if (state.annotationBox.startPosition == Offset.zero ||
-        state.annotationBox.endPosition == Offset.zero) {
-      return Rect.zero;
-    }
-    final startPosition =
-        _imageRelativePositionToScreen(state.annotationBox.startPosition);
-    final endPosition =
-        _imageRelativePositionToScreen(state.annotationBox.endPosition);
-    final left = min(startPosition.dx, endPosition.dx);
-    final top = min(startPosition.dy, endPosition.dy);
-    final width = (startPosition.dx - endPosition.dx).abs();
-    final height = (startPosition.dy - endPosition.dy).abs();
-    final result = Rect.fromLTWH(left, top, width, height);
-    if (isRectTooSmall(result, 10)) {
-      return Rect.zero;
-    }
-    return result;
   }
 
   /// 从剪贴板中获取图像
@@ -207,7 +273,7 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
       info("未选择图片");
       return;
     }
-    final rect = annotationBoxToScreenRect();
+    final rect = state.annotationBoxRect;
     if (isRectTooSmall(rect, 10)) {
       info("请标注主体区域");
       return;
@@ -215,7 +281,10 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
 
     _startLoading();
     final imgRect = _annotationBoxToImageRelativeRect();
-    final result;
+    debug("坐标: ${state.annotationBoxRect}");
+    debug("坐标: ${_imgRect}");
+    debug("比例坐标: $imgRect");
+    final String result;
     try {
       result = await $api.splitBackground(SplitBackgroundImgMsg(
           srcImg: state.srcImage!.originalPath,
@@ -234,12 +303,11 @@ class ImgToolController extends GetxController with GetxUpdateMixin {
 
   /// 转换标注框为比例坐标
   Rect _annotationBoxToImageRelativeRect() {
-    final startPosition = state.annotationBox.startPosition;
-    final endPosition = state.annotationBox.endPosition;
-    final left = min(startPosition.dx, endPosition.dx);
-    final top = min(startPosition.dy, endPosition.dy);
-    final width = (startPosition.dx - endPosition.dx).abs();
-    final height = (startPosition.dy - endPosition.dy).abs();
+    final left = (state.annotationBoxRect.left - _imgRect.left) / _imgRect.width;
+    final top = (state.annotationBoxRect.top - _imgRect.top) / _imgRect.height;
+    final width = state.annotationBoxRect.width / _imgRect.width;
+    final height = state.annotationBoxRect.height / _imgRect.height;
+    debug("left: $left, top: $top, width: $width, height: $height");
     return Rect.fromLTWH(left, top, width, height);
   }
 
@@ -298,4 +366,12 @@ enum ImgToolEnum {
   const ImgToolEnum(this.desc);
 
   final String desc;
+}
+
+enum _OperationEnum {
+  left,
+  right,
+  top,
+  bottom,
+  none,
 }

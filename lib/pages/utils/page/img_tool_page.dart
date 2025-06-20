@@ -127,21 +127,21 @@ class ImgOperateArea extends StatelessWidget {
                             logic.state.srcImage!.displayImgInfo.image.height
                                 .toDouble(),
                           );
-                          return Stack(
-                            children: [
-                              Image(
-                                image: logic.state.srcImage!.displayImg,
-                                fit: BoxFit.contain,
-                                width: constraints.maxWidth,
-                                height: constraints.maxHeight,
-                              ),
-                              GetBuilder<ImgToolController>(
-                                builder: (logic) {
-                                  return _buildImgRect(logic, context);
-                                },
-                                id: PageWidgetNameConstant.drawRect,
-                              ),
-                            ],
+                          return GetBuilder<ImgToolController>(
+                            builder: (logic) {
+                              return Stack(
+                                children: [
+                                  Image(
+                                    image: logic.state.srcImage!.displayImg,
+                                    fit: BoxFit.contain,
+                                    width: constraints.maxWidth,
+                                    height: constraints.maxHeight,
+                                  ),
+                                  ..._buildImgRect(logic, context),
+                                ],
+                              );
+                            },
+                            id: PageWidgetNameConstant.drawRect,
                           );
                         },
                       ),
@@ -150,33 +150,60 @@ class ImgOperateArea extends StatelessWidget {
         }));
   }
 
+  Positioned _rectToDot(Rect dot, Color color, bool horizontal) {
+    return  Positioned(
+      left: dot.left,
+      top: dot.top,
+      width: dot.width,
+      height: dot.height,
+      child: Container(
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+        ),
+        child: MouseRegion(
+          cursor: horizontal ? SystemMouseCursors.resizeColumn: SystemMouseCursors.resizeRow,
+        ),
+      ),
+    );
+  }
+
   /// 构建矩形
   /// @param logic 控制器
   /// @param context 上下文
   /// 仅当为背景分割时显示
-  Widget _buildImgRect(ImgToolController logic, BuildContext context) {
+  List<Widget> _buildImgRect(ImgToolController logic, BuildContext context) {
     if (logic.state.operationEnum != ImgToolEnum.backgroundSplit) {
-      return Container();
+      return [Container()];
     }
     final pColor = primaryColor(context);
-    final rect = logic.annotationBoxToScreenRect();
+    // final rect = logic.annotationBoxToScreenRect();
+    final rect = logic.state.annotationBoxRect;
+    final (topDot, bottomDot, leftDto, rightDot) =
+        logic.annotationBoxRectToDot();
     if (rect.isEmpty) {
-      return Container();
+      return [Container()];
     }
-    return Positioned(
-      left: rect.left,
-      top: rect.top,
-      width: rect.width,
-      height: rect.height,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: pColor,
-            width: 1.5,
+    return [
+      Positioned(
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: pColor,
+              width: 2.5,
+            ),
           ),
         ),
       ),
-    );
+      _rectToDot(topDot, pColor, false),
+      _rectToDot(bottomDot, pColor, false),
+      _rectToDot(leftDto, pColor, true),
+      _rectToDot(rightDot, pColor, true)
+    ];
   }
 }
 
@@ -196,15 +223,13 @@ class ImgDisplay extends StatelessWidget {
             Tooltip(
               message: "保存图片",
               child: IconButton(
-                  icon: Icon(FluentIcons.save),
-                  onPressed: logic.saveResult),
+                  icon: Icon(FluentIcons.save), onPressed: logic.saveResult),
             ),
             NFLayout.hlineh3,
             Tooltip(
               message: "复制图片",
               child: IconButton(
-                  icon: Icon(FluentIcons.copy),
-                  onPressed: logic.copyResult),
+                  icon: Icon(FluentIcons.copy), onPressed: logic.copyResult),
             )
           ],
         ),
