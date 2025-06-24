@@ -507,10 +507,11 @@ packages:
   re_editor:
     dependency: "direct main"
     description:
-      name: re_editor
-      sha256: "17e430f0591dd361992ec2dd6f69191c1853fa46e05432e095310a8f82ee820e"
-      url: "https://pub.flutter-io.cn"
-    source: hosted
+      path: "."
+      ref: d448e01d8ff25081209d1ac7d1058503251670f6
+      resolved-ref: d448e01d8ff25081209d1ac7d1058503251670f6
+      url: "https://github.moeyy.xyz/https://github.com/copywith99/re-editor.git"
+    source: git
     version: "0.7.0"
   re_highlight:
     dependency: "direct main"
