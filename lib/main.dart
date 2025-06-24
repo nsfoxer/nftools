@@ -12,6 +12,7 @@ import 'package:nftools/common/constants.dart';
 import 'package:nftools/controller/router_controller.dart';
 import 'package:nftools/router/router.dart';
 import 'package:nftools/src/bindings/bindings.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/utils.dart';
 import 'package:rinf/rinf.dart';
 import 'package:tray_manager/tray_manager.dart';
@@ -21,7 +22,9 @@ import 'package:window_manager/window_manager.dart';
 
 Future<void> _init() async {
   // 1. 初始化后端
+  info("等待初始化后端");
   await initializeRust(assignRustSignal);
+  info("后端初始化成功");
   initMsg();
 
   // 2. 初始化video
@@ -50,6 +53,7 @@ Future<void> _init() async {
 }
 
 void main() async {
+  info("启动应用");
   await _init();
   runApp(const MainApp());
 }
