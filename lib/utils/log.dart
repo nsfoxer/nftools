@@ -1,8 +1,22 @@
+import 'dart:io';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:logger/logger.dart';
 import 'package:nftools/router/router.dart';
 
-final _logger =Logger(printer: HybridPrinter(SimplePrinter(), error: PrettyPrinter(), fatal: PrettyPrinter()));
+class _MyFilter extends LogFilter {
+  @override
+  bool shouldLog(LogEvent event) {
+    return true;
+  }
+}
+
+final _logger =Logger(printer: HybridPrinter(SimplePrinter(), error: PrettyPrinter(), fatal: PrettyPrinter()),
+  output: FileOutput(
+    file: File("nftools-log.log"),
+  ),
+  filter: _MyFilter(),
+);
 
 const Map<Level, (InfoBarSeverity, String)> _infoMap = {
   Level.info: (InfoBarSeverity.info, "通知"),
