@@ -9,11 +9,12 @@ import 'package:go_router/go_router.dart';
 import 'package:nftools/api/api.dart';
 import 'package:nftools/api/base.dart' as $base_api;
 import 'package:nftools/common/constants.dart';
+import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/router_controller.dart';
 import 'package:nftools/router/router.dart';
 import 'package:nftools/src/bindings/bindings.dart';
-import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/utils.dart';
+import 'package:pasteboard/pasteboard.dart';
 import 'package:rinf/rinf.dart';
 import 'package:tray_manager/tray_manager.dart';
 
@@ -22,9 +23,7 @@ import 'package:window_manager/window_manager.dart';
 
 Future<void> _init() async {
   // 1. 初始化后端
-  info("等待初始化后端");
   await initializeRust(assignRustSignal);
-  info("后端初始化成功");
   initMsg();
 
   // 2. 初始化video
@@ -52,10 +51,68 @@ Future<void> _init() async {
   initSystemTray();
 }
 
-void main() async {
-  info("启动应用");
-  await _init();
+Future<void> main() async {
+  try {
+    await _init();
+  } catch (e) {
+    final errorMsg = e.toString();
+    String? hint;
+    if (errorMsg.contains("hub.dll") || errorMsg.contains("libhub.so")) {
+      hint = "可能缺失依赖库";
+    }
+    runApp(ErrorMessageApp(msg: "初始化失败: ${e.toString()}", hint: hint ?? "请联系开发者"));
+    return;
+  }
   runApp(const MainApp());
+}
+
+class ErrorMessageApp extends StatelessWidget {
+  final String msg;
+  final String hint;
+
+  const ErrorMessageApp({super.key, required this.msg, required this.hint});
+  @override
+  Widget build(BuildContext context) {
+    return FluentApp(
+      title: Constants.appName,
+      theme: FluentThemeData.light(),
+      darkTheme: FluentThemeData.dark(),
+      themeMode: ThemeMode.system,
+      home: ScaffoldPage(
+        content: Center(
+          child: SizedBox(
+              width: 400,
+              child:Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(FluentIcons.critical_error_solid, size: 18, color: Colors.red),
+                  NFLayout.hlineh2,
+                  Text(msg, style: TextStyle(fontSize: 16, color: Colors.red)),
+                ],
+              ),
+              NFLayout.vlineh0,
+              Text(hint, style: TextStyle(fontSize: 14)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Button(child: Text("复制错误信息"), onPressed: () {
+                   Pasteboard.writeText(msg);
+                  }),
+                  NFLayout.hlineh2,
+                  Button(child: Text("退出"), onPressed: () {
+                    exit(1);
+                  })
+                ],
+              )
+            ],
+          )),
+        ),
+      ),
+    );
+  }
 }
 
 class MainApp extends StatefulWidget {
