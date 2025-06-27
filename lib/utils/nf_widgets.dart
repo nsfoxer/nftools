@@ -716,10 +716,10 @@ class NFImagePainterController extends ChangeNotifier {
     Canvas canvas = Canvas(recorder);
     //获取图片大小
     // 通过 _painter 对象操作 canvas
-    _painter!.paint(canvas, _displayRect.size);
+    _painter!.paint(canvas, _boardSize);
     Picture picture = recorder.endRecording();
     ui.Image image = await picture.toImage(
-        _displayRect.width.toInt(), _displayRect.height.toInt());
+        _boardSize.width.toInt(), _boardSize.height.toInt());
     // 获取字节，存入文件
     ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
     if (byteData != null) {
