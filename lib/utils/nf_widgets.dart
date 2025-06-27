@@ -450,7 +450,6 @@ class NFImagePainterPage extends StatelessWidget {
         return ValueListenableBuilder<Size>(
           valueListenable: controller._imgSize,
           builder: (ctx, size, child) {
-            debug("constraints: $constraints");
             if (controller._imageProvider == null || size.height ==0 || size.width == 0) {
               controller._setDisplayRect(Rect.fromPoints(Offset.zero,
                   Offset(constraints.maxWidth, constraints.maxHeight)));
@@ -465,11 +464,10 @@ class NFImagePainterPage extends StatelessWidget {
             }
             final displayRect = _calculateImageSize(
                 Size(constraints.maxWidth, constraints.maxHeight), size);
-            debug("displayRect $displayRect");
             controller._setDisplayRect(displayRect);
-            return SizedBox(
-              width: displayRect.width,
-              height: displayRect.height,
+            return Container(
+              width: constraints.maxWidth,
+              height: constraints.maxHeight,
               child: CustomPaint(
                 foregroundPainter: painter,
                 child: RepaintBoundary(
@@ -483,7 +481,6 @@ class NFImagePainterPage extends StatelessWidget {
   }
 
   Rect _calculateImageSize(Size constraints, Size imageSize) {
-    debug("imageSize $imageSize");
     // 计算图片显示的大小
     final maxScale = constraints.width / constraints.height;
     final imgScale = imageSize.width / imageSize.height;
@@ -522,7 +519,6 @@ class _ImageMaskPainter extends CustomPainter {
           _drawPath(canvas, paint, data.points);
           break;
         case DrawType.erase:
-        // canvas.saveLayer(rect, Paint());
           _drawPath(canvas, paint, data.points);
           break;
         case DrawType.none:

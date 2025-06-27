@@ -13,7 +13,17 @@ import '../state/Image_split_state.dart';
 
 /// 图片分割控制器
 class ImageSplitController extends GetxController with GetxUpdateMixin {
-  final ImageSplitState state = ImageSplitState();
+  late ImageSplitState state;
+
+  @override
+  void onInit() {
+    super.onInit();
+    state =  ImageSplitState(NFImagePainterController(
+      DrawType.none,
+      0, Colors.transparent, _listenDrawEnd,
+    ));
+  }
+
 
 
   /// 从剪贴板中获取图像
@@ -56,6 +66,11 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
 
   void reset() {
     state.reset();
+    update();
+  }
+
+  void _listenDrawEnd(DrawType endType) {
+
   }
 
   /// 从文件中获取图像
