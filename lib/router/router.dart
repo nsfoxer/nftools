@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:meta/meta.dart';
@@ -73,6 +76,10 @@ class RouterServiceData {
         Get.lazyPut(() => ImgToolController(), fenix: true);
       })
     }),
+    if (kDebugMode)
+      "/test": MenuData("/test", FluentIcons.test_case, "测试", TestPage(), [], () {
+      }),
+
     "/settings": MenuData("/settings", Icons.settings, "设置", const SettingsPage(), [ServiceNameConstant.about, ServiceNameConstant.utils, ServiceNameConstant.autoStart], () {
       Get.lazyPut<AutoStartController>(() => AutoStartController(), fenix: true);
       Get.lazyPut<AboutController>(() => AboutController(), fenix: true);
