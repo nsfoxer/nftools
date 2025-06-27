@@ -18,10 +18,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   @override
   void onInit() {
     super.onInit();
-    state =  ImageSplitState(NFImagePainterController(
-      DrawType.none,
-      0, Colors.transparent, _listenDrawEnd,
-    ));
+    state =  ImageSplitState(NFImagePainterController(endType: _listenDrawEnd, startType:  _listenDrawStart));
   }
 
 
@@ -69,8 +66,18 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     update();
   }
 
-  void _listenDrawEnd(DrawType endType) {
+  void _listenDrawStart(DrawType startType) {
+    if (state.step == 0) {
+      state.controller.clearData();
+    }
+  }
 
+  void _listenDrawEnd(DrawType endType) {
+    if (state.step == 0) {
+      // 绘制矩形完成
+      state.controller.limitTypeNum(DrawType.rect, 1);
+      return;
+    }
   }
 
   /// 从文件中获取图像

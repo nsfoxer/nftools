@@ -2,14 +2,11 @@ import 'dart:io';
 
 import 'package:fluent_ui/fluent_ui.dart';
 
-import '../../../utils/log.dart';
 import '../../../utils/nf_widgets.dart';
 
 class TestPage extends StatelessWidget {
   final NFImagePainterController controller =
-      NFImagePainterController(DrawType.rect, 10, Colors.red, (type) {
-    debug("endType: $type");
-  });
+      NFImagePainterController(type:DrawType.rect, width:10.0, color:Colors.red);
 
   TestPage({super.key});
 
