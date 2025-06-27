@@ -14,6 +14,17 @@ class ImgToolPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Center(
+      child: Text("None"),
+    );
+  }
+}
+
+class ImgTool2Page extends StatelessWidget {
+  const ImgTool2Page({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     final imgLogic = Get.find<ImgToolController>();
     return ScaffoldPage.withPadding(
       header: PageHeader(
@@ -151,7 +162,7 @@ class ImgOperateArea extends StatelessWidget {
   }
 
   Positioned _rectToDot(Rect dot, Color color, bool horizontal) {
-    return  Positioned(
+    return Positioned(
       left: dot.left,
       top: dot.top,
       width: dot.width,
@@ -162,7 +173,9 @@ class ImgOperateArea extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         child: MouseRegion(
-          cursor: horizontal ? SystemMouseCursors.resizeColumn: SystemMouseCursors.resizeRow,
+          cursor: horizontal
+              ? SystemMouseCursors.resizeColumn
+              : SystemMouseCursors.resizeRow,
         ),
       ),
     );
