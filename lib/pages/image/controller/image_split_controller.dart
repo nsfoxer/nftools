@@ -1,12 +1,75 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/utils/extension.dart';
+import 'package:pasteboard/pasteboard.dart';
 
-import '../state/ImageSplitState.dart';
+import '../../../utils/log.dart';
+import '../../../utils/utils.dart';
+import '../state/Image_split_state.dart';
 
 /// 图片分割控制器
 class ImageSplitController extends GetxController with GetxUpdateMixin {
-
   final ImageSplitState state = ImageSplitState();
 
+  /// 从剪贴板中获取图像
+  void setPasteImg() async {
+    // 保存图像到临时文件
+    final image = await Pasteboard.image;
+    if (image == null || image.isEmpty) {
+      warn("未获取到剪贴板中图像");
+      return;
+    }
+    reset();
+    _startLoading();
+    final file = await saveBytesToTempFile(image, fileExtension: "png");
+    state.originalImage = file.path;
+    state.currentImage = file.path;
+    state.controller.setImageProvider(FileImage(file));
+    _endLoading();
+  }
 
+  /// 复制结果至剪贴板
+  void copyResult() async {
+    // final file = File(state.currentImage!.originalPath);
+    // final bytes = await file.readAsBytes();
+    // Pasteboard.writeImage(bytes);
+    // info("复制图像成功");
+  }
+
+  /// 开始加载
+  void _startLoading() {
+    state.isLoading = true;
+    update();
+  }
+
+  /// 结束加载
+  void _endLoading() {
+    state.isLoading = false;
+    update();
+  }
+
+  void reset() {
+    state.reset();
+  }
+
+  /// 从文件中获取图像
+  void setFileImg() async {
+    FilePickerResult? result =
+        await FilePicker.platform.pickFiles(type: FileType.image);
+    final path = result?.files.single.path;
+    if (path == null) {
+      return;
+    }
+
+    // 加载图像
+    reset();
+    _startLoading();
+    state.originalImage = path;
+    state.currentImage = path;
+    state.controller.setImageProvider(FileImage(File(path)));
+    _endLoading();
+  }
 }
