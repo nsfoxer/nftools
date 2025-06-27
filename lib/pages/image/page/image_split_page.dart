@@ -55,7 +55,13 @@ class ImageSplitPage extends StatelessWidget {
                           CommandBarButton(
                             label: Text("颜色"),
                             onPressed: () {},
-                          )
+                          ),
+                          CommandBarButton(
+                            label: Text("save"),
+                            onPressed: () {
+                              logic.state.controller.saveCanvas(r"C:\Users\12618\Desktop\box.png");
+                            },
+                          ),
                         ]),
                         NFLayout.vlineh0,
                         Expanded(
