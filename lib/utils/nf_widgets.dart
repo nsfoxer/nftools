@@ -452,7 +452,7 @@ class NFImagePainterPage extends StatelessWidget {
           builder: (ctx, size, child) {
             if (controller._imageProvider == null || size.height ==0 || size.width == 0) {
               controller._setDisplayRect(Rect.fromPoints(Offset.zero,
-                  Offset(constraints.maxWidth, constraints.maxHeight)));
+                  Offset(constraints.maxWidth, constraints.maxHeight)), Size(constraints.maxWidth, constraints.maxHeight));
               return CustomPaint(
                 foregroundPainter: painter,
                 child: Container(
@@ -464,14 +464,15 @@ class NFImagePainterPage extends StatelessWidget {
             }
             final displayRect = _calculateImageSize(
                 Size(constraints.maxWidth, constraints.maxHeight), size);
-            controller._setDisplayRect(displayRect);
+            controller._setDisplayRect(displayRect, Size(constraints.maxWidth, constraints.maxHeight));
             return Container(
               width: constraints.maxWidth,
               height: constraints.maxHeight,
+              color: Colors.green,
               child: CustomPaint(
                 foregroundPainter: painter,
                 child: RepaintBoundary(
-                    child: Image(image: controller._imageProvider!, fit: BoxFit.contain,)),
+                    child: Image(image: controller._imageProvider!, fit: BoxFit.contain)),
               ),
             );
           },
@@ -578,25 +579,33 @@ class NFImagePainterController extends ChangeNotifier {
   /// 绘制点
   final ValueNotifier<List<_DrawData>> _points = ValueNotifier([]);
 
-  /// 绘制区域
+  /// 图片展示区域
   Rect _displayRect = Rect.zero;
+
+  /// 画板大小
+  Size _boardSize = Size.zero;
 
   /// 绘制对象
   CustomPainter? _painter;
 
   /// 绘制结束回调
-  Function(DrawType type) endType = (type) {};
+  Function(DrawType type) endType;
+
+  /// 绘制开始回调
+  Function(DrawType type) startType;
 
   /// 图片实际大小
   final ValueNotifier<Size> _imgSize = ValueNotifier(Size.zero);
 
   ImageProvider? _imageProvider;
 
-  void _setDisplayRect(Rect rect) {
+  void _setDisplayRect(Rect rect, Size boardSize) {
     _displayRect = rect;
+    _boardSize = boardSize;
   }
 
   void reset() {
+    _boardSize = Size.zero;
     _imageProvider = null;
     _displayRect = Rect.zero;
     _points.value.clear();
@@ -610,12 +619,12 @@ class NFImagePainterController extends ChangeNotifier {
   }
 
 
-  NFImagePainterController(DrawType type, double width, Color color,
-      Function(DrawType type)? endType) {
+  NFImagePainterController({type = DrawType.none,double width = 0.0, color = Colors.transparent,
+  this.endType = _ignoreType , this.startType = _ignoreType}) {
     changeDrawType(type, width, color);
-    if (endType != null) {
-      this.endType = endType;
-    }
+  }
+
+  static void _ignoreType(DrawType type) {
   }
 
   Future<void> setImageProvider(ImageProvider imageProvider) async {
@@ -636,10 +645,18 @@ class NFImagePainterController extends ChangeNotifier {
     ));
   }
 
+  /// 清除数据
+  void clearData() {
+    final last = _points.value.last;
+    _points.value.clear();
+    _points.value.add(last.copyWith(points: []));
+  }
+
   void _handlePanStart(DragStartDetails details) {
     if (_points.value.last.type == DrawType.none) {
       return;
     }
+    startType(_points.value.last.type);
     // 获取绘制区域
     _points.value.last.points.add(details.localPosition);
   }
@@ -650,9 +667,11 @@ class NFImagePainterController extends ChangeNotifier {
     }
     final lastData = _points.value.last;
     if (!_displayRect.contains(details.localPosition)) {
-      _points.value.add(lastData.copyWith(
-        points: [],
-      ));
+      if (lastData.points.isNotEmpty) {
+        _points.value.add(lastData.copyWith(
+          points: [],
+        ));
+      }
       return;
     }
 
@@ -671,6 +690,24 @@ class NFImagePainterController extends ChangeNotifier {
       points: [],
     ));
     endType(_points.value.last.type);
+  }
+
+  /// 限制类型数量
+  /// @param type 类型
+  /// @param num 数量
+  void limitTypeNum(DrawType type, int num) {
+    List<_DrawData> newData = [];
+    for(_DrawData data in _points.value) {
+      if (data.type == type && data.points.isNotEmpty) {
+        newData.add(data);
+      }
+    }
+
+    if (newData.length > num) {
+      newData = newData.sublist(newData.length - num, newData.length);
+    }
+    _points.value = newData;
+    _points.notifyListeners();
   }
 
   /// 生成画画图像
@@ -759,6 +796,11 @@ class _DrawData {
         break;
     }
     return paint;
+  }
+
+  @override
+  String toString() {
+    return '_DrawData{type: $type, width: $width, color: $color, points: $points}';
   }
 }
 /// 图片绘制页面 end
