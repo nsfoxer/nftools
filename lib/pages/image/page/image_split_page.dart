@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:keymap/keymap.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 
-import '../../../common/style.dart';
 import '../controller/image_split_controller.dart';
 
 class ImageSplitPage extends StatelessWidget {
@@ -19,6 +18,16 @@ class ImageSplitPage extends StatelessWidget {
               builder: (logic) => CommandBar(
                   mainAxisAlignment: MainAxisAlignment.end,
                   primaryItems: [
+                    CommandBarButton(
+                      icon: Icon(FluentIcons.calculator_addition),
+                      label: Text("画笔增加"),
+                      onPressed: () => logic.changePainterWidth(true),
+                    ),
+                    CommandBarButton(
+                      icon: Icon(FluentIcons.calculator_subtract),
+                      label: Text("画笔减少"),
+                      onPressed: () => logic.changePainterWidth(false),
+                    ),
                     CommandBarButton(
                       icon: Icon(FluentIcons.next),
                       label: Text("下一步"),
@@ -46,31 +55,11 @@ class ImageSplitPage extends StatelessWidget {
                     child: NFCardContent(
                         child: Center(child: Text("选择图片或ctrl+v粘贴"))),
                   )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                        CommandBar(primaryItems: [
-                          // 操作
-                          CommandBarButton(
-                            label: Text("颜色"),
-                            onPressed: () {},
-                          ),
-                          CommandBarButton(
-                            label: Text("save"),
-                            onPressed: () {
-                              logic.state.controller.saveCanvas(r"C:\Users\12618\Desktop\box.png");
-                            },
-                          ),
-                        ]),
-                        NFLayout.vlineh0,
-                        Expanded(
-                            child: NFLoadingWidgets(
-                          loading: logic.state.isLoading,
-                          child: NFImagePainterPage(
-                              controller: logic.state.controller),
-                        ))
-                      ]),
+                : NFLoadingWidgets(
+                    loading: logic.state.isLoading,
+                    child:
+                        NFImagePainterPage(controller: logic.state.controller),
+                  ),
           );
         }));
   }

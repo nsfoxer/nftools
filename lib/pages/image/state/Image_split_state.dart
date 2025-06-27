@@ -19,6 +19,9 @@ class ImageSplitState {
   // 控制器
   NFImagePainterController controller;
 
+  // 画笔宽度
+  double painterWidth = 1.0;
+
   ImageSplitState(this.controller);
 
 
@@ -29,6 +32,14 @@ class ImageSplitState {
     step = 0;
     controller.reset();
     isLoading = false;
+  }
+
+  DrawType getDrawType() {
+    if (step == 0) {
+      return DrawType.rect;
+    }
+
+    return DrawType.path;
   }
 
 }
