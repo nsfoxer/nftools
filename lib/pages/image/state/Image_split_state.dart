@@ -25,7 +25,7 @@ class ImageSplitState {
     currentImage = null;
     resultImage = null;
     step = 0;
-    controller = NFImagePainterController(DrawType.none, 0, Colors.transparent, null);
+    controller.reset();
     isLoading = false;
   }
 

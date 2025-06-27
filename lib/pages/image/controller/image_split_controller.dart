@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:nftools/utils/extension.dart';
+import 'package:nftools/utils/nf_widgets.dart';
 import 'package:pasteboard/pasteboard.dart';
 
 import '../../../utils/log.dart';
@@ -13,6 +14,7 @@ import '../state/Image_split_state.dart';
 /// 图片分割控制器
 class ImageSplitController extends GetxController with GetxUpdateMixin {
   final ImageSplitState state = ImageSplitState();
+
 
   /// 从剪贴板中获取图像
   void setPasteImg() async {
@@ -28,6 +30,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     state.originalImage = file.path;
     state.currentImage = file.path;
     state.controller.setImageProvider(FileImage(file));
+    _startRect();
     _endLoading();
   }
 
@@ -70,6 +73,11 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     state.originalImage = path;
     state.currentImage = path;
     state.controller.setImageProvider(FileImage(File(path)));
+    _startRect();
     _endLoading();
+  }
+
+  void _startRect() {
+    state.controller.changeDrawType(DrawType.rect, 3, Colors.grey);
   }
 }

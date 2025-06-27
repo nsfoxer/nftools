@@ -27,7 +27,9 @@ class ImageSplitPage extends StatelessWidget {
                     CommandBarButton(
                         icon: Icon(FluentIcons.clear),
                         label: Text("重置"),
-                        onPressed: () {}),
+                        onPressed: () {
+                          logic.reset();
+                        }),
                   ]),
             )),
         content: GetBuilder<ImageSplitController>(builder: (logic) {
@@ -50,6 +52,10 @@ class ImageSplitPage extends StatelessWidget {
                     children: [
                         CommandBar(primaryItems: [
                           // 操作
+                          CommandBarButton(
+                            label: Text("颜色"),
+                            onPressed: () {},
+                          )
                         ]),
                         NFLayout.vlineh0,
                         Expanded(
