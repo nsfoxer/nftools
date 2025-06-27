@@ -8,6 +8,8 @@ import 'package:meta/meta.dart';
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/pages/display_page.dart';
 import 'package:nftools/pages/home_page.dart';
+import 'package:nftools/pages/image/controller/image_split_controller.dart';
+import 'package:nftools/pages/image/page/image_split_page.dart';
 import 'package:nftools/pages/settings/page/settings_page.dart';
 import 'package:nftools/pages/sync_file_page.dart';
 import 'package:nftools/pages/utils/controller/img_tool_controller.dart';
@@ -60,7 +62,6 @@ class RouterServiceData {
       // 内存永久性
       Get.put<AiController>(AiController(), permanent: true);
     }),
-
     "/utils": MenuData("/utils", FluentIcons.toolbox, "工具", const UtilsPage(), [], () {
     }, children: {
       "/utils/diffText": MenuData("/utils/diffText", FluentIcons.diff_side_by_side, "文本对比", const TextDiffPage(), [], () {
@@ -72,10 +73,13 @@ class RouterServiceData {
       "/utils/qrCode": MenuData("/utils/qrCode", FluentIcons.q_r_code, "二维码转换", const QrPage(), [], () {
         Get.lazyPut<QrController>(() =>QrController(), fenix: true);
       }),
-      "/utils/imgTool": MenuData("/utils/imgTool", FluentIcons.image_pixel, "图片操作", ImgToolPage(), [], () {
-        Get.lazyPut(() => ImgToolController(), fenix: true);
-      })
     }),
+    "/utils/imgTool": MenuData("/utils/imgTool", FluentIcons.image_pixel, "图片操作", const ImgToolPage(), [], () {}, children: {
+      "/utils/imgTool/splitForeGround": MenuData("/utils/imgTool/splitForeGround", FluentIcons.image_pixel, "前景分割", ImageSplitPage(), [], () {
+        Get.lazyPut<ImageSplitController>(() => ImageSplitController(), fenix: true);
+      }),
+    }
+    ),
     if (kDebugMode)
       "/test": MenuData("/test", FluentIcons.test_case, "测试", TestPage(), [], () {
       }),

@@ -573,7 +573,7 @@ class _ImageMaskPainter extends CustomPainter {
 ///  controller.saveCanvas(r"tmp.png");
 ///
 /// ```
-class NFImagePainterController {
+class NFImagePainterController extends ChangeNotifier {
   /// 绘制点
   final ValueNotifier<List<_DrawData>> _points = ValueNotifier([]);
 
@@ -605,6 +605,7 @@ class NFImagePainterController {
     ));
     _points.notifyListeners();
   }
+
 
   NFImagePainterController(DrawType type, double width, Color color,
       Function(DrawType type)? endType) {
