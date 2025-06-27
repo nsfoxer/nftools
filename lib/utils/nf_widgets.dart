@@ -16,6 +16,8 @@ import 'package:re_highlight/languages/sql.dart';
 import 'package:re_highlight/styles/base16/github.dart';
 import 'package:re_highlight/styles/github-dark.dart';
 
+import 'log.dart';
+
 // card 内容体
 class NFCardContent extends StatelessWidget {
   const NFCardContent(
@@ -448,7 +450,7 @@ class NFImagePainterPage extends StatelessWidget {
         return ValueListenableBuilder<Size>(
           valueListenable: controller._imgSize,
           builder: (ctx, size, child) {
-            if (controller.imageProvider == null) {
+            if (controller._imageProvider == null) {
               controller._setDisplayRect(Rect.fromPoints(Offset.zero,
                   Offset(constraints.maxWidth, constraints.maxHeight)));
               return CustomPaint(
@@ -469,7 +471,7 @@ class NFImagePainterPage extends StatelessWidget {
               child: CustomPaint(
                 foregroundPainter: painter,
                 child: RepaintBoundary(
-                    child: Image(image: controller.imageProvider!, fit: BoxFit.contain,)),
+                    child: Image(image: controller._imageProvider!, fit: BoxFit.contain,)),
               ),
             );
           },
@@ -487,11 +489,11 @@ class NFImagePainterPage extends StatelessWidget {
     if (maxScale > imgScale) {
       height = constraints.width;
       width = height * imgScale;
-      dx = (constraints.width - width) / 2;
+      dx = (constraints.width - width).abs() / 2;
     } else {
       width = constraints.width;
       height = width / imgScale;
-      dy = (constraints.height - height) / 2;
+      dy = (constraints.height - height).abs() / 2;
     }
     return Rect.fromLTWH(dx, dy, width, height);
   }
@@ -589,7 +591,7 @@ class NFImagePainterController extends ChangeNotifier {
   /// 图片实际大小
   final ValueNotifier<Size> _imgSize = ValueNotifier(Size.zero);
 
-  ImageProvider? imageProvider;
+  ImageProvider? _imageProvider;
 
   void _setDisplayRect(Rect rect) {
     _displayRect = rect;
@@ -616,7 +618,7 @@ class NFImagePainterController extends ChangeNotifier {
   }
 
   Future<void> setImageProvider(ImageProvider imageProvider) async {
-    this.imageProvider = imageProvider;
+    _imageProvider = imageProvider;
     final info = await getImageInfoFromProvider(imageProvider);
     _imgSize.value =
         Size(info.image.width.toDouble(), info.image.height.toDouble());
