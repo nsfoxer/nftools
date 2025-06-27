@@ -17,7 +17,9 @@ class ImageSplitState {
   int step = 0;
 
   // 控制器
-  NFImagePainterController controller = NFImagePainterController(DrawType.none, 0, Colors.transparent, null);
+  NFImagePainterController controller;
+
+  ImageSplitState(this.controller);
 
 
   void reset() {
