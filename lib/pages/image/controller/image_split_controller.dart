@@ -18,8 +18,9 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   @override
   void onInit() {
     super.onInit();
-    state =  ImageSplitState(NFImagePainterController(endType: _listenDrawEnd, startType:  _listenDrawStart));
+    state =  ImageSplitState(NFImagePainterController(width: state.painterWidth, endType: _listenDrawEnd, startType:  _listenDrawStart));
   }
+
 
 
 
@@ -102,4 +103,20 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   void _startRect() {
     state.controller.changeDrawType(DrawType.rect, 3, Colors.grey);
   }
+
+  void changePainterWidth(bool isAdd) {
+    var value = state.painterWidth;
+    if (isAdd) {
+      value += 1;
+    } else {
+      value -= 1;
+    }
+    value = value.clamp(1, 20);
+    if (value == state.painterWidth)
+      return;
+    state.painterWidth = value;
+    state.controller.changeDrawType(state.getDrawType(), value, Colors.grey);
+    update();
+  }
+
 }
