@@ -21,7 +21,6 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     state =  ImageSplitState(NFImagePainterController(width: 1, endType: _listenDrawEnd, startType:  _listenDrawStart));
   }
 
-
   /// 从剪贴板中获取图像
   void setPasteImg() async {
     // 保存图像到临时文件
@@ -99,7 +98,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   }
 
   void _startRect() {
-    state.controller.changeDrawType(DrawType.rect, 3, Colors.grey);
+    state.controller.changeDrawType(DrawType.rect, 3, _getColor());
   }
 
   void changePainterWidth(double value) {
@@ -107,8 +106,26 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
       return;
     }
     state.painterWidth = value;
-    state.controller.changeDrawType(state.getDrawType(), value, Colors.grey);
+    state.controller.changeDrawType(state.getDrawType(), value, _getColor());
     update();
+  }
+
+  void next() async {
+    if (state.step == 0) {
+      // 绘制矩形完成
+      final tmpFile = await getTempFilePath(fileExtension: "png");
+      state.controller.saveCanvas(tmpFile);
+      debug(tmpFile);
+      return;
+    }
+  }
+
+  Color _getColor() {
+    if (state.step == 0) {
+      // 绘制矩形完成
+      return  primaryColor(Get.context);
+    }
+    return Colors.grey;
   }
 
 }
