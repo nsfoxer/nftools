@@ -62,6 +62,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   }
 
   void reset() {
+    _imgCount = 0;
     state.reset();
     update();
   }
@@ -74,9 +75,11 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
 
   void _listenDrawEnd(DrawType endType) {
     _imgCount++;
+    debug("end _imgCount: $_imgCount");
     if (state.step == DrawStep.rect) {
       // 绘制矩形完成
       state.controller.limitTypeNum(DrawType.rect, 1);
+      _imgCount = 1;
       return;
     }
   }
@@ -126,6 +129,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
       state.step = DrawStep.path;
       state.controller.clearData();
       state.controller.changeDrawType(DrawType.path, state.painterWidth, _getColor());
+      _imgCount = 0;
       update();
     } else if (state.step == DrawStep.path) {
       // 绘制完成
@@ -133,9 +137,6 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
       state.controller.saveCanvas(tmpFile);
     }
   }
-
-
-
 
   Color _getColor() {
     if (state.step == DrawStep.rect) {
@@ -160,6 +161,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     if (_imgCount < 0) {
       _imgCount = 0;
     }
+    debug("_imgCount: $_imgCount");
     state.controller.redo();
   }
 }

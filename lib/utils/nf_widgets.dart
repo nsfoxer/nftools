@@ -716,9 +716,11 @@ class NFImagePainterController extends ChangeNotifier {
   /// @param type 类型
   /// @param num 数量
   void limitTypeNum(DrawType type, int num) {
+    // 由于最后一个数据是绘制中数据，所以需要加1
+    num += 1;
     List<_DrawData> newData = [];
     for (_DrawData data in _points.value) {
-      if (data.type == type && data.points.isNotEmpty) {
+      if (data.type == type) {
         newData.add(data);
       }
     }
@@ -751,13 +753,12 @@ class NFImagePainterController extends ChangeNotifier {
   }
 
   void redo() {
-    if (_points.value.isNotEmpty) {
-      final data = _points.value.removeLast();
-      if (_points.value.isEmpty) {
-        _points.value.add(data.copyWith(points: []));
-      }
-      _points.notifyListeners();
+    if (_points.value.length <= 1) {
+      return;
     }
+    _points.value.removeLast();
+    _points.value.last.points = [];
+   _points.notifyListeners();
   }
 }
 
