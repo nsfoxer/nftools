@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:keymap/keymap.dart';
+import 'package:nftools/pages/image/state/Image_split_state.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 
 import '../controller/image_split_controller.dart';
@@ -46,9 +49,13 @@ class ImageSplitPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   primaryItems: [
                     CommandBarButton(
-                        icon: Icon(FluentIcons.color),
-                        onPressed: (){
-                    }),
+                        icon: Icon(FluentIcons.redo),
+                        label: Text("撤销"),
+                        onPressed: logic.redo),
+                      CommandBarButton(
+                          icon: Icon(FluentIcons.add_in),
+                          label: Text(logic.state.isAddAreaMode ? "标记前景": "标记背景"),
+                          onPressed: logic.state.step == DrawStep.rect ? null :logic.changeAreaMode),
                     CommandBarButton(
                         icon: Icon(FluentIcons.circle_fill,
                             size: logic.state.painterWidth),

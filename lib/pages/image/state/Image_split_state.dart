@@ -19,7 +19,10 @@ class ImageSplitState {
   NFImagePainterController controller;
 
   // 画笔宽度
-  double painterWidth = 1.0;
+  double painterWidth = 5.0;
+
+  // 是否为新增涂抹 仅在path下使用
+  bool isAddAreaMode = true;
 
   ImageSplitState(this.controller);
 
@@ -34,10 +37,9 @@ class ImageSplitState {
   }
 
   DrawType getDrawType() {
-    if (step == 0) {
+    if (step == DrawStep.rect) {
       return DrawType.rect;
     }
-
     return DrawType.path;
   }
 }
