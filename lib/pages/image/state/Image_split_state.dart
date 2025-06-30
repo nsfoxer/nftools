@@ -1,5 +1,4 @@
 
-import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 
 class ImageSplitState {
@@ -14,7 +13,7 @@ class ImageSplitState {
   String? resultImage;
 
   // 当前分割步骤
-  int step = 0;
+  DrawStep step = DrawStep.rect;
 
   // 控制器
   NFImagePainterController controller;
@@ -29,7 +28,7 @@ class ImageSplitState {
     originalImage = null;
     currentImage = null;
     resultImage = null;
-    step = 0;
+    step = DrawStep.rect;
     controller.reset();
     isLoading = false;
   }
@@ -41,5 +40,9 @@ class ImageSplitState {
 
     return DrawType.path;
   }
+}
 
+enum DrawStep {
+  rect,
+  path
 }
