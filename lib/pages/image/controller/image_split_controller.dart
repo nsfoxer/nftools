@@ -65,13 +65,13 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   }
 
   void _listenDrawStart(DrawType startType) {
-    if (state.step == 0) {
+    if (state.step == DrawStep.rect) {
       state.controller.clearData();
     }
   }
 
   void _listenDrawEnd(DrawType endType) {
-    if (state.step == 0) {
+    if (state.step == DrawStep.rect) {
       // 绘制矩形完成
       state.controller.limitTypeNum(DrawType.rect, 1);
       return;
@@ -111,19 +111,29 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   }
 
   void next() async {
-    if (state.step == 0) {
+    if (state.step == DrawStep.rect) {
       // 绘制矩形完成
       final tmpFile = await getTempFilePath(fileExtension: "png");
       state.controller.saveCanvas(tmpFile);
       debug(tmpFile);
-      return;
+      state.step = DrawStep.path;
+      state.controller.clearData();
+      state.controller.changeDrawType(DrawType.path, state.painterWidth, _getColor());
+      update();
+    } else if (state.step == DrawStep.path) {
+      // 绘制完成
+      final tmpFile = await getTempFilePath(fileExtension: "png");
+      state.controller.saveCanvas(tmpFile);
     }
   }
 
+
+
+
   Color _getColor() {
-    if (state.step == 0) {
+    if (state.step == DrawStep.rect) {
       // 绘制矩形完成
-      return  primaryColor(Get.context);
+      return Colors.orange;
     }
     return Colors.grey;
   }

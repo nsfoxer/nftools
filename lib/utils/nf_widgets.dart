@@ -654,6 +654,7 @@ class NFImagePainterController extends ChangeNotifier {
     final last = _points.value.last;
     _points.value.clear();
     _points.value.add(last.copyWith(points: []));
+    _points.notifyListeners();
   }
 
   void _handlePanStart(DragStartDetails details) {

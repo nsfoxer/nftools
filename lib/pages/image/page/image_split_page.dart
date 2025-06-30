@@ -46,6 +46,10 @@ class ImageSplitPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   primaryItems: [
                     CommandBarButton(
+                        icon: Icon(FluentIcons.color),
+                        onPressed: (){
+                    }),
+                    CommandBarButton(
                         icon: Icon(FluentIcons.circle_fill,
                             size: logic.state.painterWidth),
                         label: Text("画笔宽度"),
