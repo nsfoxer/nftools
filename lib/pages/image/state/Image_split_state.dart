@@ -28,10 +28,12 @@ class ImageSplitState {
 
 
   void reset() {
+    painterWidth = 5.0;
+    step = DrawStep.rect;
+    isAddAreaMode = true;
     originalImage = null;
     currentImage = null;
     resultImage = null;
-    step = DrawStep.rect;
     controller.reset();
     isLoading = false;
   }
