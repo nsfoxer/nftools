@@ -55,14 +55,12 @@ class ImageSplitPage extends StatelessWidget {
                     CommandBarButton(
                       icon: Icon(FluentIcons.next),
                       label: Text("下一步"),
-                      onPressed: () {},
+                      onPressed: logic.next,
                     ),
                     CommandBarButton(
                         icon: Icon(FluentIcons.clear),
                         label: Text("重置"),
-                        onPressed: () {
-                          logic.reset();
-                        }),
+                        onPressed: logic.reset),
                   ]),
             )),
         content: GetBuilder<ImageSplitController>(builder: (logic) {

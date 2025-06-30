@@ -50,8 +50,8 @@ bool isDark(BuildContext context) {
 }
 
 // 主题主色
-Color primaryColor(BuildContext context) {
-  return FluentTheme.of(context).accentColor.normal;
+Color primaryColor(BuildContext? context) {
+  return context == null ? Colors.orange: FluentTheme.of(context).accentColor.normal;
 }
 
 const JsonDecoder _jsonDecoder = JsonDecoder();
@@ -154,12 +154,19 @@ String _removeComments(String sql) {
   return sql;
 }
 
-// 保存数据到临时文件
-Future<File> saveBytesToTempFile(List<int> bytes,
-    {String? fileExtension}) async {
+/// 生成临时文件路径
+Future<String> getTempFilePath({String? fileExtension}) async {
   final directory = await getTemporaryDirectory();
   final path = join(directory.path,
-      '${DateTime.now().millisecondsSinceEpoch}.${fileExtension ?? 'tmp'}');
+      '${DateTime.now().millisecondsSinceEpoch}.${fileExtension?? 'tmp'}');
+  // 时间戳生成文件名
+  return path;
+}
+
+/// 保存数据到临时文件
+Future<File> saveBytesToTempFile(List<int> bytes,
+    {String? fileExtension}) async {
+  final path = await getTempFilePath(fileExtension: fileExtension);
   // 时间戳生成文件名
   final file = File(path);
   return await file.writeAsBytes(bytes);

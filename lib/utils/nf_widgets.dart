@@ -642,7 +642,7 @@ class NFImagePainterController extends ChangeNotifier {
       color: color,
       points: [],
     );
-    if (_points.value.last.points.isEmpty) {
+    if (_points.value.isNotEmpty && _points.value.last.points.isEmpty) {
       _points.value.last = newDrawInfo;
     } else {
       _points.value.add(newDrawInfo);
@@ -715,7 +715,7 @@ class NFImagePainterController extends ChangeNotifier {
   }
 
   /// 生成画画图像
-  Future<void> saveCanvas(String path) async {
+  Future<(Size, Rect)> saveCanvas(String path) async {
     PictureRecorder recorder = PictureRecorder();
     Canvas canvas = Canvas(recorder);
     //获取图片大小
@@ -730,6 +730,8 @@ class NFImagePainterController extends ChangeNotifier {
       File file = File(path);
       file.writeAsBytes(byteData.buffer.asUint8List());
     }
+
+    return (_boardSize, _displayRect);
   }
 }
 
