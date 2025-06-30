@@ -15,6 +15,7 @@ import '../state/Image_split_state.dart';
 class ImageSplitController extends GetxController with GetxUpdateMixin {
   late ImageSplitState state;
 
+  int _imgCount = 0;
 
   @override
   void onInit() {
@@ -72,6 +73,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   }
 
   void _listenDrawEnd(DrawType endType) {
+    _imgCount++;
     if (state.step == DrawStep.rect) {
       // 绘制矩形完成
       state.controller.limitTypeNum(DrawType.rect, 1);
@@ -112,6 +114,10 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   }
 
   void next() async {
+    if (_imgCount == 0) {
+      warn("请先做标记");
+      return;
+    }
     if (state.step == DrawStep.rect) {
       // 绘制矩形完成
       final tmpFile = await getTempFilePath(fileExtension: "png");
@@ -150,6 +156,10 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
 
   // 撤销
   void redo() {
+    _imgCount -= 1;
+    if (_imgCount < 0) {
+      _imgCount = 0;
+    }
     state.controller.redo();
   }
 }
