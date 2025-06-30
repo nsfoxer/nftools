@@ -15,10 +15,11 @@ import '../state/Image_split_state.dart';
 class ImageSplitController extends GetxController with GetxUpdateMixin {
   late ImageSplitState state;
 
+
   @override
   void onInit() {
     super.onInit();
-    state =  ImageSplitState(NFImagePainterController(width: 1, endType: _listenDrawEnd, startType:  _listenDrawStart));
+    state = ImageSplitState(NFImagePainterController(width: 5, endType: _listenDrawEnd, startType:  _listenDrawStart));
   }
 
   /// 从剪贴板中获取图像
@@ -98,7 +99,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   }
 
   void _startRect() {
-    state.controller.changeDrawType(DrawType.rect, 3, _getColor());
+    state.controller.changeDrawType(DrawType.rect, state.painterWidth, _getColor());
   }
 
   void changePainterWidth(double value) {
@@ -132,10 +133,23 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
 
   Color _getColor() {
     if (state.step == DrawStep.rect) {
-      // 绘制矩形完成
       return Colors.orange;
     }
-    return Colors.grey;
+    if (state.isAddAreaMode) {
+      return Colors.green.withValues(alpha: 0.8);
+    }
+    return Colors.grey.withValues(alpha: 0.8);
   }
 
+
+  void changeAreaMode() {
+    state.isAddAreaMode = !state.isAddAreaMode;
+    state.controller.changeDrawType(state.getDrawType(), state.painterWidth, _getColor());
+    update();
+  }
+
+  // 撤销
+  void redo() {
+    state.controller.redo();
+  }
 }

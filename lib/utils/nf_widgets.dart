@@ -16,7 +16,6 @@ import 'package:re_highlight/languages/sql.dart';
 import 'package:re_highlight/styles/base16/github.dart';
 import 'package:re_highlight/styles/github-dark.dart';
 
-
 // card 内容体
 class NFCardContent extends StatelessWidget {
   const NFCardContent(
@@ -296,6 +295,7 @@ class NFTable<T> extends StatefulWidget {
   final List<NFHeader> header;
   final Widget? empty;
   final NFDataTableSource source;
+
   // 构造原型
   final NFRow? prototypeItem;
 
@@ -304,7 +304,8 @@ class NFTable<T> extends StatefulWidget {
       required this.minWidth,
       required this.header,
       this.empty,
-      required this.source, this.prototypeItem});
+      required this.source,
+      this.prototypeItem});
 
   @override
   State<NFTable<T>> createState() => _NFTableState<T>();
@@ -339,11 +340,16 @@ class _NFTableState<T> extends State<NFTable<T>> {
 
     // 构建表格
     final table = ListView.builder(
-      prototypeItem: widget.prototypeItem != null ? ListTile(title:SizedBox(), subtitle: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: widget.prototypeItem!.children,
-      ),) : null,
+        prototypeItem: widget.prototypeItem != null
+            ? ListTile(
+                title: SizedBox(),
+                subtitle: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: widget.prototypeItem!.children,
+                ),
+              )
+            : null,
         itemCount: widget.source.itemCount == null
             ? null
             : widget.source.itemCount! + 1,
@@ -445,13 +451,17 @@ class NFImagePainterPage extends StatelessWidget {
       onPanStart: controller._handlePanStart,
       onPanEnd: controller._handlePanEnd,
       child:
-      RepaintBoundary(child: LayoutBuilder(builder: (context, constraints) {
+          RepaintBoundary(child: LayoutBuilder(builder: (context, constraints) {
         return ValueListenableBuilder<Size>(
           valueListenable: controller._imgSize,
           builder: (ctx, size, child) {
-            if (controller._imageProvider == null || size.height ==0 || size.width == 0) {
-              controller._setDisplayRect(Rect.fromPoints(Offset.zero,
-                  Offset(constraints.maxWidth, constraints.maxHeight)), Size(constraints.maxWidth, constraints.maxHeight));
+            if (controller._imageProvider == null ||
+                size.height == 0 ||
+                size.width == 0) {
+              controller._setDisplayRect(
+                  Rect.fromPoints(Offset.zero,
+                      Offset(constraints.maxWidth, constraints.maxHeight)),
+                  Size(constraints.maxWidth, constraints.maxHeight));
               return CustomPaint(
                 foregroundPainter: painter,
                 child: Container(
@@ -463,7 +473,8 @@ class NFImagePainterPage extends StatelessWidget {
             }
             final displayRect = _calculateImageSize(
                 Size(constraints.maxWidth, constraints.maxHeight), size);
-            controller._setDisplayRect(displayRect, Size(constraints.maxWidth, constraints.maxHeight));
+            controller._setDisplayRect(
+                displayRect, Size(constraints.maxWidth, constraints.maxHeight));
             return Container(
               width: constraints.maxWidth,
               height: constraints.maxHeight,
@@ -471,7 +482,9 @@ class NFImagePainterPage extends StatelessWidget {
               child: CustomPaint(
                 foregroundPainter: painter,
                 child: RepaintBoundary(
-                    child: Image(image: controller._imageProvider!, fit: BoxFit.contain)),
+                    child: Image(
+                        image: controller._imageProvider!,
+                        fit: BoxFit.contain)),
               ),
             );
           },
@@ -617,14 +630,16 @@ class NFImagePainterController extends ChangeNotifier {
     _points.notifyListeners();
   }
 
-
-  NFImagePainterController({type = DrawType.none,double width = 0.0, color = Colors.transparent,
-  this.endType = _ignoreType , this.startType = _ignoreType}) {
+  NFImagePainterController(
+      {type = DrawType.none,
+      double width = 0.0,
+      color = Colors.transparent,
+      this.endType = _ignoreType,
+      this.startType = _ignoreType}) {
     changeDrawType(type, width, color);
   }
 
-  static void _ignoreType(DrawType type) {
-  }
+  static void _ignoreType(DrawType type) {}
 
   Future<void> setImageProvider(ImageProvider imageProvider) async {
     _imageProvider = imageProvider;
@@ -658,11 +673,11 @@ class NFImagePainterController extends ChangeNotifier {
   }
 
   void _handlePanStart(DragStartDetails details) {
-    if (_points.value.last.type == DrawType.none) {
+    if (_points.value.last.type == DrawType.none ||
+        !_displayRect.contains(details.localPosition)) {
       return;
     }
     startType(_points.value.last.type);
-    // 获取绘制区域
     _points.value.last.points.add(details.localPosition);
   }
 
@@ -702,7 +717,7 @@ class NFImagePainterController extends ChangeNotifier {
   /// @param num 数量
   void limitTypeNum(DrawType type, int num) {
     List<_DrawData> newData = [];
-    for(_DrawData data in _points.value) {
+    for (_DrawData data in _points.value) {
       if (data.type == type && data.points.isNotEmpty) {
         newData.add(data);
       }
@@ -733,6 +748,16 @@ class NFImagePainterController extends ChangeNotifier {
     }
 
     return (_boardSize, _displayRect);
+  }
+
+  void redo() {
+    if (_points.value.isNotEmpty) {
+      final data = _points.value.removeLast();
+      if (_points.value.isEmpty) {
+        _points.value.add(data.copyWith(points: []));
+      }
+      _points.notifyListeners();
+    }
   }
 }
 
@@ -810,4 +835,5 @@ class _DrawData {
     return '_DrawData{type: $type, width: $width, color: $color, points: $points}';
   }
 }
+
 /// 图片绘制页面 end
