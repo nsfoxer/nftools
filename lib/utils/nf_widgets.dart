@@ -16,7 +16,6 @@ import 'package:re_highlight/languages/sql.dart';
 import 'package:re_highlight/styles/base16/github.dart';
 import 'package:re_highlight/styles/github-dark.dart';
 
-import 'log.dart';
 
 // card 内容体
 class NFCardContent extends StatelessWidget {
@@ -637,12 +636,17 @@ class NFImagePainterController extends ChangeNotifier {
 
   /// 更改绘制类型
   void changeDrawType(DrawType type, double width, Color color) {
-    _points.value.add(_DrawData(
+    final newDrawInfo = _DrawData(
       type: type,
       width: width,
       color: color,
       points: [],
-    ));
+    );
+    if (_points.value.last.points.isEmpty) {
+      _points.value.last = newDrawInfo;
+    } else {
+      _points.value.add(newDrawInfo);
+    }
   }
 
   /// 清除数据

@@ -9,6 +9,33 @@ import '../controller/image_split_controller.dart';
 class ImageSplitPage extends StatelessWidget {
   const ImageSplitPage({super.key});
 
+  void _showPainterWidthDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: const Text("画笔宽度"),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          GetBuilder<ImageSplitController>(
+              builder: (logic) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("${logic.state.painterWidth.toInt()}"),
+                      Slider(
+                          min: 1,
+                          max: 20,
+                          value: logic.state.painterWidth,
+                          onChanged: (v) {
+                            logic.changePainterWidth(v.ceilToDouble());
+                          }),
+                    ],
+                  ))
+        ]),
+      ),
+      barrierDismissible: true,
+      dismissWithEsc: false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ScaffoldPage.withPadding(
@@ -19,15 +46,12 @@ class ImageSplitPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   primaryItems: [
                     CommandBarButton(
-                      icon: Icon(FluentIcons.calculator_addition),
-                      label: Text("画笔增加"),
-                      onPressed: () => logic.changePainterWidth(true),
-                    ),
-                    CommandBarButton(
-                      icon: Icon(FluentIcons.calculator_subtract),
-                      label: Text("画笔减少"),
-                      onPressed: () => logic.changePainterWidth(false),
-                    ),
+                        icon: Icon(FluentIcons.circle_fill,
+                            size: logic.state.painterWidth),
+                        label: Text("画笔宽度"),
+                        onPressed: () {
+                          _showPainterWidthDialog(context);
+                        }),
                     CommandBarButton(
                       icon: Icon(FluentIcons.next),
                       label: Text("下一步"),
