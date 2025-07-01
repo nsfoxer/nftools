@@ -5,7 +5,7 @@ use opencv::prelude::*;
 use opencv::{core, imgcodecs, imgproc};
 use crate::{async_func_nono, async_func_typeno, func_end, func_nono, func_typeno};
 use anyhow::Result;
-use opencv::core::{Point, Scalar, Vector};
+use opencv::core::{Point, Scalar, Size, Vector};
 use crate::common::utils::generate_path;
 use crate::messages::common::StringMsg;
 use crate::messages::image_split::{ColorMsg, ImageSplitReqMsg, MarkTypeMsg};
@@ -89,6 +89,11 @@ impl ImageSplitService {
     }
 }
 
+/// grabcut mask含义：
+/// 0 - 背景
+/// 1 - 前景
+/// 2 - 可能的背景
+/// 3 - 可能的前景
 impl ImageSplitService {
 
     /// 处理矩形
@@ -107,6 +112,56 @@ impl ImageSplitService {
 
         // 4. 保存图片
         Ok(write_img(&new_img)?)
+    }
+
+    /// 处理path
+    fn handle_path(original_image: &Mat, bgd_model: &mut Mat, fgd_model: &mut Mat, mask: &mut Mat,
+                   req: &ImageSplitReqMsg) -> Result<String> {
+        let mut mark_img = read_img(&req.mark_image)?;
+        // 1. 根据标记重新填充mask
+        Self::change_mask(original_image, &mut mark_img, mask, req.add_color, req.del_color)?;
+
+        todo!()
+    }
+
+    /// 改变mask
+    fn change_mask(original_image: &Mat, mark_img: &mut Mat, mask: &mut Mat, add_color: ColorMsg, del_color: ColorMsg) -> Result<()> {
+        let resize = Size::new(original_image.cols(), original_image.rows());
+        if let Some(add) = Self::extract_color_mask(mark_img, &add_color, resize.clone())? {
+            mask.set_to(&Scalar::all(1.0), &add)?;
+        }
+        if let Some(del) = Self::extract_color_mask(mark_img, &del_color, resize)? {
+            mask.set_to(&Scalar::all(0.0), &del)?;
+        }
+
+
+        Ok(())
+    }
+    // 辅助函数：提取特定颜色的掩码
+    fn extract_color_mask(image: &Mat, color_msg: &ColorMsg, resize: Size) -> Result<Option<Mat>> {
+        let target_color = Scalar::new(
+            color_msg.b as f64,
+            color_msg.g as f64,
+            color_msg.r as f64,
+            0.0,
+        );
+        // 创建掩码
+        let mut mask = Mat::default();
+        core::in_range(image, &target_color, &target_color, &mut mask)?;
+        if mask.empty() {
+           return Ok(None);
+        }
+        // 调整大小
+        let mut resized_mask = Mat::default();
+        imgproc::resize(
+            &mask,
+            &mut resized_mask,
+            resize,
+            0.0,
+            0.0,
+            imgproc::INTER_NEAREST
+        )?;
+        Ok(Some(resized_mask))
     }
 
     /// 添加灰色遮罩
@@ -235,7 +290,7 @@ fn rgb_to_hsv(r: u8, g: u8, b: u8) -> Result<(f64, f64, f64)> {
     Ok((h, s, v))
 }
 
-fn read_img(filename: &str) -> Result<Mat> {
+pub fn read_img(filename: &str) -> Result<Mat> {
     let mut file = std::fs::File::open(filename)?;
     let mut buf = Vec::new();
     file.read_to_end(&mut buf)?;
@@ -261,9 +316,10 @@ fn write_img(img: &Mat) -> Result<String> {
 }
 
 mod test {
+    use opencv::core::MatTraitConst;
     use crate::messages::common::StringMsg;
     use crate::messages::image_split::{ColorMsg, ImageSplitReqMsg, MarkTypeMsg};
-    use crate::service::img::img_split::ImageSplitService;
+    use crate::service::img::img_split::{read_img, ImageSplitService};
 
     #[tokio::test]
     async fn rect() {
@@ -287,5 +343,12 @@ mod test {
         };
         let r = img.handle_img(req).await.unwrap();
         println!("结果： {}", r.value);
+    }
+
+    #[test]
+    fn read() {
+        let img = read_img(r"C:\Users\12618\Pictures\wallpaper\【哲风壁纸】CP-动物背影.png").unwrap();
+        assert!(!img.empty());
+        assert_eq!(img.channels(), 3);
     }
 }
