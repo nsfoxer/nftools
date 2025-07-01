@@ -4,16 +4,14 @@ use rinf::SignalPiece;
 /// 图片裁剪请求 rect
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]
 pub struct ImageSplitReqMsg {
-    /// 原始处理图片路径
-    original_image: String,
     /// 标记图片
-    mark_image: String,
+    pub mark_image: String,
     /// 标记类型
-    mark_type: MarkTypeMsg,
+    pub mark_type: MarkTypeMsg,
     /// 添加的颜色
-    add_color: ColorMsg,
+    pub add_color: ColorMsg,
     /// 删除的颜色 对Path无效
-    del_color: ColorMsg,
+    pub del_color: ColorMsg,
 }
 
 /// 图片裁剪类型
@@ -23,12 +21,12 @@ pub enum MarkTypeMsg {
     Rect,
 }
 
-#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, SignalPiece)]
 pub struct ColorMsg {
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
 }
 
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]

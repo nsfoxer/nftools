@@ -5,7 +5,7 @@ use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::common::utils::{get_cache_dir, sha256};
+use crate::common::utils::{generate_path, get_cache_dir, sha256};
 use crate::messages::utils::{CompressLocalPicMsg, CompressLocalPicRspMsg, QrCodeDataMsg, QrCodeDataMsgList, SplitBackgroundImgMsg, SplitImageMsg};
 use crate::{async_func_notype, async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
@@ -386,12 +386,7 @@ fn calculate_rect(left: f64, top: f64, width:f64, height:f64, img_width: i32, im
     opencv::core::Rect::new(left as i32, top as i32, width as i32, height as i32)
 }
 
-fn generate_path(suffix: &str) -> Result<PathBuf> {
-    let mut path = get_cache_dir()?;
-    let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
-    path.push(format!("{}.{}", now.as_millis(), suffix));    
-    Ok(path)
-}
+
 
 ///  裁剪透明区域
 /// image: 原始图片
