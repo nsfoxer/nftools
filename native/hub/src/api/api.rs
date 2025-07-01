@@ -13,6 +13,7 @@ use crate::common::global_data::GlobalData;
 use crate::messages::common::{BoolMsg, StringMsg};
 use crate::service::ai::BaiduAiService;
 use crate::service::display::display_os::{DisplayLight, DisplayMode};
+use crate::service::img::img_split::ImageSplit;
 use crate::service::settings::about::AboutService;
 use crate::service::settings::autostart::AutoStartService;
 use crate::service::syncfile::SyncFileService;
@@ -427,7 +428,8 @@ impl ApiService {
     const DISPLAY_MODE_SERVICE: &'static str = "DisplayModeService";
     const ABOUT_SERVICE: &'static str = "AboutService";
     const AI_SERVICE: &'static str = "AiService";
-    
+    const IMAGE_SPLIT_SERVICE: &'static str = "ImageSplitService";
+
     async fn enable_service(&mut self, service: StringMsg) -> anyhow::Result<()> {
         let service = service.value;
         if self.services.contains_key(service.as_str()) || self.stream_services.contains_key(service.as_str()) {
@@ -473,6 +475,9 @@ impl ApiService {
         
         if service == Self::AI_SERVICE {
             self.add_stream_service(Box::new(BaiduAiService::new(self.global_data.clone()).await), Self::AI_SERVICE);
+        }
+        if service == Self::IMAGE_SPLIT_SERVICE {
+            self.add_service(Box::new(ImageSplit::new()), Self::IMAGE_SPLIT_SERVICE);
         }
         
         Ok(())

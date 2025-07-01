@@ -4,3 +4,4 @@ pub mod syncfile;
 pub mod utils;
 pub mod ai;
 pub mod settings;
+pub mod img;

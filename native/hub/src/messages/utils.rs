@@ -57,3 +57,21 @@ pub struct SplitBackgroundImgMsg {
     pub width: f64,
     pub height: f64,
 }
+
+/// 切割图片
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct SplitImageMsg  {
+    /// 原图片
+    pub image: String,
+    /// 要裁切的区域
+    pub rect: RectMsg,
+}
+
+/// 矩形
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct RectMsg {
+    pub(crate) left_x: f64,
+    pub(crate) left_y: f64,
+    pub(crate) width: f64,
+    pub(crate) height: f64,
+}
