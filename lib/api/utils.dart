@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import '../common/constants.dart';
 import '../src/bindings/bindings.dart';
+import '../utils/log.dart';
 import 'api.dart';
 
 const String _service = ServiceNameConstant.utils;

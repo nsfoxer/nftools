@@ -13,7 +13,7 @@ use crate::common::global_data::GlobalData;
 use crate::messages::common::{BoolMsg, StringMsg};
 use crate::service::ai::BaiduAiService;
 use crate::service::display::display_os::{DisplayLight, DisplayMode};
-use crate::service::img::img_split::ImageSplit;
+use crate::service::img::img_split::ImageSplitService;
 use crate::service::settings::about::AboutService;
 use crate::service::settings::autostart::AutoStartService;
 use crate::service::syncfile::SyncFileService;
@@ -477,7 +477,7 @@ impl ApiService {
             self.add_stream_service(Box::new(BaiduAiService::new(self.global_data.clone()).await), Self::AI_SERVICE);
         }
         if service == Self::IMAGE_SPLIT_SERVICE {
-            self.add_service(Box::new(ImageSplit::new()), Self::IMAGE_SPLIT_SERVICE);
+            self.add_service(Box::new(ImageSplitService::new()), Self::IMAGE_SPLIT_SERVICE);
         }
         
         Ok(())

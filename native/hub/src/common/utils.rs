@@ -79,3 +79,11 @@ pub fn version() -> String {
 pub fn location_path() -> Result<PathBuf> {
     Ok(env::current_exe()?)
 }
+
+/// 生成临时文件路径
+pub fn generate_path(suffix: &str) -> Result<PathBuf> {
+    let mut path = get_cache_dir()?;
+    let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
+    path.push(format!("{}.{}", now.as_millis(), suffix));
+    Ok(path)
+}
