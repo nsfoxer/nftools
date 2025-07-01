@@ -6,13 +6,13 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::common::utils::{get_cache_dir, sha256};
-use crate::messages::utils::{CompressLocalPicMsg, CompressLocalPicRspMsg, QrCodeDataMsg, QrCodeDataMsgList, SplitBackgroundImgMsg};
+use crate::messages::utils::{CompressLocalPicMsg, CompressLocalPicRspMsg, QrCodeDataMsg, QrCodeDataMsgList, SplitBackgroundImgMsg, SplitImageMsg};
 use crate::{async_func_notype, async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
 use futures_util::pending;
 use image::{DynamicImage, ImageReader};
 use log::info;
-use opencv::core::{Mat, MatTrait, MatTraitConst, Point, Size, Vector};
+use opencv::core::{Mat, MatTrait, MatTraitConst, Point, Rect, Size, Vector};
 use opencv::imgcodecs;
 use opencv::imgproc::InterpolationFlags::INTER_LINEAR;
 use qrcode_generator::QrCodeEcc;
@@ -44,7 +44,9 @@ impl ImmService for UtilsService {
             detect_file_qr_code,
             StringMsg,
             split_background,
-            SplitBackgroundImgMsg
+            SplitBackgroundImgMsg,
+            split_img,
+            ImageSplitMsg
         );
         async_func_notype!(self, func, network_status);
         func_typeno!(self, func, req_data, notify, StringMsg);
@@ -219,10 +221,43 @@ impl UtilsService {
         });
         handle.await?
     }
+
+    /// 裁剪图片
+    /// 返回裁剪后的图片地址
+    async fn split_img(&self, msg: SplitImageMsg) -> Result<StringMsg> {
+        tokio::task::spawn_blocking(move || -> Result<StringMsg> {
+            Self::split_image(msg)
+        }).await?
+    }
 }
 
 impl UtilsService {
 
+    /// 裁剪图片
+    /// 返回裁剪后的图片地址
+    fn split_image(msg: SplitImageMsg) -> Result<StringMsg> {
+        let original_img = imgcodecs::imdecode(&Mat::from_slice(&Self::read_file(&msg.image)?)?, imgcodecs::IMREAD_COLOR)?;
+        if original_img.empty() {
+           return Err(anyhow::anyhow!("读取图片【{}】数据大小为空", msg.image));
+        }
+
+        if original_img.cols() < (msg.rect.left_x + msg.rect.width) as i32 || original_img.rows() < (msg.rect.left_y + msg.rect.height) as i32 {
+            return Err(anyhow::anyhow!("图片裁剪区域超出图片范围"));
+        }
+        let rect = Rect::new(msg.rect.left_x as i32, msg.rect.left_y as i32, msg.rect.width as i32, msg.rect.height as i32);
+        let cropped_image = original_img.roi(rect)?;
+
+        let result_path = generate_path("png")?;
+        let result_path = result_path.to_str().ok_or_else(|| anyhow::anyhow!("转换路径识别"))?;
+        let mut buf = Vector::new();
+        imgcodecs::imencode(".png", &cropped_image, &mut buf, &Vector::new())?;
+        let mut file = std::fs::File::create(&result_path)?;
+        file.write_all(buf.as_slice())?;
+
+        Ok(StringMsg {
+            value: result_path.to_string(),
+        })
+    }
     /// 下采样缩放比例
     const DOWN_SAMPLE_SCALE: i32 = 4;
 
