@@ -7,6 +7,8 @@ import 'package:nftools/utils/extension.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 import 'package:pasteboard/pasteboard.dart';
 
+import '../../../api/utils.dart' as $api;
+import '../../../src/bindings/bindings.dart';
 import '../../../utils/log.dart';
 import '../../../utils/utils.dart';
 import '../state/Image_split_state.dart';
@@ -123,8 +125,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     }
     if (state.step == DrawStep.rect) {
       // 绘制矩形完成
-      final tmpFile = await getTempFilePath(fileExtension: "png");
-      state.controller.saveCanvas(tmpFile);
+      final tmpFile = await _saveCanvas();
       debug(tmpFile);
       state.step = DrawStep.path;
       state.controller.clearData();
@@ -133,8 +134,8 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
       update();
     } else if (state.step == DrawStep.path) {
       // 绘制完成
-      final tmpFile = await getTempFilePath(fileExtension: "png");
-      state.controller.saveCanvas(tmpFile);
+      final tmpFile = await _saveCanvas();
+      debug(tmpFile);
     }
   }
 
@@ -163,5 +164,15 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     }
     debug("_imgCount: $_imgCount");
     state.controller.redo();
+  }
+
+  Future<String> _saveCanvas() async {
+    final tmpFile = await getTempFilePath(fileExtension: "png");
+    final (boardSize, imgRect) = await state.controller.saveCanvas(tmpFile);
+    SplitImageMsg msg = SplitImageMsg(
+     image: tmpFile,
+     rect: RectMsg(leftX: imgRect.left, leftY: imgRect.top, width: imgRect.width, height: imgRect.height),
+    );
+    return await $api.splitImage(msg);
   }
 }
