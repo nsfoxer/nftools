@@ -14,6 +14,7 @@ const String _genFileQrCode = "gen_file_qr_code";
 const String _detectQrCode = "detect_qr_code";
 const String _detectFileQrCode = "detect_file_qr_code";
 const String _spiltBackground = "split_background";
+const String _spiltImage = "split_img";
 
 // 压缩本地图片
 Future<CompressLocalPicRspMsg> compressLocalFile(String localFile, int width, int height) async {
@@ -69,3 +70,9 @@ Future<String> splitBackground(SplitBackgroundImgMsg imgMsg) async {
   return StringMsg.bincodeDeserialize(result).value;
 }
 
+/// 图片切割
+Future<String> splitImage(SplitImageMsg imgMsg) async {
+  final result = await sendRequest
+    (_service, _spiltImage, imgMsg);
+  return StringMsg.bincodeDeserialize(result).value;
+}
