@@ -7,7 +7,7 @@ const String _service = ServiceNameConstant.imageSplitService;
 const String _createImage = "create_image";
 const String _clear = "clear";
 const String _handleImage = "handle_image";
-const String _finishImage = "finish_image";
+const String _previewImage = "preview_image";
 
 /// 创建图像
 Future<void> createImage(String imgFile) async {
@@ -26,7 +26,7 @@ Future<String> handleImage(ImageSplitReqMsg req) async {
 }
 
 /// 完成图像
-Future<String> finishImage() async {
-  final data = await sendRequest<EmptyMsg>(_service, _finishImage, null);
+Future<String> previewImage() async {
+  final data = await sendRequest<EmptyMsg>(_service, _previewImage, null);
   return StringMsg.bincodeDeserialize(data).value;
 }
