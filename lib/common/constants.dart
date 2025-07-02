@@ -14,6 +14,7 @@ class ServiceNameConstant {
   static const String about = "AboutService";
   static const String autoStart = "AutoStartService";
   static const String ai = "AiService";
+  static const String imageSplitService = "ImageSplitService";
 }
 
 class PageWidgetNameConstant {

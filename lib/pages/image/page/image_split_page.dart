@@ -80,7 +80,7 @@ class ImageSplitPage extends StatelessWidget {
               KeyAction(LogicalKeyboardKey.keyV, "粘贴图像", () {},
                   isControlPressed: true),
             ],
-            child: logic.state.originalImage == null
+            child: logic.state.currentImage == null
                 ? GestureDetector(
                     onTapUp: (details) {
                       logic.setFileImg();

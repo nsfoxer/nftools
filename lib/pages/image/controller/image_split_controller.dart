@@ -8,6 +8,7 @@ import 'package:nftools/utils/nf_widgets.dart';
 import 'package:pasteboard/pasteboard.dart';
 
 import '../../../api/utils.dart' as $api;
+import '../../../api/image_split.dart' as $api2;
 import '../../../src/bindings/bindings.dart';
 import '../../../utils/log.dart';
 import '../../../utils/utils.dart';
@@ -22,7 +23,8 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   @override
   void onInit() {
     super.onInit();
-    state = ImageSplitState(NFImagePainterController(width: 5, endType: _listenDrawEnd, startType:  _listenDrawStart));
+    state = ImageSplitState(NFImagePainterController(
+        width: 5, endType: _listenDrawEnd, startType: _listenDrawStart));
   }
 
   /// 从剪贴板中获取图像
@@ -39,6 +41,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     state.originalImage = file.path;
     state.currentImage = file.path;
     state.controller.setImageProvider(FileImage(file));
+    await $api2.createImage(file.path);
     _startRect();
     _endLoading();
   }
@@ -101,12 +104,14 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     state.originalImage = path;
     state.currentImage = path;
     state.controller.setImageProvider(FileImage(File(path)));
+    await $api2.createImage(path);
     _startRect();
     _endLoading();
   }
 
   void _startRect() {
-    state.controller.changeDrawType(DrawType.rect, state.painterWidth, _getColor());
+    state.controller.changeDrawType(
+        DrawType.rect, state.painterWidth, _getColor(state.isAddAreaMode));
   }
 
   void changePainterWidth(double value) {
@@ -114,7 +119,8 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
       return;
     }
     state.painterWidth = value;
-    state.controller.changeDrawType(state.getDrawType(), value, _getColor());
+    state.controller.changeDrawType(
+        state.getDrawType(), value, _getColor(state.isAddAreaMode));
     update();
   }
 
@@ -123,36 +129,56 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
       warn("请先做标记");
       return;
     }
+    _startLoading();
     if (state.step == DrawStep.rect) {
       // 绘制矩形完成
-      final tmpFile = await _saveCanvas();
-      debug(tmpFile);
+      final markImage = await _saveCanvas();
+      // 处理图像
+      debug("markImage: $markImage");
+      final result = await $api2.handleImage(ImageSplitReqMsg(
+          markImage: markImage,
+          markType: MarkTypeMsg.rect,
+          addColor: color2Msg(_getColor(true)),
+          delColor: color2Msg(_getColor(false))));
       state.step = DrawStep.path;
       state.controller.clearData();
-      state.controller.changeDrawType(DrawType.path, state.painterWidth, _getColor());
+      state.controller.changeDrawType(
+          DrawType.path, state.painterWidth, _getColor(state.isAddAreaMode));
       _imgCount = 0;
-      update();
+      state.currentImage = result;
+      state.controller.setImageProvider(FileImage(File(result)));
     } else if (state.step == DrawStep.path) {
       // 绘制完成
-      final tmpFile = await _saveCanvas();
-      debug(tmpFile);
+      final markImage = await _saveCanvas();
+      final result = await $api2.handleImage(ImageSplitReqMsg(
+          markImage: markImage,
+          markType: MarkTypeMsg.path,
+          addColor: color2Msg(_getColor(true)),
+          delColor: color2Msg(_getColor(false))));
+      _imgCount = 0;
+      state.controller.clearData();
+      state.currentImage = result;
+      state.controller.setImageProvider(FileImage(File(result)));
+      debug("result: $result");
     }
+
+    _endLoading();
   }
 
-  Color _getColor() {
+  Color _getColor(bool isAddArea) {
     if (state.step == DrawStep.rect) {
       return Colors.orange;
     }
-    if (state.isAddAreaMode) {
+    if (isAddArea) {
       return Colors.green.withValues(alpha: 0.8);
     }
     return Colors.grey.withValues(alpha: 0.8);
   }
 
-
   void changeAreaMode() {
     state.isAddAreaMode = !state.isAddAreaMode;
-    state.controller.changeDrawType(state.getDrawType(), state.painterWidth, _getColor());
+    state.controller.changeDrawType(state.getDrawType(), state.painterWidth,
+        _getColor(state.isAddAreaMode));
     update();
   }
 
@@ -170,9 +196,21 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     final tmpFile = await getTempFilePath(fileExtension: "png");
     final (boardSize, imgRect) = await state.controller.saveCanvas(tmpFile);
     SplitImageMsg msg = SplitImageMsg(
-     image: tmpFile,
-     rect: RectMsg(leftX: imgRect.left, leftY: imgRect.top, width: imgRect.width, height: imgRect.height),
+      image: tmpFile,
+      rect: RectMsg(
+          leftX: imgRect.left,
+          leftY: imgRect.top,
+          width: imgRect.width,
+          height: imgRect.height),
     );
     return await $api.splitImage(msg);
+  }
+
+  ColorMsg color2Msg(Color color) {
+    return ColorMsg(
+        r: (color.r * 255.0).round() & 0xff,
+        g: (color.g * 255.0).round() & 0xff,
+        b: (color.b * 255.0).round() & 0xff,
+        a: (color.a * 255.0).round() & 0xff);
   }
 }
