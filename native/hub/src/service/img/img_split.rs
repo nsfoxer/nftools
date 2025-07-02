@@ -170,12 +170,6 @@ impl ImageSplitService {
     }
     // 辅助函数：提取特定颜色的掩码
     pub fn extract_color_mask(image: &Mat, color_msg: &ColorMsg, resize: Size) -> Result<Option<Mat>> {
-        let target_color = Scalar::new(
-            color_msg.b as f64,
-            color_msg.g as f64,
-            color_msg.r as f64,
-            0.0,
-        );
         let lower = Scalar::new(
             ((color_msg.b as f64) - 10.0).max(0.0),
             ((color_msg.g as f64) - 10.0).max(0.0),
