@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:keymap/keymap.dart';
 import 'package:nftools/common/style.dart';
-import 'package:nftools/pages/image/state/Image_split_state.dart';
+import 'package:nftools/pages/utils/state/Image_split_state.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 
 import '../controller/image_split_controller.dart';
@@ -72,7 +72,7 @@ class ImageSplitPage extends StatelessWidget {
                       icon: Icon(FluentIcons.next),
                       label: Text("处理"),
                       onPressed:
-                          logic.state.previewImage == null ? logic.next : null,
+                          !logic.state.isPreview ? logic.next : null,
                     ),
                     CommandBarButton(
                         icon: Icon(FluentIcons.preview),
