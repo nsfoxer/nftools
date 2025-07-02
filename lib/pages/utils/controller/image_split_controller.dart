@@ -148,6 +148,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     _startLoading();
 
     if (state.step == DrawStep.rect) {
+      state.step = DrawStep.path;
       state.controller.changeDrawType(
           DrawType.path, state.painterWidth, _getColor(state.isAddAreaMode));
     }
@@ -160,7 +161,6 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
         delColor: color2Msg(_getColor(false))));
 
     _imgCount = 0;
-    state.step = DrawStep.path;
     state.currentImage = result;
     state.controller.clearData();
     state.controller.setImageProvider(FileImage(File(result)));
