@@ -475,10 +475,9 @@ class NFImagePainterPage extends StatelessWidget {
                 Size(constraints.maxWidth, constraints.maxHeight), size);
             controller._setDisplayRect(
                 displayRect, Size(constraints.maxWidth, constraints.maxHeight));
-            return Container(
+            return SizedBox(
               width: constraints.maxWidth,
               height: constraints.maxHeight,
-              color: Colors.green,
               child: CustomPaint(
                 foregroundPainter: painter,
                 child: RepaintBoundary(

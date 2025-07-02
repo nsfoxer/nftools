@@ -213,4 +213,12 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
         b: (color.b * 255.0).round() & 0xff,
         a: (color.a * 255.0).round() & 0xff);
   }
+
+  /// 完成
+  void finish() async{
+    _startLoading();
+    final img = await $api2.finishImage();
+    state.controller.setImageProvider(FileImage(File(img)));
+    _endLoading();
+  }
 }
