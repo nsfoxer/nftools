@@ -746,7 +746,7 @@ class NFImagePainterController extends ChangeNotifier {
     ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
     if (byteData != null) {
       File file = File(path);
-      file.writeAsBytes(byteData.buffer.asUint8List());
+      await file.writeAsBytes(byteData.buffer.asUint8List());
     }
 
     return (_boardSize, _displayRect);
