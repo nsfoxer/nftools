@@ -164,6 +164,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     state.currentImage = result;
     state.controller.clearData();
     state.controller.setImageProvider(FileImage(File(result)));
+    state.previewImage = null;
 
     _endLoading();
   }
@@ -229,7 +230,6 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     debug("preview _imgCount: $_imgCount");
     if (_imgCount != 0) {
       await next();
-      state.previewImage = await $api2.previewImage();
     }
     state.previewImage ??= await $api2.previewImage();
     _endLoading();
