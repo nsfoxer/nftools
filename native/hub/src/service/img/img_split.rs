@@ -3,10 +3,12 @@ use std::sync::Arc;
 use crate::service::service::Service;
 use opencv::prelude::*;
 use opencv::{core, imgcodecs, imgproc};
-use crate::{async_func_nono, async_func_typeno, async_func_typetype, func_end, func_nono, func_typeno};
+use crate::{async_func_nono, async_func_notype, async_func_typeno, async_func_typetype, func_end, func_nono, func_typeno};
 use anyhow::Result;
 use log::{debug, info};
-use opencv::core::{count_non_zero, Point, Rect, Scalar, Size, Vector};
+use opencv::core::{compare, count_non_zero, mix_channels, Point, Rect, Scalar, Size, ToInputArray, Vector};
+use opencv::imgproc::ColorConversionCodes::COLOR_BGR2BGRA;
+use opencv::imgproc::cvt_color;
 use crate::common::utils::generate_path;
 use crate::messages::common::StringMsg;
 use crate::messages::image_split::{ColorMsg, ImageSplitReqMsg, MarkTypeMsg};
@@ -26,6 +28,7 @@ impl Service for ImageSplitService {
         func_typeno!(self, func, req_data, create_image, StringMsg);
         func_nono!(self, func, clear);
         async_func_typetype!(self, func, req_data, handle_image, ImageSplitReqMsg);
+        async_func_notype!(self, func, finish_image);
 
         func_end!(func)
     }
@@ -90,6 +93,24 @@ impl ImageSplitService {
             Ok(StringMsg {value})
         }).await?
     }
+
+    async fn finish_image(&self) -> Result<StringMsg> {
+        if self.original_image.lock().await.empty() {
+            return Err(anyhow::anyhow!("原始图片未设置"));
+        }
+        let original_image_arc = self.original_image.clone();
+        let mask_arc = self.mask.clone();
+
+        tokio::task::spawn_blocking(move || {
+            let mut original_image = futures::executor::block_on(original_image_arc.lock());
+            let mask = futures::executor::block_on(mask_arc.lock());
+
+            let value = Self::finish(&mut original_image, &mask)?;
+
+            Ok(StringMsg{value})
+        }).await?
+    }
+
 }
 
 /// grabcut mask含义：
@@ -194,19 +215,10 @@ impl ImageSplitService {
         // 创建阴影遮罩矩阵 (例如半透明的灰色)
         let mut shadow_color = Mat::default();
         img.copy_to(&mut shadow_color)?;
-
         // 背景掩码 为2或0的像素被置位255
-        let mut temp_back1 = Mat::default();
-        core::compare(&mask, &Scalar::all(0.0), &mut temp_back1, core::CmpTypes::CMP_EQ.into())?;
-        let mut temp_back2 = Mat::default();
-        core::compare(&mask, &Scalar::all(2.0), &mut temp_back2, core::CmpTypes::CMP_EQ.into())?;
-        let mut backround = Mat::default();
-        core::bitwise_or(&temp_back1, &temp_back2, &mut backround, &Mat::default())?;
-
-        write_img(&backround)?;
-        shadow_color.set_to(&Scalar::new(191.0, 191.0, 191.0, 1.0), &backround)?;
-        write_img(&shadow_color)?;
-
+        let background = Self::get_background_from_mask(mask)?;
+        shadow_color.set_to(&Scalar::new(191.0, 191.0, 191.0, 1.0), &background)?;
+        // 混合图像
         let mut new_img = Mat::default();
         core::add_weighted(&img, 0.4, &shadow_color, 0.6, 0.0, &mut new_img, img.typ())?;
 
@@ -214,7 +226,7 @@ impl ImageSplitService {
     }
     
     /// 获取矩形边框
-    fn get_rect(img: &Mat, mark_img: &Mat, color: &ColorMsg) -> Result<core::Rect> {
+    fn get_rect(img: &Mat, mark_img: &Mat, color: &ColorMsg) -> Result<Rect> {
         // 已知的RGB颜色 (替换为实际的RGB值)
         let (lower_color, upper_color) = color2hsv(color.r, color.g, color.b)?;
 
@@ -269,6 +281,54 @@ impl ImageSplitService {
         } else {
             Err(anyhow::anyhow!("未找到符合条件的矩形边框"))
         }
+    }
+
+    /// 完成处理
+    fn finish(img: &mut Mat, mask: &Mat) -> Result<String> {
+        let mut foreground = Mat::default();
+        let background = Self::get_background_from_mask(mask)?;
+        core::bitwise_not(&background, &mut foreground, &Mat::default())?;
+        //  将临时3通道图像转为4通道（添加默认Alpha=255）
+        let mut tmp = Mat::default();
+        core::bitwise_and(img, img, &mut tmp, &foreground)?;
+        let mut result = Mat::default();
+        cvt_color(&tmp, &mut result, COLOR_BGR2BGRA.into(), 0)?;
+        let mut alpha_channel = Mat::new_rows_cols_with_default(foreground.rows(), foreground.cols(), core::CV_8UC1, Scalar::all(0.0))?;
+        alpha_channel.set_to(&Scalar::all(255.0), &foreground)?;
+        mix_channels(&alpha_channel, &mut result, &[0, 3])?;
+
+        let mut non_zero_points = Vector::<Point>::new();
+        core::find_non_zero(&foreground, &mut non_zero_points)?;
+        write_img(&foreground)?;
+
+        // 计算边界
+        let mut min_x = i32::MAX;
+        let mut min_y = i32::MAX;
+        let mut max_x = i32::MIN;
+        let mut max_y = i32::MIN;
+        for point in non_zero_points.iter() {
+            min_x = min_x.min(point.x);
+            min_y = min_y.min(point.y);
+            max_x = max_x.max(point.x);
+            max_y = max_y.max(point.y);
+        }
+        let width = (max_x - min_x + 1).max(1);
+        let height = (max_y - min_y +1).max(1);
+        let rect = Rect::new(min_x, min_y, width, height);
+
+        // 裁剪图像
+        let cropped_img = result.roi(rect)?;
+        Ok(write_img(&cropped_img)?)
+    }
+
+    fn get_background_from_mask(mask: &Mat) -> Result<Mat> {
+        let mut temp_back1 = Mat::default();
+        compare(&mask, &Scalar::all(0.0), &mut temp_back1, core::CmpTypes::CMP_EQ.into())?;
+        let mut temp_back2 = Mat::default();
+        compare(&mask, &Scalar::all(2.0), &mut temp_back2, core::CmpTypes::CMP_EQ.into())?;
+        let mut background = Mat::default();
+        core::bitwise_or(&temp_back1, &temp_back2, &mut background, &Mat::default())?;
+        Ok(background)
     }
 }
 
@@ -325,15 +385,15 @@ pub fn read_img(filename: &str) -> Result<Mat> {
     }
 }
 
-fn write_img(img: &Mat) -> Result<String> {
+fn write_img(img: &impl ToInputArray) -> Result<String> {
     let result_path = generate_path("png")?;
     let result_path = result_path.to_str().ok_or_else(|| anyhow::anyhow!("转换路径识别"))?;
     let mut buf = Vector::new();
-    imgcodecs::imencode(".png", &img, &mut buf, &Vector::new())?;
+    imgcodecs::imencode(".png", img, &mut buf, &Vector::new())?;
     let mut file = std::fs::File::create(&result_path)?;
     file.write_all(buf.as_slice())?;
 
-    println!("保存图片：{}",result_path);
+    debug!("保存图片：{}",result_path);
     Ok(result_path.to_string())
 }
 
@@ -426,6 +486,30 @@ mod test {
         }, Size::new(567, 756)).unwrap();
         assert!(mask.is_some());
         write_img(&mask.unwrap()).unwrap();
+    }
+
+    #[tokio::test]
+    async fn finish() {
+        let mut img = ImageSplitService::new();
+        img.create_image(StringMsg{value:r"C:\Users\12618\Desktop\1.jpg".to_string()}).unwrap();
+        let req = ImageSplitReqMsg{
+            mark_image: r"C:\Users\12618\Desktop\2.png".to_string(),
+            mark_type: MarkTypeMsg::Rect,
+            add_color: ColorMsg {
+                r: 249,
+                g: 100,
+                b: 12,
+                a: 1,
+            },
+            del_color: ColorMsg {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0,
+            },
+        };
+        let r = img.handle_image(req).await.unwrap();
+        img.finish_image().await.unwrap();
     }
 
 }
