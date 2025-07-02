@@ -1,6 +1,8 @@
 
 import 'package:nftools/utils/nf_widgets.dart';
 
+import '../../../src/bindings/bindings.dart';
+
 class ImageSplitState {
   bool isLoading = false;
   // 原始图片
@@ -8,6 +10,10 @@ class ImageSplitState {
 
   // 当前图片
   String? currentImage;
+  // 预览图片
+  String? previewImage;
+  //
+  bool isPreview = false;
 
   // 分割结果图片
   String? resultImage;
@@ -33,9 +39,11 @@ class ImageSplitState {
     isAddAreaMode = true;
     originalImage = null;
     currentImage = null;
+    previewImage = null;
     resultImage = null;
     controller.reset();
     isLoading = false;
+    isPreview = false;
   }
 
   DrawType getDrawType() {
@@ -48,5 +56,12 @@ class ImageSplitState {
 
 enum DrawStep {
   rect,
-  path
+  path;
+
+  MarkTypeMsg getDrawTypeMsg() {
+    if (this == DrawStep.rect) {
+      return MarkTypeMsg.rect;
+    }
+    return MarkTypeMsg.path;
+  }
 }

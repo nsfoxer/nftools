@@ -1,9 +1,10 @@
-import 'dart:math';
+import 'dart:io';
 
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:keymap/keymap.dart';
+import 'package:nftools/common/style.dart';
 import 'package:nftools/pages/image/state/Image_split_state.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 
@@ -35,7 +36,7 @@ class ImageSplitPage extends StatelessWidget {
         ]),
       ),
       barrierDismissible: true,
-      dismissWithEsc: false,
+      dismissWithEsc: true,
     );
   }
 
@@ -46,6 +47,7 @@ class ImageSplitPage extends StatelessWidget {
             title: const Text("前景分割"),
             commandBar: GetBuilder<ImageSplitController>(
               builder: (logic) => CommandBar(
+                  direction: Axis.horizontal,
                   mainAxisAlignment: MainAxisAlignment.end,
                   primaryItems: [
                     CommandBarButton(
@@ -62,21 +64,22 @@ class ImageSplitPage extends StatelessWidget {
                     CommandBarButton(
                         icon: Icon(FluentIcons.circle_fill,
                             size: logic.state.painterWidth),
-                        label: Text("画笔宽度"),
+                        label: Text("宽度"),
                         onPressed: () {
                           _showPainterWidthDialog(context);
                         }),
                     CommandBarButton(
                       icon: Icon(FluentIcons.next),
-                      label: Text("下一步"),
-                      onPressed: logic.next,
+                      label: Text("处理"),
+                      onPressed:
+                          logic.state.previewImage == null ? logic.next : null,
                     ),
                     CommandBarButton(
-                        icon: Icon(FluentIcons.accept),
-                        label: Text("完成"),
+                        icon: Icon(FluentIcons.preview),
+                        label: Text("预览"),
                         onPressed: logic.state.step == DrawStep.rect
                             ? null
-                            : logic.finish),
+                            : logic.preview),
                     CommandBarButton(
                         icon: Icon(FluentIcons.clear),
                         label: Text("重置"),
@@ -101,8 +104,39 @@ class ImageSplitPage extends StatelessWidget {
                     loading: logic.state.isLoading,
                     child: InteractiveViewer(
                         maxScale: 10,
-                        child: NFImagePainterPage(
-                            controller: logic.state.controller)),
+                        child: logic.state.isPreview
+                            ? Center(
+                                child: Stack(
+                                children: [
+                                  Image.file(File(logic.state.previewImage!)),
+                                  Positioned(
+                                      right: NFLayout.v0,
+                                      top: NFLayout.v0,
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        mainAxisSize: MainAxisSize.min,
+                                        spacing: NFLayout.v1,
+                                        children: [
+                                          Tooltip(
+                                            message: "复制",
+                                            child: IconButton(
+                                                icon: Icon(FluentIcons.copy),
+                                                onPressed: logic.copyResult),
+                                          ),
+                                          Tooltip(
+                                            message: "保存",
+                                            child: IconButton(
+                                                icon:
+                                                    Icon(FluentIcons.download),
+                                                onPressed: logic.saveResult),
+                                          ),
+                                        ],
+                                      )),
+                                ],
+                              ))
+                            : NFImagePainterPage(
+                                controller: logic.state.controller)),
                   ),
           );
         }));

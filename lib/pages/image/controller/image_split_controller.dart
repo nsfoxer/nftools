@@ -48,10 +48,26 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
 
   /// 复制结果至剪贴板
   void copyResult() async {
-    // final file = File(state.currentImage!.originalPath);
-    // final bytes = await file.readAsBytes();
-    // Pasteboard.writeImage(bytes);
-    // info("复制图像成功");
+    final file = File(state.previewImage!);
+    final bytes = await file.readAsBytes();
+    await Pasteboard.writeImage(bytes);
+    info("复制图像成功");
+  }
+
+  /// 下载结果
+  void saveResult() async {
+    if (state.previewImage == null) {
+      return;
+    }
+    final file = File(state.previewImage!);
+    final bytes = await file.readAsBytes();
+    FilePicker.platform.saveFile(
+      dialogTitle: "保存图像",
+      type: FileType.image,
+      bytes: bytes,
+      fileName: "1.png"
+    );
+    info("保存图像成功");
   }
 
   /// 开始加载
@@ -124,43 +140,30 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     update();
   }
 
-  void next() async {
+  Future<void> next() async {
     if (_imgCount == 0) {
       warn("请先做标记");
       return;
     }
     _startLoading();
+
     if (state.step == DrawStep.rect) {
-      // 绘制矩形完成
-      final markImage = await _saveCanvas();
-      // 处理图像
-      debug("markImage: $markImage");
-      final result = await $api2.handleImage(ImageSplitReqMsg(
-          markImage: markImage,
-          markType: MarkTypeMsg.rect,
-          addColor: color2Msg(_getColor(true)),
-          delColor: color2Msg(_getColor(false))));
-      state.step = DrawStep.path;
-      state.controller.clearData();
       state.controller.changeDrawType(
           DrawType.path, state.painterWidth, _getColor(state.isAddAreaMode));
-      _imgCount = 0;
-      state.currentImage = result;
-      state.controller.setImageProvider(FileImage(File(result)));
-    } else if (state.step == DrawStep.path) {
-      // 绘制完成
-      final markImage = await _saveCanvas();
-      final result = await $api2.handleImage(ImageSplitReqMsg(
-          markImage: markImage,
-          markType: MarkTypeMsg.path,
-          addColor: color2Msg(_getColor(true)),
-          delColor: color2Msg(_getColor(false))));
-      _imgCount = 0;
-      state.controller.clearData();
-      state.currentImage = result;
-      state.controller.setImageProvider(FileImage(File(result)));
-      debug("result: $result");
     }
+
+    final markImage = await _saveCanvas();
+    final result = await $api2.handleImage(ImageSplitReqMsg(
+        markImage: markImage,
+        markType:  state.step.getDrawTypeMsg(),
+        addColor: color2Msg(_getColor(true)),
+        delColor: color2Msg(_getColor(false))));
+
+    _imgCount = 0;
+    state.step = DrawStep.path;
+    state.currentImage = result;
+    state.controller.clearData();
+    state.controller.setImageProvider(FileImage(File(result)));
 
     _endLoading();
   }
@@ -214,11 +217,21 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
         a: (color.a * 255.0).round() & 0xff);
   }
 
-  /// 完成
-  void finish() async{
+  /// 预览
+  void preview() async{
+    state.isPreview = !state.isPreview;
+    if (!state.isPreview) {
+      state.controller.setImageProvider(FileImage(File(state.currentImage!)));
+      update();
+      return;
+    }
     _startLoading();
-    final img = await $api2.finishImage();
-    state.controller.setImageProvider(FileImage(File(img)));
+    debug("preview _imgCount: $_imgCount");
+    if (_imgCount != 0) {
+      await next();
+      state.previewImage = await $api2.previewImage();
+    }
+    state.previewImage ??= await $api2.previewImage();
     _endLoading();
   }
 }
