@@ -1,13 +1,13 @@
 import 'package:nftools/src/bindings/bindings.dart';
 
 import '../common/constants.dart';
-import '../utils/log.dart';
 import 'api.dart';
 
 const String _service = ServiceNameConstant.imageSplitService;
 const String _createImage = "create_image";
 const String _clear = "clear";
 const String _handleImage = "handle_image";
+const String _finishImage = "finish_image";
 
 /// 创建图像
 Future<void> createImage(String imgFile) async {
@@ -21,7 +21,12 @@ Future<void> clear() async {
 
 /// 处理图像
 Future<String> handleImage(ImageSplitReqMsg req) async {
-  debug("handleImage: ${req}");
   final data = await sendRequest(_service, _handleImage, req);
+  return StringMsg.bincodeDeserialize(data).value;
+}
+
+/// 完成图像
+Future<String> finishImage() async {
+  final data = await sendRequest<EmptyMsg>(_service, _finishImage, null);
   return StringMsg.bincodeDeserialize(data).value;
 }

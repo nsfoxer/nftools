@@ -52,10 +52,13 @@ class ImageSplitPage extends StatelessWidget {
                         icon: Icon(FluentIcons.redo),
                         label: Text("撤销"),
                         onPressed: logic.redo),
-                      CommandBarButton(
-                          icon: Icon(FluentIcons.add_in),
-                          label: Text(logic.state.isAddAreaMode ? "标记前景": "标记背景"),
-                          onPressed: logic.state.step == DrawStep.rect ? null :logic.changeAreaMode),
+                    CommandBarButton(
+                        icon: Icon(FluentIcons.add_in),
+                        label:
+                            Text(logic.state.isAddAreaMode ? "标记前景" : "标记背景"),
+                        onPressed: logic.state.step == DrawStep.rect
+                            ? null
+                            : logic.changeAreaMode),
                     CommandBarButton(
                         icon: Icon(FluentIcons.circle_fill,
                             size: logic.state.painterWidth),
@@ -68,6 +71,12 @@ class ImageSplitPage extends StatelessWidget {
                       label: Text("下一步"),
                       onPressed: logic.next,
                     ),
+                    CommandBarButton(
+                        icon: Icon(FluentIcons.accept),
+                        label: Text("完成"),
+                        onPressed: logic.state.step == DrawStep.rect
+                            ? null
+                            : logic.finish),
                     CommandBarButton(
                         icon: Icon(FluentIcons.clear),
                         label: Text("重置"),
@@ -90,8 +99,10 @@ class ImageSplitPage extends StatelessWidget {
                   )
                 : NFLoadingWidgets(
                     loading: logic.state.isLoading,
-                    child:
-                        NFImagePainterPage(controller: logic.state.controller),
+                    child: InteractiveViewer(
+                        maxScale: 10,
+                        child: NFImagePainterPage(
+                            controller: logic.state.controller)),
                   ),
           );
         }));
