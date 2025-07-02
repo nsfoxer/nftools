@@ -388,7 +388,7 @@ fn calculate_rect(left: f64, top: f64, width:f64, height:f64, img_width: i32, im
 
 
 
-///  裁剪透明区域
+/// 裁剪透明区域
 /// image: 原始图片
 /// alpha_channel: 透明通道
 pub fn trim_photo<'a>(image: &'a Mat, alpha_channel: &'a Mat) -> Result<Option<(opencv::boxed_ref::BoxedRef<'a, Mat>, opencv::boxed_ref::BoxedRef<'a, Mat>)>> {
