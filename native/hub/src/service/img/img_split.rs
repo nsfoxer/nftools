@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::io::{Read, Write};
 use std::sync::Arc;
 use crate::service::service::Service;
@@ -6,7 +7,7 @@ use opencv::{core, imgcodecs, imgproc};
 use crate::{async_func_nono, async_func_notype, async_func_typeno, async_func_typetype, func_end, func_nono, func_typeno};
 use anyhow::Result;
 use log::{debug, info};
-use opencv::core::{compare, count_non_zero, mix_channels, Point, Rect, Scalar, Size, ToInputArray, Vector};
+use opencv::core::{compare, count_non_zero, mix_channels, AlgorithmHint, Point, Rect, Scalar, Size, ToInputArray, Vector};
 use opencv::imgproc::ColorConversionCodes::COLOR_BGR2BGRA;
 use opencv::imgproc::cvt_color;
 use crate::common::utils::generate_path;
@@ -16,10 +17,12 @@ use tokio::sync::{Mutex, MutexGuard};
 
 #[derive(Debug)]
 pub struct ImageSplitService {
-    original_image: Arc<Mutex<Mat>>,
+    original_path: String,
+    handle_image: Arc<Mutex<Mat>>,
     bgd_model: Arc<Mutex<Mat>>,
     fgd_model: Arc<Mutex<Mat>>,
     mask: Arc<Mutex<Mat>>,
+    scale: f64,
 }
 
 #[async_trait::async_trait]
@@ -28,53 +31,74 @@ impl Service for ImageSplitService {
         func_typeno!(self, func, req_data, create_image, StringMsg);
         func_nono!(self, func, clear);
         async_func_typetype!(self, func, req_data, handle_image, ImageSplitReqMsg);
-        async_func_notype!(self, func, finish_image);
+        async_func_notype!(self, func, preview_image);
 
         func_end!(func)
     }
 }
 
+static THRESHOLD: i32 = 1000;
 impl ImageSplitService {
     /// new
     pub fn new() -> Self {
         Self {
-            original_image: Arc::new(Mutex::new(Mat::default())),
+            original_path: String::with_capacity(0),
+            handle_image: Arc::new(Mutex::new(Mat::default())),
             bgd_model: Arc::new(Mutex::new(Mat::default())),
             fgd_model: Arc::new(Mutex::new(Mat::default())),
             mask: Arc::new(Mutex::new(Mat::default())),
+            scale: 1.0,
         }
     }
 
     /// 清除数据
     /// 降低内存使用
     fn clear(&mut self) -> Result<()>{
-        self.original_image = Arc::new(Mutex::new(Mat::default()));
+        self.handle_image = Arc::new(Mutex::new(Mat::default()));
         self.bgd_model = Arc::new(Mutex::new(Mat::default()));
         self.fgd_model = Arc::new(Mutex::new(Mat::default()));
         self.mask = Arc::new(Mutex::new(Mat::default()));
         Ok(())
     }
+    
 
     /// 设置原始图片
-    pub fn create_image(&mut self, img: StringMsg) -> Result<()> {
-        let img = read_img(img.value.as_str())?;
+    pub fn create_image(&mut self, img_path: StringMsg) -> Result<()> {
+        let mut img = read_img(img_path.value.as_str())?;
+        let max_size = img.rows().max(img.cols());
+        
+        // downsample
+        let scale = if max_size > THRESHOLD * 4 {
+            0.25
+        } else if max_size > THRESHOLD {
+            THRESHOLD as f64 / max_size as f64
+        } else {
+            1.0
+        };
+        let mut down_img = Mat::default();
+        imgproc::resize(&img, &mut down_img, Size::new((img.cols() as f64 * scale) as i32, (img.rows() as f64 * scale) as i32),
+                        0.0, 0.0, imgproc::INTER_LINEAR)?;
+        img = down_img;
+        
         let mask = Mat::new_rows_cols_with_default(img.rows(), img.cols(), core::CV_8UC1, Scalar::all(0.0))?;
         let bgd_model = Mat::new_rows_cols_with_default(1, 65, opencv::core::CV_64FC1, opencv::core::Scalar::from(0.0))?;
         let fgd_model = Mat::new_rows_cols_with_default(1, 65, opencv::core::CV_64FC1, opencv::core::Scalar::from(0.0))?;
-        self.original_image = Arc::new(Mutex::new(img));
+        self.handle_image = Arc::new(Mutex::new(img));
         self.bgd_model = Arc::new(Mutex::new(bgd_model));
         self.fgd_model = Arc::new(Mutex::new(fgd_model));
         self.mask = Arc::new(Mutex::new(mask));
+        self.scale = scale;
+        self.original_path = img_path.value;
 
         Ok(())
     }
 
     /// 处理图片 中间过程
     async fn handle_image(&mut self, req: ImageSplitReqMsg) -> Result<StringMsg> {
-        if self.original_image.lock().await.empty() {
+        if self.handle_image.lock().await.empty() {
             return Err(anyhow::anyhow!("原始图片未设置"));
         }
-        let original_image_arc = self.original_image.clone();
+        let original_image_arc = self.handle_image.clone();
         let bgd_model_arc = self.bgd_model.clone();
         let fgd_model_arc = self.fgd_model.clone();
         let mask_arc = self.mask.clone();
@@ -94,18 +118,17 @@ impl ImageSplitService {
         }).await?
     }
 
-    async fn finish_image(&self) -> Result<StringMsg> {
-        if self.original_image.lock().await.empty() {
+    async fn preview_image(&self) -> Result<StringMsg> {
+        if self.handle_image.lock().await.empty() {
             return Err(anyhow::anyhow!("原始图片未设置"));
         }
-        let original_image_arc = self.original_image.clone();
         let mask_arc = self.mask.clone();
+        let original_path = self.original_path.clone();
+        let scale = self.scale;
 
         tokio::task::spawn_blocking(move || {
-            let mut original_image = futures::executor::block_on(original_image_arc.lock());
             let mask = futures::executor::block_on(mask_arc.lock());
-
-            let value = Self::finish(&mut original_image, &mask)?;
+            let value = Self::preview(&mask, original_path, scale)?;
 
             Ok(StringMsg{value})
         }).await?
@@ -226,7 +249,8 @@ impl ImageSplitService {
 
         // 转换为HSV颜色空间
         let mut hsv_img = Mat::default();
-        imgproc::cvt_color(&mark_img, &mut hsv_img, imgproc::COLOR_BGR2HSV, 0)?;
+        
+        cvt_color(&mark_img, &mut hsv_img, imgproc::COLOR_BGR2HSV, 0, AlgorithmHint::ALGO_HINT_DEFAULT)?;
 
         // 创建掩码，只保留目标颜色区域
         let mut mask = Mat::default();
@@ -278,15 +302,25 @@ impl ImageSplitService {
     }
 
     /// 完成处理
-    fn finish(img: &mut Mat, mask: &Mat) -> Result<String> {
+    fn preview(mask: &Mat, original_path: String, scale: f64) -> Result<String> {
+        let img = read_img(&original_path)?;
+        let mut tmp_mask = Mat::default();
+        let mask = if scale != 1.0 {
+            imgproc::resize(&mask, &mut tmp_mask, Size::new(img.cols(), img.rows()), 0.0,0.0, imgproc::INTER_NEAREST)?;
+            info!("up sample scale: {scale}");
+            &tmp_mask
+        } else {
+            mask
+        };
+        
         let mut foreground = Mat::default();
-        let background = Self::get_background_from_mask(mask)?;
+        let background = Self::get_background_from_mask(&mask)?;
         core::bitwise_not(&background, &mut foreground, &Mat::default())?;
         //  将临时3通道图像转为4通道（添加默认Alpha=255）
         let mut tmp = Mat::default();
-        core::bitwise_and(img, img, &mut tmp, &foreground)?;
+        core::bitwise_and(&img, &img, &mut tmp, &foreground)?;
         let mut result = Mat::default();
-        cvt_color(&tmp, &mut result, COLOR_BGR2BGRA.into(), 0)?;
+        cvt_color(&tmp, &mut result, COLOR_BGR2BGRA.into(), 0, AlgorithmHint::ALGO_HINT_DEFAULT)?;
         let mut alpha_channel = Mat::new_rows_cols_with_default(foreground.rows(), foreground.cols(), core::CV_8UC1, Scalar::all(0.0))?;
         alpha_channel.set_to(&Scalar::all(255.0), &foreground)?;
         mix_channels(&alpha_channel, &mut result, &[0, 3])?;
@@ -354,7 +388,7 @@ fn rgb_to_hsv(r: u8, g: u8, b: u8) -> Result<(f64, f64, f64)> {
 
     // 转换为HSV
     let mut hsv_img = Mat::default();
-    imgproc::cvt_color(&rgb_img, &mut hsv_img, imgproc::COLOR_BGR2HSV, 0)?;
+    cvt_color(&rgb_img, &mut hsv_img, imgproc::COLOR_BGR2HSV, 0, AlgorithmHint::ALGO_HINT_DEFAULT)?;
 
 
     // 获取HSV值
@@ -503,7 +537,7 @@ mod test {
             },
         };
         let r = img.handle_image(req).await.unwrap();
-        img.finish_image().await.unwrap();
+        img.preview_image().await.unwrap();
     }
 
 }
