@@ -213,7 +213,6 @@ impl ImageSplitService {
         if count_non_zero(&mask)? == 0 {
            return Ok(None);
         }
-        write_img(&mask)?;
         // 调整大小
         let mut resized_mask = Mat::default();
         imgproc::resize(
@@ -327,7 +326,6 @@ impl ImageSplitService {
 
         let mut non_zero_points = Vector::<Point>::new();
         core::find_non_zero(&foreground, &mut non_zero_points)?;
-        write_img(&foreground)?;
 
         // 计算边界
         let mut min_x = i32::MAX;
