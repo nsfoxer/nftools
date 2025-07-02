@@ -3,9 +3,10 @@ use std::sync::Arc;
 use crate::service::service::Service;
 use opencv::prelude::*;
 use opencv::{core, imgcodecs, imgproc};
-use crate::{async_func_nono, async_func_typeno, func_end, func_nono, func_typeno};
+use crate::{async_func_nono, async_func_typeno, async_func_typetype, func_end, func_nono, func_typeno};
 use anyhow::Result;
-use opencv::core::{Point, Scalar, Size, Vector};
+use log::{debug, info};
+use opencv::core::{count_non_zero, Point, Rect, Scalar, Size, Vector};
 use crate::common::utils::generate_path;
 use crate::messages::common::StringMsg;
 use crate::messages::image_split::{ColorMsg, ImageSplitReqMsg, MarkTypeMsg};
@@ -23,6 +24,8 @@ pub struct ImageSplitService {
 impl Service for ImageSplitService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         func_typeno!(self, func, req_data, create_image, StringMsg);
+        func_nono!(self, func, clear);
+        async_func_typetype!(self, func, req_data, handle_image, ImageSplitReqMsg);
 
         func_end!(func)
     }
@@ -64,7 +67,7 @@ impl ImageSplitService {
     }
 
     /// 处理图片 中间过程
-    async fn handle_img(&mut self, req: ImageSplitReqMsg) -> Result<StringMsg> {
+    async fn handle_image(&mut self, req: ImageSplitReqMsg) -> Result<StringMsg> {
         if self.original_image.lock().await.empty() {
             return Err(anyhow::anyhow!("原始图片未设置"));
         }
@@ -79,7 +82,7 @@ impl ImageSplitService {
             let mut fgd_model = futures::executor::block_on(fgd_model_arc.lock());
             let mut mask = futures::executor::block_on(mask_arc.lock());
             let value = match req.mark_type {
-                MarkTypeMsg::Path => {"undefined".to_string() }
+                MarkTypeMsg::Path => {Self::handle_path(&original_image, &mut bgd_model, &mut fgd_model, &mut mask, &req)?},
                 MarkTypeMsg::Rect => {Self::handle_rect(&original_image, &mut bgd_model, &mut fgd_model, &mut mask, &req.mark_image, &req.add_color)?}
             };
             
@@ -121,36 +124,58 @@ impl ImageSplitService {
         // 1. 根据标记重新填充mask
         Self::change_mask(original_image, &mut mark_img, mask, req.add_color, req.del_color)?;
 
-        todo!()
+        // 2. 处理
+        imgproc::grab_cut(original_image, mask, Rect::default(), bgd_model, fgd_model, 5, imgproc::GrabCutModes::GC_INIT_WITH_MASK.into())?;
+
+        // 3. 将图片mask区域添加灰色蒙版
+        let new_img = Self::gray_mask(original_image, mask)?;
+
+        // 4. 保存图片
+        Ok(write_img(&new_img)?)
     }
 
-    /// 改变mask
+    /// 更新mask
     fn change_mask(original_image: &Mat, mark_img: &mut Mat, mask: &mut Mat, add_color: ColorMsg, del_color: ColorMsg) -> Result<()> {
         let resize = Size::new(original_image.cols(), original_image.rows());
         if let Some(add) = Self::extract_color_mask(mark_img, &add_color, resize.clone())? {
+            info!("查找到新增区域");
             mask.set_to(&Scalar::all(1.0), &add)?;
         }
         if let Some(del) = Self::extract_color_mask(mark_img, &del_color, resize)? {
+            info!("查找到删除区域");
             mask.set_to(&Scalar::all(0.0), &del)?;
         }
-
-
         Ok(())
     }
     // 辅助函数：提取特定颜色的掩码
-    fn extract_color_mask(image: &Mat, color_msg: &ColorMsg, resize: Size) -> Result<Option<Mat>> {
+    pub fn extract_color_mask(image: &Mat, color_msg: &ColorMsg, resize: Size) -> Result<Option<Mat>> {
         let target_color = Scalar::new(
             color_msg.b as f64,
             color_msg.g as f64,
             color_msg.r as f64,
             0.0,
         );
+        let lower = Scalar::new(
+            ((color_msg.b as f64) - 10.0).max(0.0),
+            ((color_msg.g as f64) - 10.0).max(0.0),
+            ((color_msg.r as f64) - 10.0).max(0.0),
+            0.0,
+        );
+
+        // 计算安全的颜色上限（最大为255）
+        let upper = Scalar::new(
+            ((color_msg.b as f64) + 10.0).min(255.0),
+            ((color_msg.g as f64) + 10.0).min(255.0),
+            ((color_msg.r as f64) + 10.0).min(255.0),
+            0.0,
+        );
         // 创建掩码
         let mut mask = Mat::default();
-        core::in_range(image, &target_color, &target_color, &mut mask)?;
-        if mask.empty() {
+        core::in_range(image, &lower, &upper, &mut mask)?;
+        if count_non_zero(&mask)? == 0 {
            return Ok(None);
         }
+        write_img(&mask)?;
         // 调整大小
         let mut resized_mask = Mat::default();
         imgproc::resize(
@@ -167,12 +192,9 @@ impl ImageSplitService {
     /// 添加灰色遮罩
     fn gray_mask(img: &Mat, mask: &Mat) -> Result<Mat> {
         // 创建阴影遮罩矩阵 (例如半透明的灰色)
-        let mut shadow_color = Mat::new_rows_cols_with_default(
-            img.rows(),
-            img.cols(),
-            img.typ(),
-            Scalar::all(0.0)
-        )?;
+        let mut shadow_color = Mat::default();
+        img.copy_to(&mut shadow_color)?;
+
         // 背景掩码 为2或0的像素被置位255
         let mut temp_back1 = Mat::default();
         core::compare(&mask, &Scalar::all(0.0), &mut temp_back1, core::CmpTypes::CMP_EQ.into())?;
@@ -316,10 +338,10 @@ fn write_img(img: &Mat) -> Result<String> {
 }
 
 mod test {
-    use opencv::core::MatTraitConst;
+    use opencv::core::{MatTraitConst, Size};
     use crate::messages::common::StringMsg;
     use crate::messages::image_split::{ColorMsg, ImageSplitReqMsg, MarkTypeMsg};
-    use crate::service::img::img_split::{read_img, ImageSplitService};
+    use crate::service::img::img_split::{read_img, write_img, ImageSplitService};
 
     #[tokio::test]
     async fn rect() {
@@ -341,14 +363,69 @@ mod test {
                 a: 0,
             },
         };
-        let r = img.handle_img(req).await.unwrap();
+        let r = img.handle_image(req).await.unwrap();
         println!("结果： {}", r.value);
     }
 
+    #[tokio::test]
+    async fn path() {
+        let mut img = ImageSplitService::new();
+        img.create_image(StringMsg{value:r"C:\Users\12618\Desktop\1.jpg".to_string()}).unwrap();
+        let req = ImageSplitReqMsg{
+            mark_image: r"C:\Users\12618\Desktop\3.png".to_string(),
+            mark_type: MarkTypeMsg::Rect,
+            add_color: ColorMsg {
+                r: 249,
+                g: 100,
+                b: 12,
+                a: 1,
+            },
+            del_color: ColorMsg {
+                r: 50,
+                g: 49,
+                b: 47,
+                a: 255,
+            },
+        };
+        let r = img.handle_image(req).await.unwrap();
+        println!("<UNK> {}", r.value);
+
+        let req = ImageSplitReqMsg{
+            mark_image: r"C:\Users\12618\Desktop\2.png".to_string(),
+            mark_type: MarkTypeMsg::Path,
+            add_color: ColorMsg {
+                r: 249,
+                g: 100,
+                b: 12,
+                a: 1,
+            },
+            del_color: ColorMsg {
+                r: 50,
+                g: 49,
+                b: 47,
+                a: 255,
+            },
+        };
+        let r = img.handle_image(req).await.unwrap();
+        println!("<UNK> {}", r.value);
+    }
     #[test]
     fn read() {
         let img = read_img(r"C:\Users\12618\Pictures\wallpaper\【哲风壁纸】CP-动物背影.png").unwrap();
         assert!(!img.empty());
         assert_eq!(img.channels(), 3);
     }
+    
+    #[test]
+    fn extra_color() {
+        let mask = ImageSplitService::extract_color_mask(&read_img(r"C:\Users\12618\Desktop\2.png").unwrap(), &ColorMsg {
+            r: 50,
+            g: 49,
+            b: 48,
+            a: 204,
+        }, Size::new(567, 756)).unwrap();
+        assert!(mask.is_some());
+        write_img(&mask.unwrap()).unwrap();
+    }
+
 }

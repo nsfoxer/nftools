@@ -74,7 +74,7 @@ class RouterServiceData {
         Get.lazyPut<QrController>(() =>QrController(), fenix: true);
       }),
     }),
-    "/utils/imgTool": MenuData("/utils/imgTool", FluentIcons.image_pixel, "图片操作", const ImgToolPage(), [], () {}, children: {
+    "/utils/imgTool": MenuData("/utils/imgTool", FluentIcons.image_pixel, "图片操作", const ImgToolPage(), [ServiceNameConstant.imageSplitService], () {}, children: {
       "/utils/imgTool/splitForeGround": MenuData("/utils/imgTool/splitForeGround", FluentIcons.image_pixel, "前景分割", ImageSplitPage(), [], () {
         Get.lazyPut<ImageSplitController>(() => ImageSplitController(), fenix: true);
       }),
