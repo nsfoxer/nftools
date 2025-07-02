@@ -81,8 +81,8 @@ impl ImageSplitService {
         img = down_img;
         
         let mask = Mat::new_rows_cols_with_default(img.rows(), img.cols(), core::CV_8UC1, Scalar::all(0.0))?;
-        let bgd_model = Mat::new_rows_cols_with_default(1, 65, opencv::core::CV_64FC1, opencv::core::Scalar::from(0.0))?;
-        let fgd_model = Mat::new_rows_cols_with_default(1, 65, opencv::core::CV_64FC1, opencv::core::Scalar::from(0.0))?;
+        let bgd_model = Mat::new_rows_cols_with_default(1, 65, core::CV_64FC1, opencv::core::Scalar::from(0.0))?;
+        let fgd_model = Mat::new_rows_cols_with_default(1, 65, core::CV_64FC1, opencv::core::Scalar::from(0.0))?;
         self.handle_image = Arc::new(Mutex::new(img));
         self.bgd_model = Arc::new(Mutex::new(bgd_model));
         self.fgd_model = Arc::new(Mutex::new(fgd_model));

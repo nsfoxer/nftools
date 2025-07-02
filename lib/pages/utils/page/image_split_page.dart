@@ -71,8 +71,7 @@ class ImageSplitPage extends StatelessWidget {
                     CommandBarButton(
                       icon: Icon(FluentIcons.next),
                       label: Text("处理"),
-                      onPressed:
-                          !logic.state.isPreview ? logic.next : null,
+                      onPressed: !logic.state.isPreview ? logic.next : null,
                     ),
                     CommandBarButton(
                         icon: Icon(FluentIcons.preview),
@@ -108,7 +107,8 @@ class ImageSplitPage extends StatelessWidget {
                             ? Center(
                                 child: Stack(
                                 children: [
-                                  Image.file(File(logic.state.previewImage!)),
+                                  if (logic.state.previewImage != null)
+                                    Image.file(File(logic.state.previewImage!)),
                                   Positioned(
                                       right: NFLayout.v0,
                                       top: NFLayout.v0,
