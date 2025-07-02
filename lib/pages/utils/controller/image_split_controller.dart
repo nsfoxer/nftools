@@ -96,7 +96,6 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
 
   void _listenDrawEnd(DrawType endType) {
     _imgCount++;
-    debug("end _imgCount: $_imgCount");
     if (state.step == DrawStep.rect) {
       // 绘制矩形完成
       state.controller.limitTypeNum(DrawType.rect, 1);
@@ -127,7 +126,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
 
   void _startRect() {
     state.controller.changeDrawType(
-        DrawType.rect, state.painterWidth, _getColor(state.isAddAreaMode));
+        DrawType.rect, state.painterWidth, _getColor(DrawStep.rect, state.isAddAreaMode));
   }
 
   void changePainterWidth(double value) {
@@ -136,7 +135,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     }
     state.painterWidth = value;
     state.controller.changeDrawType(
-        state.getDrawType(), value, _getColor(state.isAddAreaMode));
+        state.getDrawType(), value, _getColor(state.step, state.isAddAreaMode));
     update();
   }
 
@@ -147,18 +146,20 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     }
     _startLoading();
 
+    var type = DrawStep.path;
     if (state.step == DrawStep.rect) {
+      type = DrawStep.rect;
       state.step = DrawStep.path;
       state.controller.changeDrawType(
-          DrawType.path, state.painterWidth, _getColor(state.isAddAreaMode));
+          DrawType.path, state.painterWidth, _getColor(type, state.isAddAreaMode));
     }
 
     final markImage = await _saveCanvas();
     final result = await $api2.handleImage(ImageSplitReqMsg(
         markImage: markImage,
-        markType:  state.step.getDrawTypeMsg(),
-        addColor: color2Msg(_getColor(true)),
-        delColor: color2Msg(_getColor(false))));
+        markType:  type.getDrawTypeMsg(),
+        addColor: color2Msg(_getColor(type, true)),
+        delColor: color2Msg(_getColor(type, false))));
 
     _imgCount = 0;
     state.currentImage = result;
@@ -169,8 +170,8 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     _endLoading();
   }
 
-  Color _getColor(bool isAddArea) {
-    if (state.step == DrawStep.rect) {
+  Color _getColor(DrawStep step, bool isAddArea) {
+    if (step == DrawStep.rect) {
       return Colors.orange;
     }
     if (isAddArea) {
@@ -182,7 +183,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   void changeAreaMode() {
     state.isAddAreaMode = !state.isAddAreaMode;
     state.controller.changeDrawType(state.getDrawType(), state.painterWidth,
-        _getColor(state.isAddAreaMode));
+        _getColor(state.step, state.isAddAreaMode));
     update();
   }
 

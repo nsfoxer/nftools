@@ -67,6 +67,11 @@ async fn base_request() -> Result<()> {
     let mut close_signal = None;
     while let Some(mut signal) = receiver.recv().await {
         signal.message.func = signal.message.func.trim().to_case(Case::Snake);
+        info!(
+            "收到信号: service={}, func={}",
+            signal.message.service,
+            signal.message.func,
+        );
         let signal = signal;
         // Api 服务特殊处理
         if signal.message.service == "ApiService" {
