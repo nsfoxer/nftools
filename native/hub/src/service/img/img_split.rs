@@ -7,7 +7,9 @@ use opencv::{core, imgcodecs, imgproc};
 use crate::{async_func_nono, async_func_notype, async_func_typeno, async_func_typetype, func_end, func_nono, func_typeno};
 use anyhow::Result;
 use log::{debug, info};
-use opencv::core::{compare, count_non_zero, mix_channels, AlgorithmHint, Point, Rect, Scalar, Size, ToInputArray, Vector};
+#[cfg(target_os = "linux")]
+use opencv::core::AlgorithmHint;
+use opencv::core::{compare, count_non_zero, mix_channels, Point, Rect, Scalar, Size, ToInputArray, Vector};
 use opencv::imgproc::ColorConversionCodes::COLOR_BGR2BGRA;
 use opencv::imgproc::cvt_color;
 use crate::common::utils::generate_path;
@@ -248,8 +250,11 @@ impl ImageSplitService {
 
         // 转换为HSV颜色空间
         let mut hsv_img = Mat::default();
-        
+
+        #[cfg(target_os = "linux")]
         cvt_color(&mark_img, &mut hsv_img, imgproc::COLOR_BGR2HSV, 0, AlgorithmHint::ALGO_HINT_DEFAULT)?;
+        #[cfg(target_os = "windows")]
+        cvt_color(&mark_img, &mut hsv_img, imgproc::COLOR_BGR2HSV, 0)?;
 
         // 创建掩码，只保留目标颜色区域
         let mut mask = Mat::default();
@@ -319,7 +324,10 @@ impl ImageSplitService {
         let mut tmp = Mat::default();
         core::bitwise_and(&img, &img, &mut tmp, &foreground)?;
         let mut result = Mat::default();
+        #[cfg(target_os = "linux")]
         cvt_color(&tmp, &mut result, COLOR_BGR2BGRA.into(), 0, AlgorithmHint::ALGO_HINT_DEFAULT)?;
+        #[cfg(target_os = "windows")]
+        cvt_color(&tmp, &mut result, COLOR_BGR2BGRA.into(), 0)?;
         let mut alpha_channel = Mat::new_rows_cols_with_default(foreground.rows(), foreground.cols(), core::CV_8UC1, Scalar::all(0.0))?;
         alpha_channel.set_to(&Scalar::all(255.0), &foreground)?;
         mix_channels(&alpha_channel, &mut result, &[0, 3])?;
@@ -386,7 +394,10 @@ fn rgb_to_hsv(r: u8, g: u8, b: u8) -> Result<(f64, f64, f64)> {
 
     // 转换为HSV
     let mut hsv_img = Mat::default();
+    #[cfg(target_os = "linux")]
     cvt_color(&rgb_img, &mut hsv_img, imgproc::COLOR_BGR2HSV, 0, AlgorithmHint::ALGO_HINT_DEFAULT)?;
+    #[cfg(target_os = "windows")]
+    cvt_color(&rgb_img, &mut hsv_img, imgproc::COLOR_BGR2HSV, 0)?;
 
 
     // 获取HSV值
