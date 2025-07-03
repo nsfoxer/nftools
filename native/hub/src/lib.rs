@@ -7,6 +7,7 @@ mod dbus;
 mod service;
 mod messages;
 
+use auto_allocator;
 use crate::api::api::ApiService;
 use crate::common::utils::{get_cache_dir, notify};
 use crate::common::*;
@@ -44,6 +45,9 @@ fn init_log() -> Result<()> {
 
 #[tokio::main]
 async fn main() {
+    let info = auto_allocator::get_allocator_info();
+    println!("当前使用的分配器: {:?}，选择原因: {}", info.allocator_type, info.reason);
+    
     if let Err(e) = init_log() {
         eprintln!("日志初始化失败: {}", e);
     }
