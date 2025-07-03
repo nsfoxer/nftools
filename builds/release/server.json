@@ -9,6 +9,12 @@
     "package_server": "https://gitee.com/muwuren/nftools/releases/download/v0.1.5/nftools-install.exe",
     "version": "v0.1.5",
     "record": "- 新增二维码识别及扫描\n- 优化页面刷新频率\n- 修复可能存在无法正常打开问题\n- 升级flutter版本至 v3.29.0",
+    "latest": false
+  },
+  {
+    "package_server": "https://gitee.com/muwuren/nftools/releases/download/v0.1.6/nftools-install.exe",
+    "version": "v0.1.6",
+    "record": "- 新增图像前景识别",
     "latest": true
   }
 ]
