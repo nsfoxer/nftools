@@ -146,20 +146,20 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     }
     _startLoading();
 
-    var type = DrawStep.path;
+    var oldType = DrawStep.path;
     if (state.step == DrawStep.rect) {
-      type = DrawStep.rect;
+      oldType = DrawStep.rect;
       state.step = DrawStep.path;
       state.controller.changeDrawType(
-          DrawType.path, state.painterWidth, _getColor(type, state.isAddAreaMode));
+          DrawType.path, state.painterWidth, _getColor(DrawStep.path, state.isAddAreaMode));
     }
 
     final markImage = await _saveCanvas();
     final result = await $api2.handleImage(ImageSplitReqMsg(
         markImage: markImage,
-        markType:  type.getDrawTypeMsg(),
-        addColor: color2Msg(_getColor(type, true)),
-        delColor: color2Msg(_getColor(type, false))));
+        markType:  oldType.getDrawTypeMsg(),
+        addColor: color2Msg(_getColor(oldType, true)),
+        delColor: color2Msg(_getColor(oldType, false))));
 
     _imgCount = 0;
     state.currentImage = result;
@@ -234,5 +234,9 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     }
     state.previewImage ??= await $api2.previewImage();
     _endLoading();
+  }
+
+  Color? getColor() {
+    return _getColor(state.step, state.isAddAreaMode);
   }
 }

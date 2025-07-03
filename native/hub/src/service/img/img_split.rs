@@ -9,9 +9,9 @@ use anyhow::Result;
 use log::{debug, info};
 #[cfg(target_os = "linux")]
 use opencv::core::AlgorithmHint;
-use opencv::core::{compare, count_non_zero, mix_channels, Point, Rect, Scalar, Size, ToInputArray, Vector};
+use opencv::core::{compare, count_non_zero, mix_channels, Point, Rect, Scalar, Size, ToInputArray, Vector, BORDER_CONSTANT, BORDER_DEFAULT};
 use opencv::imgproc::ColorConversionCodes::COLOR_BGR2BGRA;
-use opencv::imgproc::cvt_color;
+use opencv::imgproc::{cvt_color, dilate, get_structuring_element, INTER_NEAREST};
 use crate::common::utils::generate_path;
 use crate::messages::common::StringMsg;
 use crate::messages::image_split::{ColorMsg, ImageSplitReqMsg, MarkTypeMsg};
@@ -308,18 +308,15 @@ impl ImageSplitService {
     /// 完成处理
     fn preview(mask: &Mat, original_path: String, scale: f64) -> Result<String> {
         let img = read_img(&original_path)?;
-        let mut tmp_mask = Mat::default();
-        let mask = if scale != 1.0 {
-            imgproc::resize(&mask, &mut tmp_mask, Size::new(img.cols(), img.rows()), 0.0,0.0, imgproc::INTER_NEAREST)?;
-            info!("up sample scale: {scale}");
-            &tmp_mask
-        } else {
-            mask
-        };
         
-        let mut foreground = Mat::default();
-        let background = Self::get_background_from_mask(&mask)?;
-        core::bitwise_not(&background, &mut foreground, &Mat::default())?;
+        let mut foreground = Self::get_foreground_from_mask(&mask)?;
+        if scale != 1.0 {
+            foreground = Self::resize_with_dilation(&foreground, Size::new(img.cols(), img.rows()))?;
+            write_img(&foreground)?;
+        }
+
+        let mut background = Mat::default();
+        core::bitwise_not(&foreground, &mut background, &Mat::default())?;
         //  将临时3通道图像转为4通道（添加默认Alpha=255）
         let mut tmp = Mat::default();
         core::bitwise_and(&img, &img, &mut tmp, &foreground)?;
@@ -363,6 +360,44 @@ impl ImageSplitService {
         let mut background = Mat::default();
         core::bitwise_or(&temp_back1, &temp_back2, &mut background, &Mat::default())?;
         Ok(background)
+    }
+    
+    fn get_foreground_from_mask(mask: &Mat) -> Result<Mat> {
+        let mut temp_back1 = Mat::default();
+        compare(&mask, &Scalar::all(1.0), &mut temp_back1, core::CmpTypes::CMP_EQ.into())?;
+        let mut temp_back2 = Mat::default();
+        compare(&mask, &Scalar::all(3.0), &mut temp_back2, core::CmpTypes::CMP_EQ.into())?;
+        let mut foreground = Mat::default();
+        core::bitwise_or(&temp_back1, &temp_back2, &mut foreground, &Mat::default())?;
+        Ok(foreground)
+    }
+
+    fn resize_with_dilation(mask: &Mat, resize: Size) -> Result<Mat> {
+        // get_structuring_element：OpenCV 提供的函数，用于创建形态学操作所需的结构元素。
+        // MORPH_RECT：指定结构元素的形状为矩形。其他可选形状包括椭圆（MORPH_ELLIPSE）和十字形（MORPH_CROSS）。
+        // Size::new(3, 3)：设置结构元素的大小为 3×3 像素。
+        // (-1, -1)：表示锚点（Anchor Point）位于结构元素的中心。锚点决定了操作时的参考位置。
+        let kernel = get_structuring_element(imgproc::MorphShapes::MORPH_RECT.into(), Size::new(3, 3), Point::new(-1, -1))?;
+        let mut dilated_mask = Mat::default();
+        // mask：输入的二值掩码图像。
+        // &mut dilated_mask：输出结果的引用。
+        // &kernel：前面创建的 3×3 矩形结构元素。
+        // (-1, -1)：再次指定锚点位置为中心。
+        // 1：膨胀操作的迭代次数（这里只执行 1 次）。
+        // 0：边界填充类型（默认值）。
+        // Default::default()：边界填充值（默认值）。
+        dilate(mask, &mut dilated_mask, &kernel, Point::new(-1, -1), 1, BORDER_CONSTANT, Scalar::all(0.0))?;
+
+        let mut resized_mask = Mat::default();
+        imgproc::resize(
+            &dilated_mask,
+            &mut resized_mask,
+            resize,
+            0.0, 0.0,
+            INTER_NEAREST,
+        )?;
+        
+        Ok(resized_mask)
     }
 }
 

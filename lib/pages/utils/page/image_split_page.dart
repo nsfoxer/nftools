@@ -63,7 +63,7 @@ class ImageSplitPage extends StatelessWidget {
                             : logic.changeAreaMode),
                     CommandBarButton(
                         icon: Icon(FluentIcons.circle_fill,
-                            size: logic.state.painterWidth),
+                            size: logic.state.painterWidth, color: logic.getColor()),
                         label: Text("宽度"),
                         onPressed: () {
                           _showPainterWidthDialog(context);
