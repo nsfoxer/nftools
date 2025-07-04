@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -38,33 +39,34 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     reset();
     _startLoading();
     final file = await saveBytesToTempFile(image, fileExtension: "png");
-    state.originalImage = file.path;
-    state.currentImage = file.path;
+    state.originalImage = image;
+    state.currentImage = image;
     state.controller.setImageProvider(FileImage(file));
-    await $api2.createImage(file.path);
+    await $api2.createImage(image);
     _startRect();
     _endLoading();
   }
 
   /// 复制结果至剪贴板
   void copyResult() async {
-    final file = File(state.previewImage!);
-    final bytes = await file.readAsBytes();
-    await Pasteboard.writeImage(bytes);
+    if (state.previewImage == null) {
+      error("暂未获取到预览图像");
+      return;
+    }
+    await Pasteboard.writeImage(state.previewImage!);
     info("复制图像成功");
   }
 
   /// 下载结果
   void saveResult() async {
     if (state.previewImage == null) {
+      error("暂未获取到预览图像");
       return;
     }
-    final file = File(state.previewImage!);
-    final bytes = await file.readAsBytes();
     FilePicker.platform.saveFile(
       dialogTitle: "保存图像",
       type: FileType.image,
-      bytes: bytes,
+      bytes: state.previewImage!,
       fileName: "1.png"
     );
     info("保存图像成功");
@@ -112,14 +114,16 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     if (path == null) {
       return;
     }
+    File file = File(path);
+    final bytes = await file.readAsBytes();
 
     // 加载图像
     reset();
     _startLoading();
-    state.originalImage = path;
-    state.currentImage = path;
-    state.controller.setImageProvider(FileImage(File(path)));
-    await $api2.createImage(path);
+    state.originalImage = bytes;
+    state.currentImage = bytes;
+    state.controller.setImageProvider(MemoryImage(bytes));
+    await $api2.createImage(bytes);
     _startRect();
     _endLoading();
   }
@@ -156,7 +160,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
 
     final markImage = await _saveCanvas();
     final result = await $api2.handleImage(ImageSplitReqMsg(
-        markImage: markImage,
+        markImage: DataMsg(value: markImage),
         markType:  oldType.getDrawTypeMsg(),
         addColor: color2Msg(_getColor(oldType, true)),
         delColor: color2Msg(_getColor(oldType, false))));
@@ -164,7 +168,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     _imgCount = 0;
     state.currentImage = result;
     state.controller.clearData();
-    state.controller.setImageProvider(FileImage(File(result)));
+    state.controller.setImageProvider(MemoryImage(result));
     state.previewImage = null;
 
     _endLoading();
@@ -193,22 +197,23 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
     if (_imgCount < 0) {
       _imgCount = 0;
     }
-    debug("_imgCount: $_imgCount");
     state.controller.redo();
   }
 
-  Future<String> _saveCanvas() async {
-    final tmpFile = await getTempFilePath(fileExtension: "png");
-    final (boardSize, imgRect) = await state.controller.saveCanvas(tmpFile);
+  Future<Uint8List> _saveCanvas() async {
+    final (boardSize, imgRect, bytes) = await state.controller.saveCanvas();
+    if (bytes == null) {
+      return Uint8List(0);
+    }
     SplitImageMsg msg = SplitImageMsg(
-      image: tmpFile,
+      image: DataMsg(value: bytes),
       rect: RectMsg(
           leftX: imgRect.left,
           leftY: imgRect.top,
           width: imgRect.width,
           height: imgRect.height),
     );
-    return await $api.splitImage(msg);
+    return  await $api.splitImage(msg);
   }
 
   ColorMsg color2Msg(Color color) {
@@ -223,12 +228,11 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   void preview() async{
     state.isPreview = !state.isPreview;
     if (!state.isPreview) {
-      state.controller.setImageProvider(FileImage(File(state.currentImage!)));
+      state.controller.setImageProvider(MemoryImage(state.currentImage!));
       update();
       return;
     }
     _startLoading();
-    debug("preview _imgCount: $_imgCount");
     if (_imgCount != 0) {
       await next();
     }

@@ -9,17 +9,16 @@ use anyhow::Result;
 use log::{debug, info};
 #[cfg(target_os = "linux")]
 use opencv::core::AlgorithmHint;
-use opencv::core::{compare, count_non_zero, mix_channels, Point, Rect, Scalar, Size, ToInputArray, Vector, BORDER_CONSTANT, BORDER_DEFAULT};
+use opencv::core::{compare, count_non_zero, mix_channels, Point, Rect, Scalar, Size, ToInputArray, Vector, BORDER_CONSTANT};
 use opencv::imgproc::ColorConversionCodes::COLOR_BGR2BGRA;
 use opencv::imgproc::{cvt_color, dilate, get_structuring_element, INTER_NEAREST};
-use crate::common::utils::generate_path;
-use crate::messages::common::StringMsg;
 use crate::messages::image_split::{ColorMsg, ImageSplitReqMsg, MarkTypeMsg};
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::Mutex;
+use crate::messages::common::DataMsg;
 
 #[derive(Debug)]
 pub struct ImageSplitService {
-    original_path: String,
+    original_image: Arc<Mutex<Mat>>,
     handle_image: Arc<Mutex<Mat>>,
     bgd_model: Arc<Mutex<Mat>>,
     fgd_model: Arc<Mutex<Mat>>,
@@ -30,7 +29,7 @@ pub struct ImageSplitService {
 #[async_trait::async_trait]
 impl Service for ImageSplitService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        func_typeno!(self, func, req_data, create_image, StringMsg);
+        func_typeno!(self, func, req_data, create_image, ImageFileMsg);
         func_nono!(self, func, clear);
         async_func_typetype!(self, func, req_data, handle_image, ImageSplitReqMsg);
         async_func_notype!(self, func, preview_image);
@@ -44,7 +43,7 @@ impl ImageSplitService {
     /// new
     pub fn new() -> Self {
         Self {
-            original_path: String::with_capacity(0),
+            original_image: Arc::new(Mutex::new(Mat::default())),
             handle_image: Arc::new(Mutex::new(Mat::default())),
             bgd_model: Arc::new(Mutex::new(Mat::default())),
             fgd_model: Arc::new(Mutex::new(Mat::default())),
@@ -56,17 +55,19 @@ impl ImageSplitService {
     /// 清除数据
     /// 降低内存使用
     fn clear(&mut self) -> Result<()>{
+        self.original_image = Arc::new(Mutex::new(Mat::default()));
         self.handle_image = Arc::new(Mutex::new(Mat::default()));
         self.bgd_model = Arc::new(Mutex::new(Mat::default()));
         self.fgd_model = Arc::new(Mutex::new(Mat::default()));
         self.mask = Arc::new(Mutex::new(Mat::default()));
+        self.scale = 1.0;
         Ok(())
     }
     
 
     /// 设置原始图片
-    pub fn create_image(&mut self, img_path: StringMsg) -> Result<()> {
-        let mut img = read_img(img_path.value.as_str())?;
+    pub fn create_image(&mut self, req: DataMsg) -> Result<()> {
+        let mut img = read_img_from_buf(&req.value)?;
         let max_size = img.rows().max(img.cols());
         
         // downsample
@@ -80,6 +81,7 @@ impl ImageSplitService {
         let mut down_img = Mat::default();
         imgproc::resize(&img, &mut down_img, Size::new((img.cols() as f64 * scale) as i32, (img.rows() as f64 * scale) as i32),
                         0.0, 0.0, imgproc::INTER_LINEAR)?;
+        self.original_image = Arc::new(Mutex::new(img));
         img = down_img;
         
         let mask = Mat::new_rows_cols_with_default(img.rows(), img.cols(), core::CV_8UC1, Scalar::all(0.0))?;
@@ -90,13 +92,12 @@ impl ImageSplitService {
         self.fgd_model = Arc::new(Mutex::new(fgd_model));
         self.mask = Arc::new(Mutex::new(mask));
         self.scale = scale;
-        self.original_path = img_path.value;
 
         Ok(())
     }
 
     /// 处理图片 中间过程
-    async fn handle_image(&mut self, req: ImageSplitReqMsg) -> Result<StringMsg> {
+    async fn handle_image(&mut self, req: ImageSplitReqMsg) -> Result<DataMsg> {
         if self.handle_image.lock().await.empty() {
             return Err(anyhow::anyhow!("原始图片未设置"));
         }
@@ -110,29 +111,30 @@ impl ImageSplitService {
             let mut bgd_model = futures::executor::block_on(bgd_model_arc.lock());
             let mut fgd_model = futures::executor::block_on(fgd_model_arc.lock());
             let mut mask = futures::executor::block_on(mask_arc.lock());
-            let value = match req.mark_type {
+            let data = match req.mark_type {
                 MarkTypeMsg::Path => {Self::handle_path(&original_image, &mut bgd_model, &mut fgd_model, &mut mask, &req)?},
-                MarkTypeMsg::Rect => {Self::handle_rect(&original_image, &mut bgd_model, &mut fgd_model, &mut mask, &req.mark_image, &req.add_color)?}
+                MarkTypeMsg::Rect => {Self::handle_rect(&original_image, &mut bgd_model, &mut fgd_model, &mut mask, &req.mark_image.value, &req.add_color)?}
             };
             
             // 返回结果
-            Ok(StringMsg {value})
+            Ok(DataMsg {value:data})
         }).await?
     }
 
-    async fn preview_image(&self) -> Result<StringMsg> {
+    async fn preview_image(&self) -> Result<DataMsg> {
         if self.handle_image.lock().await.empty() {
             return Err(anyhow::anyhow!("原始图片未设置"));
         }
         let mask_arc = self.mask.clone();
-        let original_path = self.original_path.clone();
+        let original_image_arc = self.original_image.clone();
         let scale = self.scale;
 
         tokio::task::spawn_blocking(move || {
             let mask = futures::executor::block_on(mask_arc.lock());
-            let value = Self::preview(&mask, original_path, scale)?;
+            let original_image = futures::executor::block_on(original_image_arc.lock());
+            let data = Self::preview(&mask, &original_image, scale)?;
 
-            Ok(StringMsg{value})
+            Ok(DataMsg{value: data})
         }).await?
     }
 
@@ -147,8 +149,8 @@ impl ImageSplitService {
 
     /// 处理矩形
     fn handle_rect(original_image: &Mat, bgd_model: &mut Mat, fgd_model: &mut Mat, mask: &mut Mat,
-                   mark_image: &str, color: &ColorMsg) -> Result<String> {
-        let mark_img = read_img(mark_image)?;
+                   mark_image: &[u8], color: &ColorMsg) -> Result<Vec<u8>> {
+        let mark_img = read_img_from_buf(mark_image)?;
         // 1. 获取矩形边框
         let rect = Self::get_rect(original_image, &mark_img, color)?;
 
@@ -160,13 +162,13 @@ impl ImageSplitService {
         let new_img = Self::gray_mask(original_image, mask)?;
 
         // 4. 保存图片
-        Ok(write_img(&new_img)?)
+        Ok(write_img_to_buf(&new_img)?)
     }
 
     /// 处理path
     fn handle_path(original_image: &Mat, bgd_model: &mut Mat, fgd_model: &mut Mat, mask: &mut Mat,
-                   req: &ImageSplitReqMsg) -> Result<String> {
-        let mut mark_img = read_img(&req.mark_image)?;
+                   req: &ImageSplitReqMsg) -> Result<Vec<u8>> {
+        let mut mark_img = read_img_from_buf(&req.mark_image.value)?;
         // 1. 根据标记重新填充mask
         Self::change_mask(original_image, &mut mark_img, mask, req.add_color, req.del_color)?;
 
@@ -177,7 +179,7 @@ impl ImageSplitService {
         let new_img = Self::gray_mask(original_image, mask)?;
 
         // 4. 保存图片
-        Ok(write_img(&new_img)?)
+        Ok(write_img_to_buf(&new_img)?)
     }
 
     /// 更新mask
@@ -306,13 +308,12 @@ impl ImageSplitService {
     }
 
     /// 完成处理
-    fn preview(mask: &Mat, original_path: String, scale: f64) -> Result<String> {
-        let img = read_img(&original_path)?;
+    fn preview(mask: &Mat, original_image: &Mat, scale: f64) -> Result<Vec<u8>> {
+        let img = original_image;
         
         let mut foreground = Self::get_foreground_from_mask(&mask)?;
         if scale != 1.0 {
             foreground = Self::resize_with_dilation(&foreground, Size::new(img.cols(), img.rows()))?;
-            write_img(&foreground)?;
         }
 
         let mut background = Mat::default();
@@ -349,7 +350,7 @@ impl ImageSplitService {
 
         // 裁剪图像
         let cropped_img = result.roi(rect)?;
-        Ok(write_img(&cropped_img)?)
+        Ok(write_img_to_buf(&cropped_img)?)
     }
 
     fn get_background_from_mask(mask: &Mat) -> Result<Mat> {
@@ -448,140 +449,20 @@ pub fn read_img(filename: &str) -> Result<Mat> {
     let mut file = std::fs::File::open(filename)?;
     let mut buf = Vec::new();
     file.read_to_end(&mut buf)?;
+    read_img_from_buf(&buf)
+}
 
-    let original_img = imgcodecs::imdecode(&Mat::from_slice(&buf)?, imgcodecs::IMREAD_COLOR)?;
+pub fn read_img_from_buf(buf: &[u8]) -> Result<Mat> {
+    let original_img = imgcodecs::imdecode(&Mat::from_slice(buf)?, imgcodecs::IMREAD_COLOR)?;
     if original_img.empty() {
-        Err(anyhow::anyhow!("读取图片【{}】数据大小为空", filename))
+        Err(anyhow::anyhow!("读取图片数据大小为空"))
     } else {
         Ok(original_img)
     }
 }
 
-fn write_img(img: &impl ToInputArray) -> Result<String> {
-    let result_path = generate_path("png")?;
-    let result_path = result_path.to_str().ok_or_else(|| anyhow::anyhow!("转换路径识别"))?;
+fn write_img_to_buf(img: &impl ToInputArray) -> Result<Vec<u8>> {
     let mut buf = Vector::new();
     imgcodecs::imencode(".png", img, &mut buf, &Vector::new())?;
-    let mut file = std::fs::File::create(&result_path)?;
-    file.write_all(buf.as_slice())?;
-
-    debug!("保存图片：{}",result_path);
-    Ok(result_path.to_string())
-}
-
-mod test {
-    use opencv::core::{MatTraitConst, Size};
-    use crate::messages::common::StringMsg;
-    use crate::messages::image_split::{ColorMsg, ImageSplitReqMsg, MarkTypeMsg};
-    use crate::service::img::img_split::{read_img, write_img, ImageSplitService};
-
-    #[tokio::test]
-    async fn rect() {
-        let mut img = ImageSplitService::new();
-        img.create_image(StringMsg{value:r"C:\Users\12618\Desktop\1.png".to_string()}).unwrap();
-        let req = ImageSplitReqMsg{
-            mark_image: r"C:\Users\12618\Desktop\2.png".to_string(),
-            mark_type: MarkTypeMsg::Rect,
-            add_color: ColorMsg {
-                r: 249,
-                g: 100,
-                b: 12,
-                a: 1,
-            },
-            del_color: ColorMsg {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0,
-            },
-        };
-        let r = img.handle_image(req).await.unwrap();
-        println!("结果： {}", r.value);
-    }
-
-    #[tokio::test]
-    async fn path() {
-        let mut img = ImageSplitService::new();
-        img.create_image(StringMsg{value:r"C:\Users\12618\Desktop\1.jpg".to_string()}).unwrap();
-        let req = ImageSplitReqMsg{
-            mark_image: r"C:\Users\12618\Desktop\3.png".to_string(),
-            mark_type: MarkTypeMsg::Rect,
-            add_color: ColorMsg {
-                r: 249,
-                g: 100,
-                b: 12,
-                a: 1,
-            },
-            del_color: ColorMsg {
-                r: 50,
-                g: 49,
-                b: 47,
-                a: 255,
-            },
-        };
-        let r = img.handle_image(req).await.unwrap();
-        println!("<UNK> {}", r.value);
-
-        let req = ImageSplitReqMsg{
-            mark_image: r"C:\Users\12618\Desktop\2.png".to_string(),
-            mark_type: MarkTypeMsg::Path,
-            add_color: ColorMsg {
-                r: 249,
-                g: 100,
-                b: 12,
-                a: 1,
-            },
-            del_color: ColorMsg {
-                r: 50,
-                g: 49,
-                b: 47,
-                a: 255,
-            },
-        };
-        let r = img.handle_image(req).await.unwrap();
-        println!("<UNK> {}", r.value);
-    }
-    #[test]
-    fn read() {
-        let img = read_img(r"C:\Users\12618\Pictures\wallpaper\【哲风壁纸】CP-动物背影.png").unwrap();
-        assert!(!img.empty());
-        assert_eq!(img.channels(), 3);
-    }
-    
-    #[test]
-    fn extra_color() {
-        let mask = ImageSplitService::extract_color_mask(&read_img(r"C:\Users\12618\Desktop\2.png").unwrap(), &ColorMsg {
-            r: 50,
-            g: 49,
-            b: 48,
-            a: 204,
-        }, Size::new(567, 756)).unwrap();
-        assert!(mask.is_some());
-        write_img(&mask.unwrap()).unwrap();
-    }
-
-    #[tokio::test]
-    async fn finish() {
-        let mut img = ImageSplitService::new();
-        img.create_image(StringMsg{value:r"C:\Users\12618\Desktop\1.jpg".to_string()}).unwrap();
-        let req = ImageSplitReqMsg{
-            mark_image: r"C:\Users\12618\Desktop\2.png".to_string(),
-            mark_type: MarkTypeMsg::Rect,
-            add_color: ColorMsg {
-                r: 249,
-                g: 100,
-                b: 12,
-                a: 1,
-            },
-            del_color: ColorMsg {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0,
-            },
-        };
-        let r = img.handle_image(req).await.unwrap();
-        img.preview_image().await.unwrap();
-    }
-
+    Ok(buf.to_vec())
 }

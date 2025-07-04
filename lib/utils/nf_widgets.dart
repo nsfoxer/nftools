@@ -732,7 +732,7 @@ class NFImagePainterController extends ChangeNotifier {
   }
 
   /// 生成画画图像
-  Future<(Size, Rect)> saveCanvas(String path) async {
+  Future<(Size, Rect, Uint8List?)> saveCanvas() async {
     PictureRecorder recorder = PictureRecorder();
     Canvas canvas = Canvas(recorder);
     //获取图片大小
@@ -743,12 +743,8 @@ class NFImagePainterController extends ChangeNotifier {
         _boardSize.width.toInt(), _boardSize.height.toInt());
     // 获取字节，存入文件
     ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
-    if (byteData != null) {
-      File file = File(path);
-      await file.writeAsBytes(byteData.buffer.asUint8List());
-    }
 
-    return (_boardSize, _displayRect);
+    return (_boardSize, _displayRect, byteData?.buffer.asUint8List());
   }
 
   void redo() {

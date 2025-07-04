@@ -1,5 +1,6 @@
 use rinf::SignalPiece;
 use serde::{Deserialize, Serialize};
+use crate::messages::common::DataMsg;
 
 // 压缩图片请求
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]
@@ -62,7 +63,7 @@ pub struct SplitBackgroundImgMsg {
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]
 pub struct SplitImageMsg  {
     /// 原图片
-    pub image: String,
+    pub image: DataMsg,
     /// 要裁切的区域
     pub rect: RectMsg,
 }

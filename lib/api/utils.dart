@@ -63,8 +63,8 @@ Future<QrCodeDataMsgList> detectFileQrCode(String path) async {
 }
 
 /// 图片切割
-Future<String> splitImage(SplitImageMsg imgMsg) async {
+Future<Uint8List> splitImage(SplitImageMsg imgMsg) async {
   final result = await sendRequest
     (_service, _spiltImage, imgMsg);
-  return StringMsg.bincodeDeserialize(result).value;
+  return Uint8List.fromList(DataMsg.bincodeDeserialize(result).value);
 }

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:nftools/src/bindings/bindings.dart';
 
 import '../common/constants.dart';
@@ -10,8 +12,8 @@ const String _handleImage = "handle_image";
 const String _previewImage = "preview_image";
 
 /// 创建图像
-Future<void> createImage(String imgFile) async {
-  await sendRequest<StringMsg>(_service, _createImage, StringMsg(value: imgFile));
+Future<void> createImage(Uint8List imgData) async {
+  await sendRequest(_service, _createImage, DataMsg(value: imgData));
 }
 
 /// 清除内存
@@ -20,13 +22,13 @@ Future<void> clear() async {
 }
 
 /// 处理图像
-Future<String> handleImage(ImageSplitReqMsg req) async {
+Future<Uint8List> handleImage(ImageSplitReqMsg req) async {
   final data = await sendRequest(_service, _handleImage, req);
-  return StringMsg.bincodeDeserialize(data).value;
+  return Uint8List.fromList(DataMsg.bincodeDeserialize(data).value);
 }
 
 /// 完成图像
-Future<String> previewImage() async {
+Future<Uint8List> previewImage() async {
   final data = await sendRequest<EmptyMsg>(_service, _previewImage, null);
-  return StringMsg.bincodeDeserialize(data).value;
+  return Uint8List.fromList(DataMsg.bincodeDeserialize(data).value);
 }
