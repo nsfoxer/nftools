@@ -1,4 +1,6 @@
 
+import 'dart:typed_data';
+
 import 'package:nftools/utils/nf_widgets.dart';
 
 import '../../../src/bindings/bindings.dart';
@@ -6,17 +8,14 @@ import '../../../src/bindings/bindings.dart';
 class ImageSplitState {
   bool isLoading = false;
   // 原始图片
-  String? originalImage;
+  Uint8List? originalImage;
 
   // 当前图片
-  String? currentImage;
+  Uint8List? currentImage;
   // 预览图片
-  String? previewImage;
+  Uint8List? previewImage;
   //
   bool isPreview = false;
-
-  // 分割结果图片
-  String? resultImage;
 
   // 当前分割步骤
   DrawStep step = DrawStep.rect;
@@ -40,7 +39,6 @@ class ImageSplitState {
     originalImage = null;
     currentImage = null;
     previewImage = null;
-    resultImage = null;
     controller.reset();
     isLoading = false;
     isPreview = false;

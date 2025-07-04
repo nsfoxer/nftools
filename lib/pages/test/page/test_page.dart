@@ -56,7 +56,7 @@ class TestPage extends StatelessWidget {
             Button(
                 child: Text("save"),
                 onPressed: () {
-                  controller.saveCanvas(r"C:\Users\12618\Desktop\box.png");
+                  controller.saveCanvas();
                 })
           ],
         ),

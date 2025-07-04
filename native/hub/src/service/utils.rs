@@ -10,7 +10,7 @@ use crate::messages::utils::{CompressLocalPicMsg, CompressLocalPicRspMsg, QrCode
 use crate::{async_func_notype, async_func_typetype, func_end, func_typeno};
 use anyhow::Result;
 use image::{DynamicImage, ImageReader};
-use opencv::core::{Mat, MatTraitConst, Rect, Vector};
+use opencv::core::{Mat, MatTraitConst, Rect, Vector, VectorToVec};
 use opencv::imgcodecs;
 use qrcode_generator::QrCodeEcc;
 use tokio::fs;
@@ -211,8 +211,8 @@ impl UtilsService {
 
     /// 裁剪图片
     /// 返回裁剪后的图片地址
-    async fn split_img(&self, msg: SplitImageMsg) -> Result<StringMsg> {
-        tokio::task::spawn_blocking(move || -> Result<StringMsg> {
+    async fn split_img(&self, msg: SplitImageMsg) -> Result<DataMsg> {
+        tokio::task::spawn_blocking(move || {
             Self::split_image(msg)
         }).await?
     }
@@ -222,10 +222,10 @@ impl UtilsService {
 
     /// 裁剪图片
     /// 返回裁剪后的图片地址
-    fn split_image(msg: SplitImageMsg) -> Result<StringMsg> {
-        let original_img = imgcodecs::imdecode(&Mat::from_slice(&Self::read_file(&msg.image)?)?, imgcodecs::IMREAD_COLOR)?;
+    fn split_image(msg: SplitImageMsg) -> Result<DataMsg> {
+        let original_img = imgcodecs::imdecode(&Mat::from_slice(&msg.image.value)?, imgcodecs::IMREAD_COLOR)?;
         if original_img.empty() {
-           return Err(anyhow::anyhow!("读取图片【{}】数据大小为空", msg.image));
+           return Err(anyhow::anyhow!("读取图片数据大小为空"));
         }
 
         if original_img.cols() < (msg.rect.left_x + msg.rect.width) as i32 || original_img.rows() < (msg.rect.left_y + msg.rect.height) as i32 {
@@ -234,15 +234,11 @@ impl UtilsService {
         let rect = Rect::new(msg.rect.left_x as i32, msg.rect.left_y as i32, msg.rect.width as i32, msg.rect.height as i32);
         let cropped_image = original_img.roi(rect)?;
 
-        let result_path = generate_path("png")?;
-        let result_path = result_path.to_str().ok_or_else(|| anyhow::anyhow!("转换路径识别"))?;
         let mut buf = Vector::new();
         imgcodecs::imencode(".png", &cropped_image, &mut buf, &Vector::new())?;
-        let mut file = std::fs::File::create(&result_path)?;
-        file.write_all(buf.as_slice())?;
 
-        Ok(StringMsg {
-            value: result_path.to_string(),
+        Ok(DataMsg {
+            value: buf.to_vec(),
         })
     }
 

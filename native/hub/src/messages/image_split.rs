@@ -1,11 +1,12 @@
 use reqwest_dav::re_exports::serde::{Deserialize, Serialize};
 use rinf::SignalPiece;
+use crate::messages::common::DataMsg;
 
 /// 图片裁剪请求 rect
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]
 pub struct ImageSplitReqMsg {
     /// 标记图片
-    pub mark_image: String,
+    pub mark_image: DataMsg,
     /// 标记类型
     pub mark_type: MarkTypeMsg,
     /// 添加的颜色
@@ -27,10 +28,4 @@ pub struct ColorMsg {
     pub g: u8,
     pub b: u8,
     pub a: u8,
-}
-
-#[derive(Debug, Serialize, Deserialize, SignalPiece)]
-struct ImageSplitRspMsg {
-    /// 处理后的图片
-    image: String,
 }

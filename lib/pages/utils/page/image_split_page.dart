@@ -108,7 +108,7 @@ class ImageSplitPage extends StatelessWidget {
                                 child: Stack(
                                 children: [
                                   if (logic.state.previewImage != null)
-                                    Image.file(File(logic.state.previewImage!)),
+                                    Image.memory(logic.state.previewImage!),
                                   Positioned(
                                       right: NFLayout.v0,
                                       top: NFLayout.v0,
