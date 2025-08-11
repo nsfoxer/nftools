@@ -21,7 +21,6 @@ ahash = { version = "0.8.11", features = ["serde"] }
 #dashmap = "6.1.0"
 ddc = "0.2.2"
 serde = { version = "1.0.210", features = ["derive"] }
-#chrono = "0.4.38"
 dirs = "5.0.1"
 serde_json = "1.0.128"
 reqwest_dav = "0.1.13"
@@ -34,7 +33,7 @@ filetime = "0.2.25"
 sha2 = "0.10.8"
 image = "0.25.5"
 notify-rust = "4.11.3"
-reqwest = { version = "0.12.9", features = ["stream", "json"] }
+reqwest = { version = "0.12.9", features = ["stream", "json", "multipart"] }
 futures-util = "0.3.31"
 futures = "0.3.31"
 bytes = "1.9.0"
@@ -45,6 +44,8 @@ qrcode-generator = "5.0.0"
 rqrr = "0.9.3"
 opencv = { version = "0.94.4" }
 simple-log = "2.3.0"
+pdfium = "0.9.4"
+tempfile = "3.20.0"
 auto-allocator = "0.1.0"
 
 [target."cfg(windows)".dependencies]
