@@ -5,4 +5,4 @@ pub mod utils;
 pub mod ai;
 pub mod settings;
 pub mod img;
-mod pdf;
+pub mod pdf;
