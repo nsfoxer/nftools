@@ -6,6 +6,7 @@ import 'package:meta/meta.dart';
 import 'package:nftools/common/constants.dart';
 import 'package:nftools/pages/display_page.dart';
 import 'package:nftools/pages/home_page.dart';
+import 'package:nftools/pages/tar_pdf/controller/tar_pdf_controller.dart';
 import 'package:nftools/pages/utils/controller/image_split_controller.dart';
 import 'package:nftools/pages/utils/page/image_split_page.dart';
 import 'package:nftools/pages/settings/page/settings_page.dart';
@@ -23,6 +24,7 @@ import '../controller/system_mode_controller.dart';
 import '../pages/ai_page.dart';
 import '../pages/settings/controller/about_controller.dart';
 import '../pages/settings/controller/auto_start_controller.dart';
+import '../pages/tar_pdf/page/tar_pdf_page.dart';
 import '../pages/test/page/test_page.dart';
 import '../pages/utils/controller/qr_controller.dart';
 import '../pages/utils/controller/text_diff_controller.dart';
@@ -72,6 +74,9 @@ class RouterServiceData {
       "/utils/imageSplit": MenuData("/utils/imageSplit", FluentIcons.image_pixel, "前景分割", ImageSplitPage(), [ServiceNameConstant.imageSplitService], () {
         Get.lazyPut<ImageSplitController>(() => ImageSplitController(), fenix: true);
       }),
+    }),
+    "/tar_pdf": MenuData("/tar_pdf", FluentIcons.pdf, "PDF转换", const TarPdfPage(), [ServiceNameConstant.tarPdfService], () {
+      Get.put<TarPdfController>(TarPdfController(), permanent: true);
     }),
     if (kDebugMode)
       "/test": MenuData("/test", FluentIcons.test_case, "测试", TestPage(), [], () {
