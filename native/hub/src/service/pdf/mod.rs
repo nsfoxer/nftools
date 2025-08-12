@@ -1,1 +1,1 @@
-mod tar_pdf;
+pub mod tar_pdf;

@@ -9,12 +9,27 @@ use pdfium::{PdfiumDocument, PdfiumRenderConfig};
 use serde::Deserialize;
 use tempfile::NamedTempFile;
 use tokio_stream::wrappers::ReadDirStream;
-use crate::{async_stream_func_typeno, func_end};
+use crate::{async_stream_func_typeno, func_end, func_notype, func_typeno};
+use crate::common::global_data::GlobalData;
 use crate::messages::tar_pdf::TarPdfMsg;
+
+#[derive(Debug)]
+struct PdfResult {
+    file_path: PathBuf,
+    ocr_result: Result<String>,
+}
 
 /// tar pdf服务
 pub struct TarPdfService {
+    global_data: GlobalData,
+    pdf_password: Option<String>,
+    url: Option<String>,
+    url_key: Option<String>,
+    result: Vec<PdfResult>,
 }
+
+const URL_CACHE: &str = "tarPdfPrefix-url";
+const URL_KEY_CACHE: &str = "tarPdfPrefix-url_key";
 
 #[async_trait::async_trait]
 impl StreamService for TarPdfService {
@@ -22,7 +37,7 @@ impl StreamService for TarPdfService {
         &mut self,
         func: &str,
         req_data: Vec<u8>,
-        tx: UnboundedSender<anyhow::Result<Option<Vec<u8>>>>,
+        tx: UnboundedSender<Result<Option<Vec<u8>>>>,
     ) -> Result<()> {
         async_stream_func_typeno!(self, func, req_data, start, StringMsg, tx);
         func_end!(func)
@@ -31,13 +46,60 @@ impl StreamService for TarPdfService {
 
 #[async_trait::async_trait]
 impl Service for TarPdfService {
-    async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> anyhow::Result<Option<Vec<u8>>> {
+    async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
+        func_typeno!(self, func, req_data, set_url, StringMsg, set_password, StringMsg, set_url_key, StringMsg);
+        func_notype!(self, func, get_url, get_url_key, get_password);
         func_end!(func)
+    }
+
+    async fn close(&mut self) -> Result<()> {
+        if let Some(k) = &self.url {
+            self.global_data.set_data(URL_CACHE.to_string(), k).await?;
+        }
+        if let Some(k) = &self.url_key {
+            self.global_data.set_data(URL_KEY_CACHE.to_string(), k).await?;
+        }
+
+        Ok(())
     }
 }
 
 impl TarPdfService {
-    pub async fn start(&mut self, pdf_dir: StringMsg, tx: UnboundedSender<Result<Option<Vec<u8>>>>) -> Result<()> {
+
+    fn set_url(&mut self, url: StringMsg) -> Result<()> {
+        self.url = Some(url.value);
+        Ok(())
+    }
+
+    fn get_url(&self) -> Result<StringMsg> {
+        Ok(StringMsg {
+            value: self.url.clone().unwrap_or(String::with_capacity(0)),
+        })
+    }
+
+    fn set_password(&mut self, password: StringMsg) -> Result<()> {
+        self.pdf_password = Some(password.value);
+        Ok(())
+    }
+    fn get_password(&self) -> Result<StringMsg> {
+        Ok(StringMsg {
+            value: self.pdf_password.clone().unwrap_or(String::with_capacity(0)),
+        })
+    }
+
+    fn set_url_key(&mut self, url_key: StringMsg) -> Result<()> {
+        self.url_key = Some(url_key.value);
+        Ok(())
+    }
+
+    fn get_url_key(&self) -> Result<StringMsg> {
+        Ok(StringMsg {
+            value: self.url_key.clone().unwrap_or(String::with_capacity(0)),
+        })
+    }
+    
+    
+    async fn start(&mut self, pdf_dir: StringMsg, tx: UnboundedSender<Result<Option<Vec<u8>>>>) -> Result<()> {
         let pdf_dir = PathBuf::from(pdf_dir.value);
         if !pdf_dir.exists() {
             return Err(anyhow!("pdf_dir not exists"));
@@ -45,6 +107,7 @@ impl TarPdfService {
         if !pdf_dir.is_dir() {
             return Err(anyhow!("pdf_dir is not a directory"));
         }
+        self.result.clear();
 
         // 按创建时间从最新到最旧遍历所有后缀为pdf的文件
         let mut pdf_files = get_pdf_files_in_directory(&pdf_dir).await?;
@@ -54,7 +117,7 @@ impl TarPdfService {
         let count = pdf_files.len();
         for (index, pdf_file) in pdf_files.into_iter().enumerate() {
             let file_name = pdf_file.path.file_name().unwrap_or_default().to_str().unwrap_or_default().to_string();
-            let msg = match ocr_pdf(pdf_file.path).await {
+            let msg = match ocr_pdf(pdf_file.path.clone()).await {
                 Ok(r) => TarPdfMsg {
                     now: (index + 1) as u32,
                     sum: count as u32,
@@ -68,6 +131,11 @@ impl TarPdfService {
             };
             let msg = rinf::serialize(&msg);
             tx.send(Ok(Some(msg?)))?;
+            let r = PdfResult {
+                file_path: pdf_file.path,
+                ocr_result: Ok(String::default()),
+            };
+            self.result.push(r);
         }
 
         Ok(())
@@ -75,8 +143,15 @@ impl TarPdfService {
 }
 
 impl TarPdfService {
-    pub fn new() -> Self {
+    pub async fn new(global_data: GlobalData) -> Self {
+        let url = global_data.get_data(URL_CACHE.to_string()).await;
+        let url_key = global_data.get_data(URL_KEY_CACHE.to_string()).await;
         TarPdfService {
+            global_data,
+            url,
+            url_key,
+            pdf_password: None,
+            result: Vec::new(),
         }
     }
 }
@@ -184,16 +259,4 @@ fn export_pdf_to_jpegs(path: &Path, password: Option<&str>) -> Result<NamedTempF
     let tmp_file = NamedTempFile::with_suffix("png")?;
     bitmap.save(tmp_file.path().to_str().unwrap(), image::ImageFormat::Jpeg)?;
     Ok(tmp_file)
-}
-
-mod test {
-    use std::path::PathBuf;
-    use crate::service::pdf::tar_pdf::ocr_pdf;
-
-    #[tokio::test]
-    async fn ocr() {
-        let pdf = PathBuf::from("/home/nsfoxer/桌面/关于2023年淮安市市本级监测及质控服务项目的工作总结 （第四版）.pdf");
-        let r = ocr_pdf(pdf).await.unwrap();
-        eprintln!("{:?}", r);
-    }
 }
