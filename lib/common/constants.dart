@@ -15,6 +15,7 @@ class ServiceNameConstant {
   static const String autoStart = "AutoStartService";
   static const String ai = "AiService";
   static const String imageSplitService = "ImageSplitService";
+  static const String tarPdfService = "TarPdfService";
 }
 
 class PageWidgetNameConstant {
