@@ -74,6 +74,25 @@ void processDirectory(Directory directory) {
   }
 }
 
+void addImport(File signalFile) {
+  // 查找第一个import开头的行，并在之后新增一行 abc
+  final content = signalFile.readAsStringSync();
+  final lines = content.split('\n');
+
+  for (int i = 0; i < lines.length; i++) {
+    if (lines[i].trim().startsWith('import')) {
+      // 在找到的import行后插入新行
+      lines.insert(i + 1, r"import '../../../api/api.dart';");
+      break;
+    }
+  }
+
+  // 将修改后的内容写回文件
+  final newContent = lines.join('\n');
+  signalFile.writeAsStringSync(newContent);
+}
+
+
 void main() {
   final targetDir = Directory('lib/src/bindings/signals');
   if (targetDir.existsSync()) {
@@ -81,4 +100,11 @@ void main() {
   } else {
     print('Directory not found: ${targetDir.path}');
   }
+
+  final signalFile = File('lib/src/bindings/signals/signals.dart');
+  if (signalFile.existsSync()) {
+    print("add import");
+    addImport(signalFile);
+  }
 }
+
