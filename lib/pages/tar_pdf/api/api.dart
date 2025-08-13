@@ -11,6 +11,7 @@ const String _setUrl = "set_url";
 const String _setUrlKey = "set_url_key";
 const String _setPdfPassword = "set_password";
 const String _ocrCheck = "ocr_check";
+const String _ocrResult = "get_result";
 
 
 // start
@@ -43,4 +44,9 @@ Future<void> setPdfPassword(String password) async {
 
 Future<void> ocrCheck() async{
   await sendEmptyRequest(_service, _ocrCheck);
+}
+
+Future<List<TarPdfResultMsg>> ocrResult() async {
+  final data = await sendEmptyRequest(_service, _ocrResult);
+  return TarPdfResultsMsg.bincodeDeserialize(data).datas;
 }

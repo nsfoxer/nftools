@@ -17,13 +17,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
   }
 
   void _init() async {
-    final url = await $api.getUrl();
-    final urlKey = await $api.getUrlKey();
-    if (url.isEmpty || urlKey.isEmpty) {
-      warn("OCR服务未配置,请先配置!");
-    }
-    state.urlTextController.text = url;
-    state.urlKeyTextController.text = urlKey;
+    configReset();
   }
 
   void selectPdfDir() async {
@@ -47,20 +41,19 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     stream.listen((data) {
       state.sum = data.sum;
       state.current = data.now;
-      state.result.add(data.currentFile);
       update();
     }, onDone: () {
       _end();
     }, onError: (e) {
       error(e.toString());
       state.processEnum = DisplayProcessEnum.start;
-      state.result.clear();
       update();
     }, cancelOnError: true);
   }
 
-  void _end() {
+  void _end() async {
     state.processEnum = DisplayProcessEnum.end;
+    state.ocrResult = await $api.ocrResult();
     update();
   }
 
@@ -69,11 +62,29 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     update();
   }
 
-  void config() async {
-    final url  = state.urlTextController.text;
+  void configReset() async {
+    final url = await $api.getUrl();
+    final urlKey = await $api.getUrlKey();
+    if (url.isEmpty || urlKey.isEmpty) {
+      warn("OCR服务未配置,请先配置!");
+    }
+    state.urlTextController.text = url;
+    state.urlKeyTextController.text = urlKey;
+  }
+
+  Future<bool> config() async {
+    final url = state.urlTextController.text;
     final urlKey = state.urlKeyTextController.text;
     await $api.setUrl(url);
     await $api.setUrlKey(urlKey);
-    await $api.ocrCheck();
+    try {
+      await $api.ocrCheck();
+    } catch (e) {
+      error("文字识别服务检查失败,请检查配置!");
+      return false;
+    }
+    info("服务器配置成功");
+    return true;
   }
+
 }

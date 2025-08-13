@@ -1,4 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:nftools/src/bindings/bindings.dart';
 
 class TarPdfState {
   bool isProcess = false;
@@ -6,7 +7,7 @@ class TarPdfState {
 
   int sum = 0;
   int current = 0;
-  List<String> result = [];
+  List<TarPdfResultMsg> ocrResult = [];
 
   TextEditingController pdfDirTextController = TextEditingController();
   TextEditingController pdfPasswordTextController = TextEditingController();
@@ -22,7 +23,7 @@ class TarPdfState {
     processEnum = DisplayProcessEnum.start;
     sum = 0;
     current = 0;
-    result.clear();
+    ocrResult.clear();
     pdfDirTextController.clear();
     pdfPasswordTextController.clear();
   }
