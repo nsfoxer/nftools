@@ -131,8 +131,7 @@ impl TarPdfService {
         }
         Ok(())
     }
-    
-    
+
     async fn start(&mut self, pdf_dir: StringMsg, tx: UnboundedSender<Result<Option<Vec<u8>>>>) -> Result<()> {
         self.ocr_check().await?;
 
@@ -153,14 +152,19 @@ impl TarPdfService {
         let url = format!("{}/ocr", self.url.as_ref().unwrap());
         let count = pdf_files.len();
         for (index, pdf_file) in pdf_files.into_iter().enumerate() {
+            // send current process
             let file_name = pdf_file.path.file_name().unwrap_or_default().to_str().unwrap_or_default().to_string();
-            let ocr = ocr_pdf(pdf_file.path.clone(), self.url.as_ref().unwrap(), &url, &self.pdf_password).await;
             let msg = rinf::serialize(&TarPdfMsg {
                 now: index as u32,
                 sum: count as u32,
                 current_file: file_name,
             });
             tx.send(Ok(Some(msg?)))?;
+
+            // handle ocr pdf
+            let ocr = ocr_pdf(pdf_file.path.clone(), &url, &self.url_key.as_ref().unwrap(), &self.pdf_password).await;
+
+            // save result
             let r = PdfResult {
                 file_path: pdf_file.path,
                 ocr_result: ocr,
@@ -307,9 +311,10 @@ async fn ocr_pdf(pdf_file: PathBuf, url: &str, url_key: &str, pdf_password: &Opt
         .header("api-key", url_key)
         .multipart(form)
         .send()
-        .await?
-        .json::<OcrResult>()
         .await?;
+    let text = result.text().await?;
+    debug!("ocr url response: {}", text);
+    let result: OcrResult = serde_json::from_str(&text)?;
 
     // 2. 识别标题
     let pattern = r#"[\(|（]\d{4}[\)|）].*[\(|（].*[\)|）].*[\(|（].*[)|）].*"#;
@@ -321,22 +326,21 @@ async fn ocr_pdf(pdf_file: PathBuf, url: &str, url_key: &str, pdf_password: &Opt
         }
     }
     if titles.is_empty() {
-        return Err(anyhow!("未成功识别"));
+        return Err(anyhow!("未成功识别标题"));
     }
     if titles.len() > 1 {
         return Err(anyhow!("识别到多个标题"));
     }
-
 
     Ok(titles.get(0).unwrap().to_string())
 }
 
 fn export_pdf_to_jpegs(path: &Path, password: Option<&str>) -> Result<NamedTempFile> {
     let pdf = PdfiumDocument::new_from_path(path, password)?;
-    let page = pdf.page(2)?;
+    let page = pdf.page(0)?;
     let config = PdfiumRenderConfig::new().with_width(1920);
     let bitmap = page.render(&config)?;
-    let tmp_file = NamedTempFile::with_suffix("png")?;
+    let tmp_file = NamedTempFile::with_suffix("jpeg")?;
     bitmap.save(tmp_file.path().to_str().unwrap(), image::ImageFormat::Jpeg)?;
     Ok(tmp_file)
 }
