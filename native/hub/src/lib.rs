@@ -4,27 +4,26 @@
 mod api;
 mod common;
 mod dbus;
-mod service;
 mod messages;
+mod service;
 
-use mimalloc::MiMalloc;
+use crate::api::BaseRequest;
 use crate::api::api::ApiService;
 use crate::common::utils::{get_cache_dir, notify};
 use crate::common::*;
 use crate::service::display::display_os::{DisplayLight, DisplayMode};
 use anyhow::anyhow;
 use common::global_data::GlobalData;
-use std::path::PathBuf;
 use convert_case::{Case, Casing};
 use log::{error, info};
-use rinf::{dart_shutdown, DartSignalBinary, RustSignalBinary};
+use mimalloc::MiMalloc;
+use rinf::{DartSignalBinary, RustSignalBinary, dart_shutdown};
 use simple_log::LogConfigBuilder;
+use std::path::PathBuf;
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use tokio;
-use crate::api::BaseRequest;
 
 rinf::write_interface!();
-
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -33,12 +32,16 @@ fn init_log() -> Result<()> {
     let mut log_file = get_cache_dir()?;
 
     log_file.push("nftools.log");
-    let config  = LogConfigBuilder::builder()
+    let config = LogConfigBuilder::builder()
         .path(log_file.to_str().unwrap_or_default().to_string())
-        .size(1*100)
+        .size(1 * 100)
         .roll_count(100)
         .time_format("%Y-%m-%d %H:%M:%S.%f") //E.g:%H:%M:%S.%f
-        .level("info")?
+        .level(if cfg!(debug_assertions) {
+            "debug"
+        } else {
+            "info"
+        })?
         .output_file()
         .output_console()
         .build();
@@ -49,7 +52,6 @@ fn init_log() -> Result<()> {
 
 #[tokio::main]
 async fn main() {
-
     if let Err(e) = init_log() {
         eprintln!("日志初始化失败: {}", e);
     }
@@ -75,8 +77,7 @@ async fn base_request() -> Result<()> {
         signal.message.func = signal.message.func.trim().to_case(Case::Snake);
         info!(
             "收到信号: service={}, func={}",
-            signal.message.service,
-            signal.message.func,
+            signal.message.service, signal.message.func,
         );
         let signal = signal;
         // Api 服务特殊处理
@@ -168,16 +169,4 @@ fn lock() -> anyhow::Result<PathBuf> {
     path.push(format!("{name}_^_^_{pid}.lock"));
     let _ = std::fs::File::create(&path)?;
     Ok(path)
-}
-
-mod test {
-    use crate::lock;
-
-    #[test]
-    fn s() {
-        let result = lock();
-        eprintln!("{:?}", result);
-        let result = lock();
-        eprintln!("{:?}", result);
-    }
 }

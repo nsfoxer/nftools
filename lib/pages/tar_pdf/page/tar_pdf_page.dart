@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/pages/tar_pdf/controller/tar_pdf_controller.dart';
 import 'package:nftools/pages/tar_pdf/state/tar_pdf_state.dart';
+import 'package:nftools/src/bindings/bindings.dart';
+import 'package:nftools/utils/nf_widgets.dart';
 
 import '../../../utils/log.dart';
 import '../../../utils/utils.dart';
@@ -47,7 +49,7 @@ class TarPdfPage extends StatelessWidget {
           case DisplayProcessEnum.processing:
             return _buildProcessing(logic);
           case DisplayProcessEnum.end:
-            return _buildEnd(logic);
+            return _buildEnd(logic, context);
         }
       }),
     );
@@ -111,24 +113,28 @@ class TarPdfPage extends StatelessWidget {
     ]);
   }
 
-  Widget _buildEnd(TarPdfController logic) {
+  Widget _buildEnd(TarPdfController logic, BuildContext context) {
     final count = logic.state.ocrResult.length;
     final success = logic.state.ocrResult
         .where((element) => element.errorMsg.isEmpty)
         .length;
     final fail = count - success;
+    final typography = FluentTheme.of(context).typography;
     return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
       Text("处理已完成, 共发现$count个pdf文件,成功处理$success个,失败$fail个"),
       Expanded(
-          child: ListView.builder(
-              itemCount: count,
-              itemBuilder: (context, index) {
-                final item = logic.state.ocrResult[index];
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-
-                );
-              })),
+          child: NFTable(
+            minWidth: 400,
+            empty: Center(child: Text("empty")),
+            prototypeItem: NFRow(children: [Text("Some", style: typography.bodyStrong,)]),
+            header: [
+              NFHeader(flex: 1, child: Text("处理文件", style: typography.bodyStrong,)),
+              NFHeader(flex: 2, child: Text("识别结果", style: typography.bodyStrong,)),
+              NFHeader(flex: 2, child: Text("错误信息", style: typography.bodyStrong,)),
+            ],
+            source: _DataSource(logic.state.ocrResult, logic),
+          ),
+      ),
     ]);
   }
 
@@ -215,4 +221,29 @@ class TarPdfPage extends StatelessWidget {
               );
             }));
   }
+}
+
+class _DataSource extends NFDataTableSource {
+  final List<TarPdfResultMsg> data;
+  final TarPdfController logic;
+
+  _DataSource(this.data, this.logic);
+  
+  @override
+  NFRow getRow(BuildContext context, int index) {
+    final item = data[index];
+    debug("msg: ${item.errorMsg}");
+    return NFRow(children: [
+      Text(item.fileName, maxLines: 2,),
+      Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis,),
+      Text(item.errorMsg, maxLines: 2, style: TextStyle(color: Colors.red), overflow: TextOverflow.ellipsis, ),
+    ]);
+  }
+
+  @override
+  bool get isEmpty => data.isEmpty;
+
+  @override
+  int? get itemCount => data.length;
+  
 }
