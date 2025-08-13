@@ -62,6 +62,11 @@ Future<Uint8List> sendRequest<T extends ApiSerializable >(
   return completer.future;
 }
 
+
+Future<Uint8List> sendEmptyRequest(String service, String func) {
+  return sendRequest<EmptyMsg>(service, func, null);
+}
+
 // 发送请求，并流式响应
 Stream<Uint8List> sendRequestStream<T extends ApiSerializable>(
     String service, String func, T? request) {
