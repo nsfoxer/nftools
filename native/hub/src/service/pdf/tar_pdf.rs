@@ -7,11 +7,13 @@ use anyhow::{anyhow, Result};
 use futures_util::StreamExt;
 use pdfium::{PdfiumDocument, PdfiumRenderConfig};
 use serde::Deserialize;
+use serde_json::{json, Value};
 use tempfile::NamedTempFile;
 use tokio_stream::wrappers::ReadDirStream;
-use crate::{async_stream_func_typeno, func_end, func_notype, func_typeno};
+use regex::Regex;
+use crate::{async_func_nono, async_stream_func_typeno, func_end, func_notype, func_typeno};
 use crate::common::global_data::GlobalData;
-use crate::messages::tar_pdf::TarPdfMsg;
+use crate::messages::tar_pdf::{TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
 
 #[derive(Debug)]
 struct PdfResult {
@@ -48,7 +50,9 @@ impl StreamService for TarPdfService {
 impl Service for TarPdfService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         func_typeno!(self, func, req_data, set_url, StringMsg, set_password, StringMsg, set_url_key, StringMsg);
-        func_notype!(self, func, get_url, get_url_key, get_password);
+        func_notype!(self, func, get_url, get_url_key, get_password, get_result);
+        async_func_nono!(self, func, ocr_check);
+
         func_end!(func)
     }
 
@@ -67,7 +71,15 @@ impl Service for TarPdfService {
 impl TarPdfService {
 
     fn set_url(&mut self, url: StringMsg) -> Result<()> {
-        self.url = Some(url.value);
+        let mut ourl = url.value;
+        let url = ourl.trim();
+        if !url.starts_with("http://") || !url.starts_with("https://") {
+            return Err(anyhow!("url must start with http:// or https://"));
+        }
+        if url.ends_with("/") {
+            ourl.pop();
+        }
+        self.url = Some(ourl);
         Ok(())
     }
 
@@ -97,9 +109,30 @@ impl TarPdfService {
             value: self.url_key.clone().unwrap_or(String::with_capacity(0)),
         })
     }
+
+    const ERROR_MSG: &'static str = "无法探测出OCR服务器，请检查配置";
+    async fn ocr_check(&self) -> Result<()> {
+        self.check_config()?;
+        let url = format!("{}/check", self.url.as_ref().unwrap());
+        let rsp = reqwest::Client::new()
+            .post(url)
+            .send()
+            .await?
+            .text()
+            .await?;
+        let rsp: Value = serde_json::from_str(&rsp)?;
+        let r = rsp.get("result").ok_or_else(|| anyhow!(Self::ERROR_MSG))?;
+        let r = r.as_str().ok_or_else(|| anyhow!(Self::ERROR_MSG))?;
+        if r != "pass" {
+           return Err(anyhow!(Self::ERROR_MSG));
+        }
+        Ok(())
+    }
     
     
     async fn start(&mut self, pdf_dir: StringMsg, tx: UnboundedSender<Result<Option<Vec<u8>>>>) -> Result<()> {
+        self.ocr_check().await?;
+
         let pdf_dir = PathBuf::from(pdf_dir.value);
         if !pdf_dir.exists() {
             return Err(anyhow!("pdf_dir not exists"));
@@ -114,30 +147,55 @@ impl TarPdfService {
         pdf_files.sort();
 
         // handle
+        let url = format!("{}/ocr", self.url.as_ref().unwrap());
         let count = pdf_files.len();
         for (index, pdf_file) in pdf_files.into_iter().enumerate() {
             let file_name = pdf_file.path.file_name().unwrap_or_default().to_str().unwrap_or_default().to_string();
-            let msg = match ocr_pdf(pdf_file.path.clone()).await {
-                Ok(r) => TarPdfMsg {
-                    now: (index + 1) as u32,
-                    sum: count as u32,
-                    current_file: file_name,
-                },
-                Err(e) => TarPdfMsg {
-                    now: (index + 1) as u32,
-                    sum: count as u32,
-                    current_file: file_name,
-                },
-            };
-            let msg = rinf::serialize(&msg);
+            let ocr = ocr_pdf(pdf_file.path.clone(), self.url.as_ref().unwrap(), &url, &self.pdf_password).await;
+            let msg = rinf::serialize(&TarPdfMsg {
+                now: index as u32,
+                sum: count as u32,
+                current_file: file_name,
+            });
             tx.send(Ok(Some(msg?)))?;
             let r = PdfResult {
                 file_path: pdf_file.path,
-                ocr_result: Ok(String::default()),
+                ocr_result: ocr,
             };
             self.result.push(r);
         }
 
+        Ok(())
+    }
+
+    fn get_result(&self) -> Result<TarPdfResultsMsg> {
+        let data = self.result.iter().map(|x| {
+            let file_name = x.file_path.file_name().unwrap().to_str().unwrap().to_string();
+            match &x.ocr_result {
+                Ok(r) => TarPdfResultMsg {
+                    file_name,
+                    title: r.clone(),
+                    error_msg: String::with_capacity(0),
+                },
+                Err(e) => TarPdfResultMsg {
+                    file_name,
+                    title: String::with_capacity(0),
+                    error_msg: e.to_string(),
+                }
+            }
+        }).collect();
+        Ok(TarPdfResultsMsg{
+            datas: data,
+        })
+    }
+
+    fn check_config(&self) -> Result<()>{
+        if self.url.is_none() {
+            return Err(anyhow!("url is empty"));
+        }
+        if self.url_key.is_none() {
+            return Err(anyhow!("url_key is empty"));
+        }
         Ok(())
     }
 }
@@ -233,22 +291,41 @@ async fn get_pdf_files_in_directory(
     Ok(pdf_files)
 }
 
-async fn ocr_pdf(pdf_file: PathBuf) -> Result<Vec<String>> {
+async fn ocr_pdf(pdf_file: PathBuf, url: &str, url_key: &str, pdf_password: &Option<String>) -> Result<String> {
+    // 1. 文本识别
+    let pdf_password = pdf_password.clone();
     let img = tokio::task::spawn_blocking(move || {
-        export_pdf_to_jpegs(&pdf_file, None)
+        export_pdf_to_jpegs(&pdf_file, pdf_password.as_deref())
     }).await??;
     let form = reqwest::multipart::Form::new()
         .file("file", img).await?;
     let result = reqwest::Client::new()
-        .post("")
-        .header("", "")
+        .post(url)
+        .header("api-key", url_key)
         .multipart(form)
         .send()
         .await?
         .json::<OcrResult>()
         .await?;
 
-    Ok(result.result.texts)
+    // 2. 识别标题
+    let pattern = r#"[\(|（]\d{4}[\)|）].*[\(|（].*[\)|）].*[\(|（].*[)|）].*"#;
+    let re = Regex::new(pattern)?;
+    let mut titles = Vec::new();
+    for text in result.result.texts.iter() {
+        if re.is_match(&text.trim()) {
+            titles.push(text.trim());
+        }
+    }
+    if titles.is_empty() {
+        return Err(anyhow!("未成功识别"));
+    }
+    if titles.len() > 1 {
+        return Err(anyhow!("识别到多个标题"));
+    }
+
+
+    Ok(titles.get(0).unwrap().to_string())
 }
 
 fn export_pdf_to_jpegs(path: &Path, password: Option<&str>) -> Result<NamedTempFile> {

@@ -1303,6 +1303,7 @@ dependencies = [
  "opencv",
  "pdfium",
  "qrcode-generator",
+ "regex",
  "reqwest",
  "reqwest_dav",
  "rinf",
