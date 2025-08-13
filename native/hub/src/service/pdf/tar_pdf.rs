@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use tokio::sync::mpsc::UnboundedSender;
 use anyhow::{anyhow, Result};
 use futures_util::StreamExt;
+use log::debug;
 use pdfium::{PdfiumDocument, PdfiumRenderConfig};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -73,8 +74,8 @@ impl TarPdfService {
     fn set_url(&mut self, url: StringMsg) -> Result<()> {
         let mut ourl = url.value;
         let url = ourl.trim();
-        if !url.starts_with("http://") || !url.starts_with("https://") {
-            return Err(anyhow!("url must start with http:// or https://"));
+        if !url.starts_with("http://") && !url.starts_with("https://") {
+            return Err(anyhow!("url必须以http://或https://开头"));
         }
         if url.ends_with("/") {
             ourl.pop();
@@ -116,11 +117,13 @@ impl TarPdfService {
         let url = format!("{}/check", self.url.as_ref().unwrap());
         let rsp = reqwest::Client::new()
             .post(url)
+            .header("api-key", self.url_key.as_ref().unwrap())
             .send()
             .await?
             .text()
             .await?;
         let rsp: Value = serde_json::from_str(&rsp)?;
+        debug!("ocr check result: {}", rsp);
         let r = rsp.get("result").ok_or_else(|| anyhow!(Self::ERROR_MSG))?;
         let r = r.as_str().ok_or_else(|| anyhow!(Self::ERROR_MSG))?;
         if r != "pass" {
