@@ -11,6 +11,12 @@ class TarPdfState {
   TextEditingController pdfDirTextController = TextEditingController();
   TextEditingController pdfPasswordTextController = TextEditingController();
 
+  // 配置文本输入框
+  GlobalKey<FormState> formKey = GlobalKey();
+  TextEditingController urlTextController = TextEditingController();
+  TextEditingController urlKeyTextController = TextEditingController();
+  TextEditingController regexTextController = TextEditingController();
+
   void reset() {
     isProcess = false;
     processEnum = DisplayProcessEnum.start;

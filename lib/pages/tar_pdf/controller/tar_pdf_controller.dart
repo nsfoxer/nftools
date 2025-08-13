@@ -10,6 +10,22 @@ import '../api/api.dart' as $api;
 class TarPdfController extends GetxController with GetxUpdateMixin {
   TarPdfState state = TarPdfState();
 
+  @override
+  void onReady() {
+    _init();
+    super.onReady();
+  }
+
+  void _init() async {
+    final url = await $api.getUrl();
+    final urlKey = await $api.getUrlKey();
+    if (url.isEmpty || urlKey.isEmpty) {
+      warn("OCR服务未配置,请先配置!");
+    }
+    state.urlTextController.text = url;
+    state.urlKeyTextController.text = urlKey;
+  }
+
   void selectPdfDir() async {
     final path = await FilePicker.platform.getDirectoryPath();
     if (path == null) {
@@ -51,5 +67,13 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
   void reset() {
     state.reset();
     update();
+  }
+
+  void config() async {
+    final url  = state.urlTextController.text;
+    final urlKey = state.urlKeyTextController.text;
+    await $api.setUrl(url);
+    await $api.setUrlKey(urlKey);
+    await $api.ocrCheck();
   }
 }
