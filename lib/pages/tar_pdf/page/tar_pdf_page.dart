@@ -112,20 +112,36 @@ class TarPdfPage extends StatelessWidget {
   }
 
   Widget _buildEnd(TarPdfController logic) {
-    return Center(
-      child: Text("处理已完成, 共发现{}个文件,成功处理{}个,失败{}个"),
-    );
+    final count = logic.state.ocrResult.length;
+    final success = logic.state.ocrResult
+        .where((element) => element.errorMsg.isEmpty)
+        .length;
+    final fail = count - success;
+    return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      Text("处理已完成, 共发现$count个pdf文件,成功处理$success个,失败$fail个"),
+      Expanded(
+          child: ListView.builder(
+              itemCount: count,
+              itemBuilder: (context, index) {
+                final item = logic.state.ocrResult[index];
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+
+                );
+              })),
+    ]);
   }
+
   void _showSetting(BuildContext context) async {
     final typography = FluentTheme.of(context).typography;
     var color = primaryColor(context);
     await showDialog<String>(
         context: context,
         builder: (context) => GetBuilder<TarPdfController>(builder: (logic) {
-          return ContentDialog(
-            title: Text("网络配置", style: typography.subtitle),
-            content: SizedBox(
-                child: Form(
+              return ContentDialog(
+                title: Text("网络配置", style: typography.subtitle),
+                content: SizedBox(
+                    child: Form(
                   key: logic.state.formKey,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   child: Column(
@@ -178,24 +194,25 @@ class TarPdfPage extends StatelessWidget {
                     ],
                   ),
                 )),
-            actions: [
-              FilledButton(
-                  onPressed:  () async {
-                    if (!logic.state.formKey.currentState!.validate()) {
-                      return;
-                    }
-                    logic.config();
-                  },
-                  child: const Text("提交")),
-              Button(
-                  child: const Text("取消"),
-                  onPressed: () {
-                    logic.state.formKey.currentState!.reset();
-                    context.pop();
-                  })
-            ],
-          );
-        }));
+                actions: [
+                  FilledButton(
+                      onPressed: () async {
+                        if (!logic.state.formKey.currentState!.validate()) {
+                          return;
+                        }
+                        if (await logic.config() && context.mounted) {
+                          context.pop();
+                        }
+                      },
+                      child: const Text("提交")),
+                  Button(
+                      child: const Text("取消"),
+                      onPressed: () {
+                        logic.configReset();
+                        context.pop();
+                      })
+                ],
+              );
+            }));
   }
-
 }
