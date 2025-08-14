@@ -11,7 +11,6 @@ use crate::api::BaseRequest;
 use crate::api::api::ApiService;
 use crate::common::utils::{get_cache_dir, notify};
 use crate::common::*;
-use crate::service::display::display_os::{DisplayLight, DisplayMode};
 use anyhow::anyhow;
 use common::global_data::GlobalData;
 use convert_case::{Case, Casing};
@@ -121,7 +120,7 @@ fn lock() -> anyhow::Result<PathBuf> {
     let process = System::new_with_specifics(
         RefreshKind::new().with_processes(ProcessRefreshKind::everything()),
     );
-    let mut path = utils::get_cache_dir()?;
+    let mut path = get_cache_dir()?;
     for entry in std::fs::read_dir(&path)? {
         if let Ok(entry) = entry {
             let path = entry.path().to_str().unwrap_or_default().to_string();
@@ -140,7 +139,7 @@ fn lock() -> anyhow::Result<PathBuf> {
                     std::fs::remove_file(&path)?;
                     continue;
                 }
-                let pid = pid.unwrap();
+                let pid = pid?;
                 match process.process(Pid::from_u32(pid)) {
                     None => {
                         std::fs::remove_file(&path)?;
@@ -169,4 +168,16 @@ fn lock() -> anyhow::Result<PathBuf> {
     path.push(format!("{name}_^_^_{pid}.lock"));
     let _ = std::fs::File::create(&path)?;
     Ok(path)
+}
+
+mod test {
+    use crate::lock;
+
+    #[test]
+    fn s() {
+        let result = lock();
+        eprintln!("{:?}", result);
+        let result = lock();
+        eprintln!("{:?}", result);
+    }
 }
