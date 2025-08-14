@@ -5,7 +5,6 @@ use log::{error, info};
 use rinf::{DartSignalPack, RustSignalBinary};
 use std::ops::DerefMut;
 use std::sync::Arc;
-use anyhow::anyhow;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::Mutex;
 use crate::api::{BaseRequest, BaseResponse};
@@ -14,7 +13,6 @@ use crate::messages::common::{BoolMsg, StringMsg};
 use crate::service::ai::BaiduAiService;
 use crate::service::display::display_os::{DisplayLight, DisplayMode};
 use crate::service::img::img_split::ImageSplitService;
-use crate::service::pdf::tar_pdf::TarPdfService;
 use crate::service::settings::about::AboutService;
 use crate::service::settings::autostart::AutoStartService;
 use crate::service::syncfile::SyncFileService;
@@ -430,7 +428,6 @@ impl ApiService {
     const ABOUT_SERVICE: &'static str = "AboutService";
     const AI_SERVICE: &'static str = "AiService";
     const IMAGE_SPLIT_SERVICE: &'static str = "ImageSplitService";
-    const TAR_PDF_SERVICE: &'static str = "TarPdfService";
 
     async fn enable_service(&mut self, service: StringMsg) -> anyhow::Result<()> {
         let service = service.value;
@@ -480,11 +477,6 @@ impl ApiService {
         }
         if service == Self::IMAGE_SPLIT_SERVICE {
             self.add_service(Box::new(ImageSplitService::new()), Self::IMAGE_SPLIT_SERVICE);
-        }
-        
-        if service == Self::TAR_PDF_SERVICE {
-            let pdf_service = TarPdfService::new(self.global_data.clone()).await;
-            self.add_stream_service(Box::new(pdf_service), Self::TAR_PDF_SERVICE);
         }
         
         Ok(())
