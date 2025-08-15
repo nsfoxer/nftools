@@ -103,7 +103,7 @@ void main() {
 
   final signalFile = File('lib/src/bindings/signals/signals.dart');
   if (signalFile.existsSync()) {
-    print("add import");
+    print("add import ${signalFile}");
     addImport(signalFile);
   }
 }
