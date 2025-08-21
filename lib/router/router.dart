@@ -14,6 +14,9 @@ import 'package:nftools/pages/sync_file_page.dart';
 import 'package:nftools/pages/utils/page/qr_page.dart';
 import 'package:nftools/pages/utils/page/text_diff_page.dart';
 import 'package:nftools/pages/utils/page/text_tool_page.dart';
+import 'package:nftools/pages/work/controller/work_controller.dart';
+import 'package:nftools/pages/work/page/sms_limit_page.dart';
+import 'package:nftools/pages/work/page/work_page.dart';
 
 import '../controller/ai_controller.dart';
 import '../controller/display_controller.dart';
@@ -30,6 +33,8 @@ import '../pages/utils/controller/qr_controller.dart';
 import '../pages/utils/controller/text_diff_controller.dart';
 import '../pages/utils/controller/text_tool_controller.dart';
 import '../pages/utils/page/utils_page.dart';
+import '../pages/work/controller/user_code_controller.dart';
+import '../pages/work/page/user_code_page.dart';
 
 /// 路由定义
 ///
@@ -40,49 +45,15 @@ class RouterServiceData {
   const RouterServiceData();
 
   static final Map<String, MenuData> menuData = {
-    "/": MenuData("/", Icons.home, "主页", const HomePage(), [ServiceNameConstant.displayMode], () {
-      Get.lazyPut<MainPageController>(() => MainPageController(), fenix: true);
+    "/": MenuData("/", Icons.home, "主页", const WorkPage(), [ServiceNameConstant.displayMode, ServiceNameConstant.utils], () {
+      Get.put<WorkController>(WorkController(), permanent: true);
+    }),
+    "/userCode": MenuData("/userCode", Icons.code, "获取验证码", const UserCodePage(), [ ServiceNameConstant.utils], () {
+      Get.lazyPut<UserCodeController>(()=>UserCodeController(), fenix: true);
     }),
 
-    "/display": MenuData("/display", Icons.display_settings, "显示", const DisplayPage(), [
-      ServiceNameConstant.displayMode, ServiceNameConstant.displayLight, ServiceNameConstant.utils
-      ], () {
-      Get.lazyPut<DisplayController>(() => DisplayController(), fenix: true);
-      Get.lazyPut<DisplayModeController>(() => DisplayModeController(),  fenix: true);
-      Get.lazyPut<SystemModeController>(() => SystemModeController(), fenix: true);
+    "/smsLimit": MenuData("/smsLimit", Icons.sms, "去除短信限制", const SmsLimitPage(), [ ServiceNameConstant.utils], () {
     }),
-
-    "/sync_file": MenuData("/sync_file", FluentIcons.cloud_flow, "文件同步", const SyncFilePage(), [ServiceNameConstant.syncFile], () {
-      Get.put<SyncFileController>(SyncFileController(), permanent: true);
-    }),
-
-    "/ai": MenuData("/ai", Icons.chat, "AI对话", const AiPage(), [ServiceNameConstant.ai], () {
-      // 内存永久性
-      Get.put<AiController>(AiController(), permanent: true);
-    }),
-    "/utils": MenuData("/utils", FluentIcons.toolbox, "工具", const UtilsPage(), [ServiceNameConstant.imageSplitService], () {
-    }, children: {
-      "/utils/diffText": MenuData("/utils/diffText", FluentIcons.diff_side_by_side, "文本对比", const TextDiffPage(), [], () {
-        Get.lazyPut<TextDiffController>(()=>TextDiffController(), fenix: true);
-      }),
-      "/utils/textTool": MenuData("/utils/textTool", FluentIcons.text_box, "文本处理", const TextToolPage(), [], () {
-        Get.lazyPut<TextToolController>(() => TextToolController(), fenix: true);
-      }),
-      "/utils/qrCode": MenuData("/utils/qrCode", FluentIcons.q_r_code, "二维码转换", const QrPage(), [], () {
-        Get.lazyPut<QrController>(() =>QrController(), fenix: true);
-      }),
-      "/utils/imageSplit": MenuData("/utils/imageSplit", FluentIcons.image_pixel, "前景分割", ImageSplitPage(), [ServiceNameConstant.imageSplitService], () {
-        Get.lazyPut<ImageSplitController>(() => ImageSplitController(), fenix: true);
-      }),
-    }),
-    if (kDebugMode)
-      "/test": MenuData("/test", FluentIcons.test_case, "测试", TestPage(), [], () {
-      }),
-
-    "/settings": MenuData("/settings", Icons.settings, "设置", const SettingsPage(), [ServiceNameConstant.about, ServiceNameConstant.utils, ServiceNameConstant.autoStart], () {
-      Get.lazyPut<AutoStartController>(() => AutoStartController(), fenix: true);
-      Get.lazyPut<AboutController>(() => AboutController(), fenix: true);
-    }, isFooter: true),
   };
 }
 
