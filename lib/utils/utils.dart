@@ -321,3 +321,60 @@ class NFImage {
         originalPath: originalPath);
   }
 }
+
+/// 简单的字符串加密解密工具
+final int _key = 11;
+
+/// 加密字符串
+String encrypt(String text) {
+  StringBuffer encrypted = StringBuffer();
+
+  for (int i = 0; i < text.length; i++) {
+    int code = text.codeUnitAt(i);
+
+    // 处理大写字母
+    if (code >= 65 && code <= 90) {
+      code = (code - 65 + _key) % 26 + 65;
+    }
+    // 处理小写字母
+    else if (code >= 97 && code <= 122) {
+      code = (code - 97 + _key) % 26 + 97;
+    }
+    // 数字
+    else if (code >= 48 && code <= 57) {
+      code = (code - 48 + _key) % 10 + 48;
+    }
+    // 其他字符不加密
+
+    encrypted.writeCharCode(code);
+  }
+
+  return encrypted.toString();
+}
+
+/// 解密字符串
+String decrypt(String encryptedText) {
+  StringBuffer decrypted = StringBuffer();
+
+  for (int i = 0; i < encryptedText.length; i++) {
+    int code = encryptedText.codeUnitAt(i);
+
+    // 处理大写字母
+    if (code >= 65 && code <= 90) {
+      code = (code - 65 - _key + 26) % 26 + 65;
+    }
+    // 处理小写字母
+    else if (code >= 97 && code <= 122) {
+      code = (code - 97 - _key + 26) % 26 + 97;
+    }
+    // 数字
+    else if (code >= 48 && code <= 57) {
+      code = (code - 48 - _key + 10) % 10 + 48;
+    }
+    // 其他字符不解密
+
+    decrypted.writeCharCode(code);
+  }
+
+  return decrypted.toString();
+}

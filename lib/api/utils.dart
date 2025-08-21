@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:typed_data';
 
 import '../common/constants.dart';
@@ -76,7 +77,12 @@ Future<void> setData(String key, String value) async {
 }
 
 /// 获取数据
-Future<String> getData(String key) async {
-  final result = await sendRequest(_service, _getData, StringMsg(value: key));
-  return StringMsg.bincodeDeserialize(result).value;
+Future<String?> getData(String key) async {
+  try {
+    final result = await sendRequest(_service, _getData, StringMsg(value: key));
+    return StringMsg.bincodeDeserialize(result).value;
+  } catch (e) {
+    debug("获取存储数据失败:$key -- $e");
+    return null;
+  }
 }
