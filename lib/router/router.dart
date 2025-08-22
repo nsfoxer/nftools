@@ -14,7 +14,9 @@ import 'package:nftools/pages/sync_file_page.dart';
 import 'package:nftools/pages/utils/page/qr_page.dart';
 import 'package:nftools/pages/utils/page/text_diff_page.dart';
 import 'package:nftools/pages/utils/page/text_tool_page.dart';
+import 'package:nftools/pages/work/controller/pwd_expire_controller.dart';
 import 'package:nftools/pages/work/controller/work_controller.dart';
+import 'package:nftools/pages/work/page/pwd_expire_page.dart';
 import 'package:nftools/pages/work/page/sms_limit_page.dart';
 import 'package:nftools/pages/work/page/work_page.dart';
 
@@ -52,9 +54,11 @@ class RouterServiceData {
     "/userCode": MenuData("/userCode", Icons.code, "获取验证码", const UserCodePage(), [ ServiceNameConstant.utils], () {
       Get.lazyPut<UserCodeController>(()=>UserCodeController(), fenix: true);
     }),
-
     "/smsLimit": MenuData("/smsLimit", Icons.sms, "去除短信限制", const SmsLimitPage(), [ ServiceNameConstant.utils], () {
       Get.lazyPut<SmsLimitController>(()=>SmsLimitController(), fenix: true);
+    }),
+    "/pwdExpireReset": MenuData("/pwdExpireReset", Icons.sms, "密码过期重置", const PwdExpirePage(), [ ServiceNameConstant.utils], () {
+      Get.lazyPut<PwdExpireController>(()=>PwdExpireController(), fenix: true);
     }),
   };
 }

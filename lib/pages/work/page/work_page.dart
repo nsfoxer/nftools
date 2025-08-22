@@ -41,6 +41,7 @@ class WorkPage extends StatelessWidget {
             children: [
               _UtilsPage(url: "/userCode", child: Text("验证码获取")),
               _UtilsPage(url: "/smsLimit", child: Text("去除短信限制")),
+              _UtilsPage(url: "/pwdExpireReset", child: Text("密码过期重置")),
             ]));
   }
 
