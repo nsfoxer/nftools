@@ -1,7 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 
-import '../../../common/style.dart';
 import '../../../utils/nf_widgets.dart';
 import '../controller/sms_limit_controller.dart';
 import '../state/sms_limit_state.dart';

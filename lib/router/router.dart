@@ -57,7 +57,7 @@ class RouterServiceData {
     "/smsLimit": MenuData("/smsLimit", Icons.sms, "去除短信限制", const SmsLimitPage(), [ ServiceNameConstant.utils], () {
       Get.lazyPut<SmsLimitController>(()=>SmsLimitController(), fenix: true);
     }),
-    "/pwdExpireReset": MenuData("/pwdExpireReset", Icons.sms, "密码过期重置", const PwdExpirePage(), [ ServiceNameConstant.utils], () {
+    "/pwdExpireReset": MenuData("/pwdExpireReset", Icons.password, "密码过期重置", const PwdExpirePage(), [ ServiceNameConstant.utils], () {
       Get.lazyPut<PwdExpireController>(()=>PwdExpireController(), fenix: true);
     }),
   };

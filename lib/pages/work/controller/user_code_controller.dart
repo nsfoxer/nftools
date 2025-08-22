@@ -38,7 +38,7 @@ class UserCodeController extends GetxController with GetxUpdateMixin {
     }
 
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
       debug("刷新数据 user code");
       refreshData();
     });
