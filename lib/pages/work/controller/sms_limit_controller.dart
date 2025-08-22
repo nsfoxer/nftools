@@ -28,7 +28,7 @@ class SmsLimitController extends GetxController with GetxUpdateMixin {
     if (_setConfig()) {
       refreshData();
     }
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
       debug("刷新数据 sms limit");
       refreshData();
     });
