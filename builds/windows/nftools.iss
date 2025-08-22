@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "nftools"
-#define MyAppVersion "0.1.6"
+#define MyAppVersion "0.0.1"
 #define MyAppPublisher "nsfoxer"
 #define MyAppURL "https://gitee.com/muwuren/nftools/"
 #define MyAppExeName "nftools.exe"
@@ -10,7 +10,7 @@
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{AF8641CE-E729-45CD-A67E-31E4491BDD07}
+AppId={{E7A52810-A05B-4BCF-BC50-53AE5B797DBF}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
