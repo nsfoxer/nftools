@@ -45,6 +45,7 @@ class UserCodePage extends StatelessWidget {
                   source: _UserCodeDataSource(logic.state.data),
                 ))));
   }
+
 }
 
 class _UserCodeDataSource extends NFDataTableSource {

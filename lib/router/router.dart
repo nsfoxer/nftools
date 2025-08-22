@@ -33,6 +33,7 @@ import '../pages/utils/controller/qr_controller.dart';
 import '../pages/utils/controller/text_diff_controller.dart';
 import '../pages/utils/controller/text_tool_controller.dart';
 import '../pages/utils/page/utils_page.dart';
+import '../pages/work/controller/sms_limit_controller.dart';
 import '../pages/work/controller/user_code_controller.dart';
 import '../pages/work/page/user_code_page.dart';
 
@@ -53,6 +54,7 @@ class RouterServiceData {
     }),
 
     "/smsLimit": MenuData("/smsLimit", Icons.sms, "去除短信限制", const SmsLimitPage(), [ ServiceNameConstant.utils], () {
+      Get.lazyPut<SmsLimitController>(()=>SmsLimitController(), fenix: true);
     }),
   };
 }

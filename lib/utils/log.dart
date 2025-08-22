@@ -46,14 +46,18 @@ void _print(String message, Level level) async {
     return;
   }
 
-  await displayInfoBar(context, duration: const Duration(seconds: 3),
-      builder: (context, close) {
-    return InfoBar(
-      content: Text(message),
-      severity: value.$1,
-      title: Text(value.$2),
-      isLong: message.length > 30,
-      isIconVisible: true,
-    );
-  });
+  try {
+    await displayInfoBar(context, duration: const Duration(seconds: 3),
+        builder: (context, close) {
+      return InfoBar(
+        content: Text(message),
+        severity: value.$1,
+        title: Text(value.$2),
+        isLong: message.length > 30,
+        isIconVisible: true,
+      );
+    });
+  } catch (e) {
+    _logger.log(Level.fatal, "日志图形化输出错误");
+  }
 }
