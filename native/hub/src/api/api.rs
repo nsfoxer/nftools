@@ -436,7 +436,7 @@ impl ApiService {
         }
         
         if service == Self::UTILS_SERVICE {
-            self.add_imm_service(Box::new(UtilsService::new()), Self::UTILS_SERVICE);
+            self.add_imm_service(Box::new(UtilsService::new(self.global_data.clone())), Self::UTILS_SERVICE);
         }
         
         if service == Self::SYNC_FILE_SERVICE {

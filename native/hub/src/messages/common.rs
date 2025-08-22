@@ -9,6 +9,12 @@ pub struct EmptyMsg {
 pub struct StringMsg {
     pub value: String,
 }
+
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct PairStringMsg {
+    pub key: String,
+    pub value: String,
+}
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]
 pub struct VecStringMsg {
     pub values: Vec<String>,
@@ -17,7 +23,6 @@ pub struct VecStringMsg {
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]
 pub struct UintFiveMsg {
     pub value: u32,
-    
 }
 
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]
