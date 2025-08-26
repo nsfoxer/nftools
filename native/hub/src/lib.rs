@@ -128,9 +128,8 @@ fn lock() -> anyhow::Result<PathBuf> {
             let filename = filename.to_str().unwrap_or_default();
             if path.ends_with(".lock") {
                 let path1 = filename.strip_suffix(".lock").unwrap();
-                let paths: Vec<&str> = path1.splitn(2, "__^_^__").collect();
+                let paths: Vec<&str> = path1.splitn(2, "_^o^_").collect();
                 if paths.len() != 2 {
-                    std::fs::remove_file(&path)?;
                     continue;
                 }
                 let name = paths[0];
@@ -165,7 +164,7 @@ fn lock() -> anyhow::Result<PathBuf> {
         None => "",
         Some(p) => p.name().to_str().unwrap_or_default(),
     };
-    path.push(format!("{name}__^_^__{pid}.lock"));
+    path.push(format!("{name}_^o^_{pid}.lock"));
     let _ = std::fs::File::create(&path)?;
     Ok(path)
 }
