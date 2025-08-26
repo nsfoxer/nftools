@@ -114,7 +114,7 @@ async fn base_request() -> Result<()> {
 
 /// 加锁成功，则返回lg，否则，返回Err
 fn lock() -> anyhow::Result<PathBuf> {
-    if cfg!(debug_assertions) || !cfg!(debug_assertions) {
+    if cfg!(debug_assertions) {
         return Err(anyhow!("测试环境不开启lock file"));
     }
     let process = System::new_with_specifics(
