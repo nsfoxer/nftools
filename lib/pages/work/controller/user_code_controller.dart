@@ -1,24 +1,22 @@
-import 'dart:async';
-
 import 'package:get/get.dart';
 import 'package:nftools/pages/work/controller/work_controller.dart';
 import 'package:nftools/pages/work/state/user_code_state.dart';
 import 'package:dio/dio.dart';
 import 'package:nftools/utils/utils.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../../../utils/extension.dart';
 import '../../../utils/log.dart';
 
-class UserCodeController extends GetxController with GetxUpdateMixin {
+class UserCodeController extends GetxController with GetxUpdateMixin, WindowListener {
   late WorkController workController;
   UserCodeState state = UserCodeState();
   Dio? dio;
 
-  Timer? _timer;
-
   @override
   void onInit() {
     super.onInit();
+    windowManager.addListener(this);
     workController = Get.find<WorkController>();
   }
 
@@ -37,18 +35,19 @@ class UserCodeController extends GetxController with GetxUpdateMixin {
       return false;
     }
 
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      debug("刷新数据 user code");
-      refreshData();
-    });
     return true;
   }
 
   @override
   void onClose() {
-    _timer?.cancel();
     super.onClose();
+    windowManager.removeListener(this);
+  }
+
+  @override
+  void onWindowFocus() {
+    debug("focus user code");
+    refreshData();
   }
 
 
@@ -84,7 +83,6 @@ class UserCodeController extends GetxController with GetxUpdateMixin {
     state.isLoading = false;
     update();
   }
-
 
 }
 

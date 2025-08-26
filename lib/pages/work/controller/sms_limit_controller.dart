@@ -1,24 +1,23 @@
-import 'dart:async';
-
 import 'package:get/get.dart';
 import 'package:nftools/pages/work/controller/work_controller.dart';
 import 'package:nftools/pages/work/state/sms_limit_state.dart';
 import 'package:dio/dio.dart';
 import 'package:nftools/utils/utils.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../../../utils/extension.dart';
 import '../../../utils/log.dart';
 
-class SmsLimitController extends GetxController with GetxUpdateMixin {
+class SmsLimitController extends GetxController with GetxUpdateMixin, WindowListener {
   late WorkController workController;
   SmsLimitState state = SmsLimitState();
   Dio? dio;
 
-  Timer? _timer;
 
   @override
   void onInit() {
     super.onInit();
+    windowManager.addListener(this);
     workController = Get.find<WorkController>();
   }
 
@@ -28,16 +27,17 @@ class SmsLimitController extends GetxController with GetxUpdateMixin {
     if (_setConfig()) {
       refreshData();
     }
-    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      debug("刷新数据 sms limit");
-      refreshData();
-    });
   }
 
   @override
   void onClose() {
-    _timer?.cancel();
+    windowManager.removeListener(this);
     super.onClose();
+  }
+
+  @override
+  void onWindowFocus() {
+    refreshData();
   }
 
   bool _setConfig() {
