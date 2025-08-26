@@ -142,7 +142,6 @@ fn lock() -> anyhow::Result<PathBuf> {
                 let pid = pid?;
                 match process.process(Pid::from_u32(pid)) {
                     None => {
-                        std::fs::remove_file(&path)?;
                         continue;
                     }
                     Some(p) => {
