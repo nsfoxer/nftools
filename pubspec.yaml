@@ -34,7 +34,7 @@ dependencies:
   pretty_diff_text: ^2.0.0
   re_editor:
     git:
-      url: https://github.moeyy.xyz/https://github.com/copywith99/re-editor.git
+      url: https://gh.b52m.cn/https://github.com/copywith99/re-editor.git
       ref: d448e01d8ff25081209d1ac7d1058503251670f6
   pasteboard: ^0.4.0
   re_highlight: ^0.0.3
