@@ -88,7 +88,9 @@ class ImageSplitPage extends StatelessWidget {
         content: GetBuilder<ImageSplitController>(builder: (logic) {
           return KeyboardWidget(
             bindings: [
-              KeyAction(LogicalKeyboardKey.keyV, "粘贴图像", () {},
+              KeyAction(LogicalKeyboardKey.keyV, "粘贴图像", () {
+                logic.setPasteImg();
+              },
                   isControlPressed: true),
             ],
             child: logic.state.currentImage == null
