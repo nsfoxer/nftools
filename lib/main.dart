@@ -252,7 +252,6 @@ class _MainAppState extends State<MainApp>
           primaryLightRef: primaryColor,
           fontFamily: fonts),
       title: Constants.appName,
-      debugShowCheckedModeBanner: false,
       localizationsDelegates: FluentLocalizations.localizationsDelegates,
       routeInformationParser:
           routerLogic.routerState.router.routeInformationParser,
