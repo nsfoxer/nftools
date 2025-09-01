@@ -94,6 +94,15 @@ void addImport(File signalFile) {
 
 
 void main() {
+  // 1. 重新生成msg文件: 执行 rinf gen
+  final result = Process.runSync('rinf', ['gen']);
+  if (result.exitCode != 0) {
+    print('Error: ${result.stderr}');
+    exit(result.exitCode);
+  }
+  print(result.stdout);
+
+  // 2. 添加 ApiSerializable
   final targetDir = Directory('lib/src/bindings/signals');
   if (targetDir.existsSync()) {
     processDirectory(targetDir);
@@ -101,6 +110,7 @@ void main() {
     print('Directory not found: ${targetDir.path}');
   }
 
+  // 3. 添加 import '../../../api/api.dart';
   final signalFile = File('lib/src/bindings/signals/signals.dart');
   if (signalFile.existsSync()) {
     print("add import ${signalFile}");
