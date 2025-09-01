@@ -13,9 +13,20 @@ pub struct TarPdfResultsMsg {
     pub datas: Vec<TarPdfResultMsg>
 }
 
-#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+#[derive(Debug, Default, Serialize, Deserialize, SignalPiece)]
 pub struct TarPdfResultMsg {
     pub file_name: String,
     pub title: String,
+    pub company: String,
+    pub no: String,
+    pub pages: i32,
     pub error_msg: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct OcrConfigMsg {
+    pub url: String,
+    pub api_key: String,
+    pub passwd: Option<String>,
+    pub no_regex: Vec<String>
 }
