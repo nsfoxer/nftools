@@ -49,7 +49,15 @@ impl ExcelData {
     fn convert_file_name(&self, rule: &str) -> Result<String> {
         let json = serde_json::to_value(&self)?;
         let data = if let Value::Object(map) = json {
-            map.into_iter().map(|(k, v)| (k, v.to_string())).collect()
+            map.into_iter().map(|(k, v)| {
+                if v.is_null() {
+                    (k, String::with_capacity(0))
+                } else if let Value::String(s) = &v && s.is_empty() {
+                   (k, String::with_capacity(0))
+                } else {
+                    (k, v.to_string())
+                }
+            }).collect()
         } else {
             HashMap::new()
         };
@@ -672,6 +680,7 @@ fn export_pdf_to_jpegs(path: &Path, password: Option<&str>) -> Result<(NamedTemp
 }
 
 mod test {
+    use crate::service::pdf::tar_pdf::ExcelData;
 
     #[test]
     fn test() {
@@ -687,5 +696,13 @@ mod test {
         println!("company : {company}");
         let title = texts.get_title().unwrap();
         println!("title : {title}");
+    }
+
+    #[test]
+    fn test2() {
+        let excel = ExcelData::default();
+        let rule = r#"{index}{no}{company_name}{title}-xxx.xlsx"#;
+        let r = excel.convert_file_name(rule).unwrap();
+        assert_eq!("0-xxx.xlsx", r);
     }
 }
