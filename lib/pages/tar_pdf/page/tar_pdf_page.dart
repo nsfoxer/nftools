@@ -75,12 +75,6 @@ class TarPdfPage extends StatelessWidget {
                       controller: logic.state.pdfDirTextController,
                     ),
                   ),
-                  InfoLabel(
-                    label: "pdf password",
-                    child: PasswordBox(
-                      controller: logic.state.pdfPasswordTextController,
-                    ),
-                  )
                 ])),
         Expanded(flex: 1, child: Container()),
       ],
@@ -123,17 +117,37 @@ class TarPdfPage extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
       Text("处理已完成, 共发现$count个pdf文件,成功处理$success个,失败$fail个"),
       Expanded(
-          child: NFTable(
-            minWidth: 400,
-            empty: Center(child: Text("empty")),
-            prototypeItem: NFRow(children: [Text("Some", style: typography.bodyStrong,)]),
-            header: [
-              NFHeader(flex: 1, child: Text("处理文件", style: typography.bodyStrong,)),
-              NFHeader(flex: 2, child: Text("识别结果", style: typography.bodyStrong,)),
-              NFHeader(flex: 2, child: Text("错误信息", style: typography.bodyStrong,)),
-            ],
-            source: _DataSource(logic.state.ocrResult, logic),
-          ),
+        child: NFTable(
+          minWidth: 400,
+          empty: Center(child: Text("empty")),
+          prototypeItem: NFRow(children: [
+            Text(
+              "Some",
+              style: typography.bodyStrong,
+            )
+          ]),
+          header: [
+            NFHeader(
+                flex: 1,
+                child: Text(
+                  "处理文件",
+                  style: typography.bodyStrong,
+                )),
+            NFHeader(
+                flex: 2,
+                child: Text(
+                  "识别结果",
+                  style: typography.bodyStrong,
+                )),
+            NFHeader(
+                flex: 2,
+                child: Text(
+                  "错误信息",
+                  style: typography.bodyStrong,
+                )),
+          ],
+          source: _DataSource(logic.state.ocrResult, logic),
+        ),
       ),
     ]);
   }
@@ -146,12 +160,14 @@ class TarPdfPage extends StatelessWidget {
         builder: (context) => GetBuilder<TarPdfController>(builder: (logic) {
               return ContentDialog(
                 title: Text("网络配置", style: typography.subtitle),
-                content: SizedBox(
-                    child: Form(
+                content: Scrollbar(
+                    child: SingleChildScrollView(
+                        child: Form(
                   key: logic.state.formKey,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    spacing: NFLayout.v0,
                     children: [
                       InfoLabel(
                           label: "服务器地址",
@@ -171,13 +187,10 @@ class TarPdfPage extends StatelessWidget {
                           )),
                       InfoLabel(
                           label: "密钥",
-                          child: TextFormBox(
-                            controller: logic.state.urlKeyTextController,
+                          child: PasswordFormBox(
+                            controller: logic.state.apiKeyTextController,
                             cursorColor: color,
-                            keyboardType: TextInputType.text,
                             placeholder: "XXXXXXXXXXXXXXXXXXX",
-                            enableSuggestions: false,
-                            obscureText: true,
                             validator: (v) {
                               if (v == '') {
                                 return "数据不能为空";
@@ -186,27 +199,40 @@ class TarPdfPage extends StatelessWidget {
                             },
                           )),
                       InfoLabel(
-                          label: "高级设置",
-                          child: TextFormBox(
-                            controller: logic.state.regexTextController,
-                            cursorColor: color,
-                            keyboardType: TextInputType.visiblePassword,
-                            placeholder: "regex",
-                            enableSuggestions: false,
-                            validator: (v) {
-                              return null;
+                        label: "pdf密码",
+                        child: PasswordFormBox(
+                          controller: logic.state.pdfPasswordTextController,
+                          cursorColor: color,
+                          placeholder: "请输入pdf密码(没有则不填)",
+                        ),
+                      ),
+                      InfoLabel(
+                          label: "编号正则配置",
+                          child: _MultiText(
+                            controllers: logic.state.regexTextControllers,
+                            onTapOutside: (i) {
+                              debug("editing complete $i");
+                              if (logic
+                                  .state.regexTextControllers[i].text.isEmpty) {
+                                logic.removeRegex(i);
+                              } else {
+                                logic.trySupplyNewText();
+                              }
+                            },
+                            remove: (i) {
+                              logic.removeRegex(i);
                             },
                           )),
                     ],
                   ),
-                )),
+                ))),
                 actions: [
                   FilledButton(
                       onPressed: () async {
                         if (!logic.state.formKey.currentState!.validate()) {
                           return;
                         }
-                        if (await logic.config() && context.mounted) {
+                        if (await logic.setConfig() && context.mounted) {
                           context.pop();
                         }
                       },
@@ -228,15 +254,27 @@ class _DataSource extends NFDataTableSource {
   final TarPdfController logic;
 
   _DataSource(this.data, this.logic);
-  
+
   @override
   NFRow getRow(BuildContext context, int index) {
     final item = data[index];
     debug("msg: ${item.errorMsg}");
     return NFRow(children: [
-      Text(item.fileName, maxLines: 2,),
-      Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis,),
-      Text(item.errorMsg, maxLines: 2, style: TextStyle(color: Colors.red), overflow: TextOverflow.ellipsis, ),
+      Text(
+        item.fileName,
+        maxLines: 2,
+      ),
+      Text(
+        item.title,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      Text(
+        item.errorMsg,
+        maxLines: 2,
+        style: TextStyle(color: Colors.red),
+        overflow: TextOverflow.ellipsis,
+      ),
     ]);
   }
 
@@ -245,5 +283,45 @@ class _DataSource extends NFDataTableSource {
 
   @override
   int? get itemCount => data.length;
-  
+}
+
+class _MultiText extends StatelessWidget {
+  final List<TextEditingController> controllers;
+  final void Function(int index) onTapOutside;
+  final void Function(int index) remove;
+
+  const _MultiText(
+      {required this.controllers,
+      required this.onTapOutside,
+      required this.remove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      spacing: NFLayout.v2,
+      children: [
+        for (var i = 0; i < controllers.length; i++)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                  child: TextFormBox(
+                controller: controllers[i],
+                cursorColor: primaryColor(context),
+                keyboardType: TextInputType.text,
+                placeholder: "请输入[编号]正则表达式",
+                enableSuggestions: false,
+                onTapOutside: (p) => onTapOutside(i),
+              )),
+              if (i != controllers.length - 1)
+                IconButton(
+                    icon: Icon(FluentIcons.delete, color: Colors.red),
+                    onPressed: () => remove(i)),
+            ],
+          ),
+      ],
+    );
+  }
 }

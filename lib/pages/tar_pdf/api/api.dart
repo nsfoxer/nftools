@@ -5,11 +5,8 @@ import '../../../api/api.dart';
 
 const String _service = ServiceNameConstant.tarPdfService;
 const String _start = "start";
-const String _getUrl = "get_url";
-const String _getUrlKey = "get_url_key";
-const String _setUrl = "set_url";
-const String _setUrlKey = "set_url_key";
-const String _setPdfPassword = "set_password";
+const String _setConfig = "set_config";
+const String _getConfig = "get_config";
 const String _ocrCheck = "ocr_check";
 const String _ocrResult = "get_result";
 
@@ -20,26 +17,16 @@ Stream<TarPdfMsg> start(String pdfDir) {
   return stream.map((x) => TarPdfMsg.bincodeDeserialize(x));
 }
 
-Future<String> getUrl() async{
-   final result = await sendEmptyRequest(_service, _getUrl);
-   return StringMsg.bincodeDeserialize(result).value;
+Future<void> setConfig(String url, String apiKey, List<String> noRegex, String? pdfPasswd) async{
+  if (pdfPasswd?.isEmpty ?? false) {
+    pdfPasswd = null;
+  }
+  await sendRequest(_service, _setConfig, OcrConfigMsg(url: url, apiKey: apiKey, noRegex: noRegex, passwd: pdfPasswd));
 }
 
-Future<String> getUrlKey() async{
-   final result = await sendEmptyRequest(_service, _getUrlKey);
-   return StringMsg.bincodeDeserialize(result).value;
-}
-
-Future<void> setUrl(String url) async{
-   await sendRequest(_service, _setUrl, StringMsg(value: url));
-}
-
-Future<void> setUrlKey(String urlKey) async{
-   await sendRequest(_service, _setUrlKey, StringMsg(value: urlKey));
-}
-
-Future<void> setPdfPassword(String password) async {
-  await sendRequest(_service, _setPdfPassword, StringMsg(value: password));
+Future<OcrConfigMsg> getConfig() async{
+   final data = await sendEmptyRequest(_service, _getConfig);
+   return OcrConfigMsg.bincodeDeserialize(data);
 }
 
 Future<void> ocrCheck() async{
