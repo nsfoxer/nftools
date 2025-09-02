@@ -75,6 +75,10 @@ class RouterServiceData {
         Get.lazyPut<ImageSplitController>(() => ImageSplitController(), fenix: true);
       }),
     }),
+    "/tarPdf" : MenuData("/tarPdf", FluentIcons.pdf, "PDF归档", const TarPdfPage(), [ServiceNameConstant.tarPdfService], () {
+      Get.put<TarPdfController>(TarPdfController(), permanent: true);
+    }),
+
     if (kDebugMode)
       "/test": MenuData("/test", FluentIcons.test_case, "测试", TestPage(), [], () {
       }),

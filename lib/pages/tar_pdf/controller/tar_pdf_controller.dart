@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:nftools/pages/tar_pdf/state/tar_pdf_state.dart';
 import 'package:nftools/src/bindings/signals/signals.dart';
@@ -63,20 +64,48 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
   }
 
   void configReset() async {
-    final url = await $api.getUrl();
-    final urlKey = await $api.getUrlKey();
-    if (url.isEmpty || urlKey.isEmpty) {
+    final OcrConfigMsg config;
+    try {
+      config = await $api.getConfig();
+    } on Exception catch (e) {
+      debug(e.toString());
       warn("OCR服务未配置,请先配置!");
+      return;
     }
-    state.urlTextController.text = url;
-    state.urlKeyTextController.text = urlKey;
+
+    state.urlTextController.text = config.url;
+    state.apiKeyTextController.text = config.apiKey;
+    state.pdfPasswordTextController.text = config.passwd ?? "";
+
+    for (var element in state.regexTextControllers) {
+      element.dispose();
+    }
+    state.regexTextControllers.clear();
+    for (var element in config.noRegex) {
+      state.regexTextControllers.add(TextEditingController(text: element));
+    }
+    trySupplyNewText();
   }
 
-  Future<bool> config() async {
+  Future<bool> setConfig() async {
     final url = state.urlTextController.text;
-    final urlKey = state.urlKeyTextController.text;
-    await $api.setUrl(url);
-    await $api.setUrlKey(urlKey);
+    final urlKey = state.apiKeyTextController.text;
+    final passwd = state.pdfPasswordTextController.text;
+    final regex = state.regexTextControllers.map((e) => e.text).toList();
+    regex.removeWhere((element) => element.isEmpty);
+
+    if (url.isEmpty || urlKey.isEmpty || regex.isEmpty) {
+      error("请填写服务器配置!");
+      return false;
+    }
+
+    try {
+      await $api.setConfig(url, urlKey, regex, passwd);
+    } catch (e) {
+      error("服务器配置失败,请检查配置!");
+      return false;
+    }
+
     try {
       await $api.ocrCheck();
     } catch (e) {
@@ -87,4 +116,28 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     return true;
   }
 
+
+  // 添加正则输入框
+  void trySupplyNewText() {
+    if (state.regexTextControllers.isEmpty) {
+      state.regexTextControllers.add(TextEditingController());
+    } else if (state.regexTextControllers.last.text.isNotEmpty) {
+      state.regexTextControllers.add(TextEditingController());
+    }
+    update();
+  }
+
+  // 移除正则输入框
+  void removeRegex(int i) {
+    if (i < 0 || i > state.regexTextControllers.length - 1) {
+      fatal("移除输入框索引越界");
+      return;
+    }
+
+    if (state.regexTextControllers.length > 1) {
+      final controller = state.regexTextControllers.removeAt(i);
+      controller.dispose();
+    }
+    trySupplyNewText();
+  }
 }
