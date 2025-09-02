@@ -9,6 +9,7 @@ const String _setConfig = "set_config";
 const String _getConfig = "get_config";
 const String _ocrCheck = "ocr_check";
 const String _ocrResult = "get_result";
+const String _exportResult = "export_result_and_rename_files";
 
 
 // start
@@ -17,11 +18,11 @@ Stream<TarPdfMsg> handle(String pdfDir) {
   return stream.map((x) => TarPdfMsg.bincodeDeserialize(x));
 }
 
-Future<void> setConfig(String url, String apiKey, List<String> noRegex, String? pdfPasswd) async{
+Future<void> setConfig(String url, String apiKey, List<String> noRegex, String? pdfPasswd, String nameRule) async{
   if (pdfPasswd?.isEmpty ?? false) {
     pdfPasswd = null;
   }
-  await sendRequest(_service, _setConfig, OcrConfigMsg(url: url, apiKey: apiKey, noRegex: noRegex, passwd: pdfPasswd));
+  await sendRequest(_service, _setConfig, OcrConfigMsg(url: url, apiKey: apiKey, noRegex: noRegex, exportFileNameRule: nameRule, passwd: pdfPasswd));
 }
 
 Future<OcrConfigMsg> getConfig() async{
@@ -36,4 +37,9 @@ Future<void> ocrCheck() async{
 Future<List<TarPdfResultMsg>> ocrResult() async {
   final data = await sendEmptyRequest(_service, _ocrResult);
   return TarPdfResultsMsg.bincodeDeserialize(data).datas;
+}
+
+Future<String> exportResult() async {
+  final data = await sendEmptyRequest(_service, _exportResult);
+  return StringMsg.bincodeDeserialize(data).value;
 }

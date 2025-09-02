@@ -76,6 +76,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     state.urlTextController.text = config.url;
     state.apiKeyTextController.text = config.apiKey;
     state.pdfPasswordTextController.text = config.passwd ?? "";
+    state.nameRuleTextController.text = config.exportFileNameRule;
 
     for (var element in state.regexTextControllers) {
       element.dispose();
@@ -91,16 +92,17 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     final url = state.urlTextController.text;
     final urlKey = state.apiKeyTextController.text;
     final passwd = state.pdfPasswordTextController.text;
+    final nameRule = state.nameRuleTextController.text;
     final regex = state.regexTextControllers.map((e) => e.text).toList();
     regex.removeWhere((element) => element.isEmpty);
 
-    if (url.isEmpty || urlKey.isEmpty || regex.isEmpty) {
-      error("请填写服务器配置!");
+    if (url.isEmpty || urlKey.isEmpty || regex.isEmpty || nameRule.isEmpty) {
+      error("请补全配置");
       return false;
     }
 
     try {
-      await $api.setConfig(url, urlKey, regex, passwd);
+      await $api.setConfig(url, urlKey, regex, passwd, nameRule);
     } catch (e) {
       error("服务器配置失败,请检查配置!");
       return false;
@@ -139,5 +141,10 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
       controller.dispose();
     }
     trySupplyNewText();
+  }
+
+  void exportResult() async {
+    final file = await $api.exportResult();
+    info("导出成功,文件路径:$file");
   }
 }

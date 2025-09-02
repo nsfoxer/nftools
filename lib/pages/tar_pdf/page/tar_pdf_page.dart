@@ -35,6 +35,16 @@ class TarPdfPage extends StatelessWidget {
                       },
                     ),
                     CommandBarButton(
+                      icon: const Icon(FluentIcons.excel_document),
+                      label: const Text('导出结果'),
+                      onPressed:
+                          logic.state.processEnum == DisplayProcessEnum.end
+                              ? () {
+                                  logic.exportResult();
+                                }
+                              : null,
+                    ),
+                    CommandBarButton(
                       icon: const Icon(FluentIcons.reset),
                       label: const Text('重置'),
                       onPressed: logic.reset,
@@ -129,46 +139,67 @@ class TarPdfPage extends StatelessWidget {
           header: [
             NFHeader(
                 flex: 1,
-                child: Text(
-                  "序号",
-                  style: typography.bodyStrong,
-                )),
+                child: Tooltip(
+                    message: "序号(index)",
+                    child: Text(
+                      "序号",
+                      maxLines: 1,
+                      style: typography.bodyStrong,
+                    ))),
             NFHeader(
                 flex: 2,
-                child: Text(
-                  "原始文件",
-                  style: typography.bodyStrong,
-                )),
+                child: Tooltip(
+                    message: "原始文件名(file_name)",
+                    child: Text(
+                      "原始文件",
+                      maxLines: 1,
+                      style: typography.bodyStrong,
+                    ))),
             NFHeader(
                 flex: 3,
-                child: Text(
-                  "项目标题",
-                  style: typography.bodyStrong,
-                )),
+                child: Tooltip(
+                    message: "项目标题(title)",
+                    child: Text(
+                      "项目标题",
+                      maxLines: 1,
+                      style: typography.bodyStrong,
+                    ))),
             NFHeader(
                 flex: 3,
-                child: Text(
-                  "项目编号",
-                  style: typography.bodyStrong,
-                )),
+                child: Tooltip(
+                    message: "项目编号(no)",
+                    child: Text(
+                      "项目编号",
+                      maxLines: 1,
+                      style: typography.bodyStrong,
+                    ))),
             NFHeader(
                 flex: 3,
-                child: Text(
-                  "企业名称",
-                  style: typography.bodyStrong,
-                )),
+                child: Tooltip(
+                    message: "企业名称(company_name)",
+                    child: Text(
+                      "企业名称",
+                      maxLines: 1,
+                      style: typography.bodyStrong,
+                    ))),
             NFHeader(
                 flex: 1,
-                child: Text(
-                  "页数",
-                  style: typography.bodyStrong,
-                )),
+                child: Tooltip(
+                    message: "页数(pages)",
+                    child: Text(
+                      "页数",
+                      maxLines: 1,
+                      style: typography.bodyStrong,
+                    ))),
             NFHeader(
                 flex: 3,
-                child: Text(
-                  "错误信息",
-                  style: typography.bodyStrong,
-                )),
+                child: Tooltip(
+                    message: "错误信息",
+                    child: Text(
+                      "错误信息",
+                      maxLines: 1,
+                      style: typography.bodyStrong,
+                    ))),
           ],
           source: _DataSource(logic.state.ocrResult, logic),
         ),
@@ -227,6 +258,19 @@ class TarPdfPage extends StatelessWidget {
                           controller: logic.state.pdfPasswordTextController,
                           cursorColor: color,
                           placeholder: "请输入pdf密码(没有则不填)",
+                        ),
+                      ),
+                      InfoLabel(
+                        label: "文件重命名规则",
+                        child: TextFormBox(
+                          controller: logic.state.nameRuleTextController,
+                          cursorColor: color,
+                          validator: (v) {
+                            if (v == '') {
+                              return "数据不能为空";
+                            }
+                            return null;
+                          },
                         ),
                       ),
                       InfoLabel(
