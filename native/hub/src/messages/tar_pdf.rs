@@ -28,5 +28,6 @@ pub struct OcrConfigMsg {
     pub url: String,
     pub api_key: String,
     pub passwd: Option<String>,
-    pub no_regex: Vec<String>
+    pub no_regex: Vec<String>,
+    pub export_file_name_rule: String,
 }
