@@ -481,7 +481,7 @@ impl ApiService {
             self.add_service(Box::new(ImageSplitService::new()), Self::IMAGE_SPLIT_SERVICE);
         }
         if service == Self::TAR_PDF_SERVICE {
-            self.add_service(Box::new(TarPdfService::new(self.global_data.clone()).await), Self::TAR_PDF_SERVICE);
+            self.add_stream_service(Box::new(TarPdfService::new(self.global_data.clone()).await), Self::TAR_PDF_SERVICE);
         }
         
         Ok(())
