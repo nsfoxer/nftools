@@ -2,10 +2,7 @@ use crate::common::global_data::GlobalData;
 use crate::messages::common::StringMsg;
 use crate::messages::tar_pdf::{OcrConfigMsg, TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
 use crate::service::service::{Service, StreamService};
-use crate::{
-    async_func_nono, async_func_notype, async_stream_func_typeno, func_end, func_notype,
-    func_typeno,
-};
+use crate::{async_func_nono, async_func_notype, async_stream_func_typeno, func_end, func_nono, func_notype, func_typeno};
 use anyhow::{anyhow, Result};
 use futures_util::StreamExt;
 use log::debug;
@@ -58,13 +55,16 @@ impl ExcelData {
                     if v.is_null() {
                         return (k, null);
                     }
-                    let v = v.to_string();
+                    let mut v = v.to_string();
                     // 去除字符串的前后引号
-                    let tv = v.trim_start_matches("\"").trim_end_matches("\"");
-                    if tv.is_empty() {
+                    if v.starts_with('"') && v.ends_with('"'){
+                        v.pop();
+                        v.remove(0);
+                    }
+                    if v.is_empty() {
                         (k, null)
                     } else {
-                        (k, tv.to_string())
+                        (k, v)
                     }
                 })
                 .collect()
@@ -161,6 +161,7 @@ impl Service for TarPdfService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         func_typeno!(self, func, req_data, set_config, OcrConfigMsg);
         func_notype!(self, func, get_config, get_result);
+        func_nono!(self, func, clear_result);
         async_func_nono!(self, func, ocr_check);
         async_func_notype!(self, func, export_result_and_rename_files);
 
@@ -337,6 +338,11 @@ impl TarPdfService {
             .unwrap_or_default()
             .to_string();
         Ok(StringMsg { value: name })
+    }
+
+    fn clear_result(&mut self) -> Result<()> {
+        self.result.clear();
+        Ok(())
     }
 }
 
