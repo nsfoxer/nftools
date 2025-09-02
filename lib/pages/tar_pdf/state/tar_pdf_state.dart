@@ -20,6 +20,7 @@ class TarPdfState {
   TextEditingController urlTextController = TextEditingController();
   TextEditingController apiKeyTextController = TextEditingController();
   TextEditingController pdfPasswordTextController = TextEditingController();
+  TextEditingController nameRuleTextController = TextEditingController();
   List<TextEditingController> regexTextControllers = [TextEditingController()];
 
   void reset() {
@@ -30,6 +31,7 @@ class TarPdfState {
     ocrResult.clear();
     pdfDirTextController.clear();
     pdfPasswordTextController.clear();
+    nameRuleTextController.clear();
 
     for (var element in regexTextControllers) {
       element.dispose();
