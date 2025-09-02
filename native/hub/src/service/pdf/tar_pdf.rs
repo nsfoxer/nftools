@@ -1,20 +1,24 @@
 use serde_with::DisplayFromStr;
-use serde_with::{serde_as, SerializeDisplay};
+use serde_with::{serde_as};
 use std::cmp::Ordering;
-use crate::messages::common::StringMsg;
+use std::collections::HashMap;
+use crate::messages::common::{StringMsg};
 use crate::service::service::{Service, StreamService};
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::mpsc::UnboundedSender;
 use anyhow::{anyhow, Result};
 use futures_util::StreamExt;
 use log::debug;
 use pdfium::{PdfiumDocument, PdfiumRenderConfig};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value};
 use tempfile::NamedTempFile;
 use tokio_stream::wrappers::ReadDirStream;
 use regex::Regex;
-use crate::{async_func_nono, async_stream_func_typeno, func_end, func_notype, func_typeno};
+use rust_xlsxwriter::{Format, Workbook};
+use strfmt::{strfmt};
+use crate::{async_func_nono, async_func_notype, async_stream_func_typeno, func_end, func_notype, func_typeno};
 use crate::common::global_data::GlobalData;
 use crate::messages::tar_pdf::{OcrConfigMsg, TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
 
@@ -24,10 +28,12 @@ struct PdfResult {
     ocr_result: Result<ExcelData>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default, Serialize)]
 struct ExcelData {
     // 原始文件名称
-    file_path: String,
+    file_name: String,
+    // 序号
+    index: u32,
     // 编号
     no: String,
     // 总页数
@@ -36,6 +42,20 @@ struct ExcelData {
     company_name: String,
     // 标题
     title: String
+}
+
+impl ExcelData {
+    // 根据规则转换文件名
+    fn convert_file_name(&self, rule: &str) -> Result<String> {
+        let json = serde_json::to_value(&self)?;
+        let data = if let Value::Object(map) = json {
+            map.into_iter().map(|(k, v)| (k, v.to_string())).collect()
+        } else {
+            HashMap::new()
+        };
+
+        Ok(strfmt(rule, &data)?)
+    }
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -48,7 +68,8 @@ struct OcrConfig {
     api_key: String,
     // 编码匹配正则表达式字符串
     no_regex: Vec<String>,
-
+    // 文件名修改规则
+    export_file_name_rule: String,
     // 标题匹配正则表达式
     #[serde(skip)]
     no_regex_match: Vec<Regex>,
@@ -57,7 +78,9 @@ struct OcrConfig {
 impl OcrConfig {
     /// 是否为有效数据
     fn has_data(&self) -> bool {
-        !self.url.is_empty() && !self.api_key.is_empty() && !self.no_regex.is_empty()
+        !self.url.is_empty() && !self.api_key.is_empty()
+            && !self.export_file_name_rule.is_empty()
+            && !self.no_regex.is_empty()
             && self.no_regex_match.len() == self.no_regex.len()
     }
 }
@@ -70,6 +93,7 @@ impl From<OcrConfigMsg> for OcrConfig {
             api_key: value.api_key,
             no_regex_match: value.no_regex.iter().map(|x| Regex::new(x)).filter_map(|r| r.ok()).collect(),
             no_regex: value.no_regex,
+            export_file_name_rule: value.export_file_name_rule,
         }
     }
 }
@@ -81,6 +105,7 @@ impl Into<OcrConfigMsg> for OcrConfig {
             url: self.url,
             api_key: self.api_key,
             no_regex: self.no_regex,
+            export_file_name_rule: self.export_file_name_rule,
         }
     }
 }
@@ -112,8 +137,9 @@ impl StreamService for TarPdfService {
 impl Service for TarPdfService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         func_typeno!(self, func, req_data, set_config, OcrConfigMsg);
-        func_notype!(self, func, get_config);
+        func_notype!(self, func, get_config, get_result);
         async_func_nono!(self, func, ocr_check);
+        async_func_notype!(self, func, export_result_and_rename_files);
 
         func_end!(func)
     }
@@ -134,6 +160,11 @@ impl TarPdfService {
                 return Err(anyhow!("正则表达式错误：{}", e));
             }
         }
+        let excel_data = ExcelData::default();
+        if let Err(e) = excel_data.convert_file_name(&config.export_file_name_rule) {
+            return Err(anyhow!("文件名规则错误：{}", e));
+        }
+
         let config = OcrConfig::from(config);
         if !config.has_data() {
             Err(anyhow!("配置不正确"))
@@ -202,7 +233,7 @@ impl TarPdfService {
             tx.send(Ok(Some(msg?)))?;
 
             // 处理OCR
-            let ocr = self.ocr_pdf(pdf_file.path.clone(), &url).await;
+            let ocr = self.ocr_pdf(pdf_file.path.clone(), index as u32, &url).await;
 
             // 保存结果
             let r = PdfResult {
@@ -239,6 +270,28 @@ impl TarPdfService {
         })
     }
 
+    /// 导出结果并重命名文件
+    /// return 导出后的文件
+    async fn export_result_and_rename_files(&mut self) -> Result<StringMsg> {
+        if self.result.is_empty() {
+            return Err(anyhow!("无识别结果"));
+        }
+
+        // 1. 重命名文件
+        for pdf in self.result.iter_mut() {
+           if let Err(e) = Self::rename_pdf(pdf, &self.config.export_file_name_rule).await {
+               pdf.ocr_result = Err(e);
+           }
+        }
+
+        // 2. 导出excel表格
+        let file = self.write_excel_file().await?;
+        let name = file.file_name().unwrap_or_default().to_str().unwrap_or_default().to_string();
+        Ok(StringMsg{
+            value: name,
+        })
+    }
+
 }
 
 impl TarPdfService {
@@ -252,7 +305,7 @@ impl TarPdfService {
     }
 
     // ocr_pdf
-    async fn ocr_pdf(&self, pdf_file: PathBuf, url: &str) -> Result<ExcelData> {
+    async fn ocr_pdf(&self, pdf_file: PathBuf, index: u32, url: &str) -> Result<ExcelData> {
         // 1. 文本识别
         let pdf_path = pdf_file.to_str().unwrap().to_string();
         let pdf_password = self.config.pdf_password.clone();
@@ -269,9 +322,10 @@ impl TarPdfService {
             .await?;
         let text = result.text().await?;
         debug!("ocr url response: {}", text);
-        let ocr_result: OcrResult = serde_json::from_str(&text)?;
+        let mut ocr_result: OcrResult = serde_json::from_str(&text)?;
 
         // 2. 识别数据
+        ocr_result.result.clear_fuzzy_data();
         // a. 识别编号
         let no = ocr_result.get_no(&self.config.no_regex_match)?;
         // b. 识别公司名称
@@ -280,12 +334,88 @@ impl TarPdfService {
         let title = ocr_result.get_title()?;
 
         Ok(ExcelData {
-            file_path: pdf_path,
+            file_name: pdf_path,
+            index: index + 1,
             no,
             pages,
             company_name: company,
             title
         })
+    }
+
+    // 重命名文件
+    async fn rename_pdf(pdf: &PdfResult, rule: &str) -> Result<()> {
+        // 1. 生成文件名
+        if let Err(e) = &pdf.ocr_result {
+            return Err(anyhow!("{}", e.to_string()));
+        }
+        let pdf_result = pdf.ocr_result.as_ref().unwrap();
+        let file_name = pdf_result.convert_file_name(rule)?;
+
+        // 2. 重命名
+        let mut file = pdf.file_path.clone();
+        file.pop();
+        file.push(&file_name);
+        if file.exists() {
+            return Err(anyhow!("无法重命名【{}】文件已存在", &file_name));
+        }
+        tokio::fs::rename(&pdf.file_path, &file).await?;
+
+        Ok(())
+    }
+
+    async fn write_excel_file(&self) -> Result<PathBuf> {
+        if self.result.is_empty() {
+            return Err(anyhow!("无识别结果"));
+        }
+        // 1. 创建文件
+        let mut file = self.result.get(0).unwrap().file_path.clone();
+        file.pop();
+        let now = SystemTime::now();
+        file.push(format!("检测报告识别结果_{}.xlsx",now.duration_since(UNIX_EPOCH)?.as_millis()));
+
+        // 2. 写入数据
+        let mut workbook = Workbook::new();
+        let worksheet = workbook.add_worksheet().set_name("sheet1")?;
+        // 定义一些单元格样式
+        let header_format = Format::new()
+            .set_bold()
+            .set_background_color(rust_xlsxwriter::Color::RGB(0xD9E1F2))
+            .set_border(rust_xlsxwriter::FormatBorder::Thin);
+        let error_format = Format::new()
+            .set_background_color(rust_xlsxwriter::Color::RGB(0xFFC7CE));
+        let number_format = Format::new()
+            .set_num_format("0");
+
+        // 创建表头
+        worksheet.write_with_format(0, 0, "原始文件", &header_format)?;
+        worksheet.write_with_format(0, 1, "序号", &header_format)?;
+        worksheet.write_with_format(0, 2, "文件名称", &header_format)?;
+        worksheet.write_with_format(0, 3, "文件编号", &header_format)?;
+        worksheet.write_with_format(0, 4, "页数", &header_format)?;
+        worksheet.write_with_format(0, 5, "错误信息", &header_format)?;
+
+        // 创建数据行
+        for (index, pdf) in self.result.iter().enumerate() {
+            let row = (index + 1) as u32;
+            worksheet.write(row, 0, pdf.file_path.file_name().unwrap_or_default().to_str().unwrap_or_default())?;
+            worksheet.write_number_with_format(row, 1, (index+1) as f64, &number_format)?;
+            match &pdf.ocr_result {
+                Ok(data) => {
+                    worksheet.write(row, 2, format!("{}{}", data.company_name, data.title))?;
+                    worksheet.write(row, 3, &data.no)?;
+                    worksheet.write_number_with_format(row, 4, data.pages as f64, &number_format)?;
+                }
+                Err(e) => {
+                    worksheet.write_with_format(row, 5, e.to_string(), &error_format)?;
+                }
+            };
+        }
+
+        // 3. 保存文件
+        workbook.save(&file)?;
+
+        Ok(file)
     }
 }
 
@@ -293,7 +423,7 @@ impl TarPdfService {
 #[derive(Debug)]
 struct PdfFile {
     path: PathBuf,
-    created_time: std::time::SystemTime,
+    created_time: SystemTime,
 }
 
 impl Ord for PdfFile {
@@ -542,11 +672,12 @@ fn export_pdf_to_jpegs(path: &Path, password: Option<&str>) -> Result<(NamedTemp
 }
 
 mod test {
-    use regex::Regex;
-    use crate::service::pdf::tar_pdf::{OcrResult, OcrTexts};
 
     #[test]
     fn test() {
+        use regex::Regex;
+        use crate::service::pdf::tar_pdf::OcrResult;
+
         let texts: OcrResult = serde_json::from_str(r#"这里是mock的数据"#).unwrap();
         let res = vec![ Regex::new(r"[\(|（]\d{4}[\)|）].*[\(|（].*[\)|）].*[\(|（].*[)|）].*").unwrap() ];
 
