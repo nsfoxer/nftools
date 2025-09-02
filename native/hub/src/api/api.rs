@@ -459,7 +459,7 @@ impl ApiService {
                 self.add_imm_service(Box::new(DisplayLight::new()), Self::DISPLAY_LIGHT_SERVICE);
             }
             #[cfg(target_os = "linux")] {
-                self.add_service(Box::new(DisplayLight::new().await.ok_or(anyhow!("创建light服务失败"))?), Self::DISPLAY_LIGHT_SERVICE);
+                self.add_service(Box::new(DisplayLight::new().await.ok_or(anyhow::anyhow!("创建light服务失败"))?), Self::DISPLAY_LIGHT_SERVICE);
             }
         }
         
