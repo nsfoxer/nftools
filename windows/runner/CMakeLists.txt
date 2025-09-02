@@ -38,3 +38,22 @@ target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
+
+# 在现有的 CMakeLists.txt 中添加
+# 正确使用file(GLOB)解析通配符，获取所有匹配的DLL文件
+file(GLOB EXTRA_DLLS
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../assets/bin/*.dll"
+)
+
+# 检查是否找到DLL文件
+message(STATUS "找到的DLL文件数量: ${CMAKE_ARGC}")
+# 逐个复制DLL文件到输出目录
+foreach(dll ${EXTRA_DLLS})
+    message(STATUS "正在复制DLL: ${dll}")
+    add_custom_command(
+        TARGET ${BINARY_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${dll}"
+        "$<TARGET_FILE_DIR:${BINARY_NAME}>"
+    )
+endforeach()

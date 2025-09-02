@@ -4,7 +4,7 @@ import 'package:nftools/src/bindings/bindings.dart';
 import '../../../api/api.dart';
 
 const String _service = ServiceNameConstant.tarPdfService;
-const String _start = "start";
+const String _handle = "handle";
 const String _setConfig = "set_config";
 const String _getConfig = "get_config";
 const String _ocrCheck = "ocr_check";
@@ -12,8 +12,8 @@ const String _ocrResult = "get_result";
 
 
 // start
-Stream<TarPdfMsg> start(String pdfDir) {
-  var stream = sendRequestStream(_service, _start, StringMsg(value: pdfDir));
+Stream<TarPdfMsg> handle(String pdfDir) {
+  var stream = sendRequestStream(_service, _handle, StringMsg(value: pdfDir));
   return stream.map((x) => TarPdfMsg.bincodeDeserialize(x));
 }
 

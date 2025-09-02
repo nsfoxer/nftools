@@ -118,29 +118,53 @@ class TarPdfPage extends StatelessWidget {
       Text("处理已完成, 共发现$count个pdf文件,成功处理$success个,失败$fail个"),
       Expanded(
         child: NFTable(
-          minWidth: 400,
+          minWidth: 800,
           empty: Center(child: Text("empty")),
           prototypeItem: NFRow(children: [
             Text(
               "Some",
-              style: typography.bodyStrong,
+              maxLines: 2,
             )
           ]),
           header: [
             NFHeader(
                 flex: 1,
                 child: Text(
-                  "处理文件",
+                  "序号",
                   style: typography.bodyStrong,
                 )),
             NFHeader(
                 flex: 2,
                 child: Text(
-                  "识别结果",
+                  "原始文件",
                   style: typography.bodyStrong,
                 )),
             NFHeader(
-                flex: 2,
+                flex: 3,
+                child: Text(
+                  "项目标题",
+                  style: typography.bodyStrong,
+                )),
+            NFHeader(
+                flex: 3,
+                child: Text(
+                  "项目编号",
+                  style: typography.bodyStrong,
+                )),
+            NFHeader(
+                flex: 3,
+                child: Text(
+                  "企业名称",
+                  style: typography.bodyStrong,
+                )),
+            NFHeader(
+                flex: 1,
+                child: Text(
+                  "页数",
+                  style: typography.bodyStrong,
+                )),
+            NFHeader(
+                flex: 3,
                 child: Text(
                   "错误信息",
                   style: typography.bodyStrong,
@@ -160,9 +184,8 @@ class TarPdfPage extends StatelessWidget {
         builder: (context) => GetBuilder<TarPdfController>(builder: (logic) {
               return ContentDialog(
                 title: Text("网络配置", style: typography.subtitle),
-                content: Scrollbar(
-                    child: SingleChildScrollView(
-                        child: Form(
+                content: SingleChildScrollView(
+                    child: Form(
                   key: logic.state.formKey,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   child: Column(
@@ -225,7 +248,7 @@ class TarPdfPage extends StatelessWidget {
                           )),
                     ],
                   ),
-                ))),
+                )),
                 actions: [
                   FilledButton(
                       onPressed: () async {
@@ -261,18 +284,33 @@ class _DataSource extends NFDataTableSource {
     debug("msg: ${item.errorMsg}");
     return NFRow(children: [
       Text(
+        "${index + 1}",
+      ),
+      Text(
         item.fileName,
         maxLines: 2,
       ),
       Text(
         item.title,
         maxLines: 2,
+      ),
+      Text(
+        item.no,
+        maxLines: 2,
+      ),
+      Text(
+        item.company,
+        maxLines: 2,
+      ),
+      Text(
+        "${item.pages}",
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
       Text(
-        item.errorMsg,
+        item.errorMsg.isEmpty ? "无" : item.errorMsg,
         maxLines: 2,
-        style: TextStyle(color: Colors.red),
+        style: item.errorMsg.isEmpty ? null : TextStyle(color: Colors.red),
         overflow: TextOverflow.ellipsis,
       ),
     ]);
@@ -314,6 +352,16 @@ class _MultiText extends StatelessWidget {
                 placeholder: "请输入[编号]正则表达式",
                 enableSuggestions: false,
                 onTapOutside: (p) => onTapOutside(i),
+                validator: (v) {
+                  bool check = false;
+                  if (controllers.length == 1 || i != controllers.length - 1) {
+                    check = true;
+                  }
+                  if (check && v == '') {
+                    return "数据不能为空";
+                  }
+                  return null;
+                },
               )),
               if (i != controllers.length - 1)
                 IconButton(
