@@ -1,26 +1,29 @@
-use serde_with::DisplayFromStr;
-use serde_with::{serde_as};
-use std::cmp::Ordering;
-use std::collections::HashMap;
-use crate::messages::common::{StringMsg};
+use crate::common::global_data::GlobalData;
+use crate::messages::common::StringMsg;
+use crate::messages::tar_pdf::{OcrConfigMsg, TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
 use crate::service::service::{Service, StreamService};
-use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
-use tokio::sync::mpsc::UnboundedSender;
+use crate::{
+    async_func_nono, async_func_notype, async_stream_func_typeno, func_end, func_notype,
+    func_typeno,
+};
 use anyhow::{anyhow, Result};
 use futures_util::StreamExt;
 use log::debug;
 use pdfium::{PdfiumDocument, PdfiumRenderConfig};
-use serde::{Deserialize, Serialize};
-use serde_json::{Value};
-use tempfile::NamedTempFile;
-use tokio_stream::wrappers::ReadDirStream;
 use regex::Regex;
 use rust_xlsxwriter::{Format, Workbook};
-use strfmt::{strfmt};
-use crate::{async_func_nono, async_func_notype, async_stream_func_typeno, func_end, func_notype, func_typeno};
-use crate::common::global_data::GlobalData;
-use crate::messages::tar_pdf::{OcrConfigMsg, TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use serde_with::serde_as;
+use serde_with::DisplayFromStr;
+use std::cmp::Ordering;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
+use strfmt::strfmt;
+use tempfile::NamedTempFile;
+use tokio::sync::mpsc::UnboundedSender;
+use tokio_stream::wrappers::ReadDirStream;
 
 #[derive(Debug)]
 struct PdfResult {
@@ -41,7 +44,7 @@ struct ExcelData {
     // 公司名称
     company_name: String,
     // 标题
-    title: String
+    title: String,
 }
 
 impl ExcelData {
@@ -49,15 +52,22 @@ impl ExcelData {
     fn convert_file_name(&self, rule: &str) -> Result<String> {
         let json = serde_json::to_value(&self)?;
         let data = if let Value::Object(map) = json {
-            map.into_iter().map(|(k, v)| {
-                if v.is_null() {
-                    (k, String::with_capacity(0))
-                } else if let Value::String(s) = &v && s.is_empty() {
-                   (k, String::with_capacity(0))
-                } else {
-                    (k, v.to_string())
-                }
-            }).collect()
+            map.into_iter()
+                .map(|(k, v)| {
+                    let null = String::with_capacity(0);
+                    if v.is_null() {
+                        return (k, null);
+                    }
+                    let v = v.to_string();
+                    // 去除字符串的前后引号
+                    let tv = v.trim_start_matches("\"").trim_end_matches("\"");
+                    if tv.is_empty() {
+                        (k, null)
+                    } else {
+                        (k, tv.to_string())
+                    }
+                })
+                .collect()
         } else {
             HashMap::new()
         };
@@ -86,7 +96,8 @@ struct OcrConfig {
 impl OcrConfig {
     /// 是否为有效数据
     fn has_data(&self) -> bool {
-        !self.url.is_empty() && !self.api_key.is_empty()
+        !self.url.is_empty()
+            && !self.api_key.is_empty()
             && !self.export_file_name_rule.is_empty()
             && !self.no_regex.is_empty()
             && self.no_regex_match.len() == self.no_regex.len()
@@ -99,7 +110,12 @@ impl From<OcrConfigMsg> for OcrConfig {
             pdf_password: value.passwd,
             url: value.url,
             api_key: value.api_key,
-            no_regex_match: value.no_regex.iter().map(|x| Regex::new(x)).filter_map(|r| r.ok()).collect(),
+            no_regex_match: value
+                .no_regex
+                .iter()
+                .map(|x| Regex::new(x))
+                .filter_map(|r| r.ok())
+                .collect(),
             no_regex: value.no_regex,
             export_file_name_rule: value.export_file_name_rule,
         }
@@ -124,7 +140,6 @@ pub struct TarPdfService {
     config: OcrConfig,
     result: Vec<PdfResult>,
 }
-
 
 const CONFIG_CACHE: &str = "tarPdfConfig";
 
@@ -154,14 +169,15 @@ impl Service for TarPdfService {
 
     async fn close(&mut self) -> Result<()> {
         if self.config.has_data() {
-            self.global_data.set_data(CONFIG_CACHE.to_string(), &self.config).await?;
+            self.global_data
+                .set_data(CONFIG_CACHE.to_string(), &self.config)
+                .await?;
         }
         Ok(())
     }
 }
 
 impl TarPdfService {
-
     fn set_config(&mut self, config: OcrConfigMsg) -> Result<()> {
         for regex in &config.no_regex {
             if let Err(e) = Regex::new(regex) {
@@ -208,12 +224,16 @@ impl TarPdfService {
         let r = rsp.get("result").ok_or_else(|| anyhow!(Self::ERROR_MSG))?;
         let r = r.as_str().ok_or_else(|| anyhow!(Self::ERROR_MSG))?;
         if r != "pass" {
-           return Err(anyhow!(Self::ERROR_MSG));
+            return Err(anyhow!(Self::ERROR_MSG));
         }
         Ok(())
     }
 
-    async fn handle(&mut self, pdf_dir: StringMsg, tx: UnboundedSender<Result<Option<Vec<u8>>>>) -> Result<()> {
+    async fn handle(
+        &mut self,
+        pdf_dir: StringMsg,
+        tx: UnboundedSender<Result<Option<Vec<u8>>>>,
+    ) -> Result<()> {
         self.ocr_check().await?;
 
         let pdf_dir = PathBuf::from(pdf_dir.value);
@@ -232,7 +252,13 @@ impl TarPdfService {
         let count = pdf_files.len();
         for (index, pdf_file) in pdf_files.into_iter().enumerate() {
             // send current process
-            let file_name = pdf_file.path.file_name().unwrap_or_default().to_str().unwrap_or_default().to_string();
+            let file_name = pdf_file
+                .path
+                .file_name()
+                .unwrap_or_default()
+                .to_str()
+                .unwrap_or_default()
+                .to_string();
             let msg = rinf::serialize(&TarPdfMsg {
                 now: index as u32,
                 sum: count as u32,
@@ -241,7 +267,9 @@ impl TarPdfService {
             tx.send(Ok(Some(msg?)))?;
 
             // 处理OCR
-            let ocr = self.ocr_pdf(pdf_file.path.clone(), index as u32, &url).await;
+            let ocr = self
+                .ocr_pdf(pdf_file.path.clone(), index as u32, &url)
+                .await;
 
             // 保存结果
             let r = PdfResult {
@@ -255,27 +283,35 @@ impl TarPdfService {
     }
 
     fn get_result(&self) -> Result<TarPdfResultsMsg> {
-        let data = self.result.iter().map(|x| {
-            let file_name = x.file_path.file_name().unwrap().to_str().unwrap().to_string();
-            let mut ocr_result = TarPdfResultMsg::default();
-            ocr_result.file_name = file_name;
-            match &x.ocr_result {
-                Ok(r) => {
-                    ocr_result.company = r.company_name.clone();
-                    ocr_result.title = r.title.clone();
-                    ocr_result.no = r.no.clone();
-                    ocr_result.error_msg = String::with_capacity(0);
-                    ocr_result.pages =  r.pages;
-                },
-                Err(e) => {
-                   ocr_result.error_msg = e.to_string();
-                }
-            };
-            ocr_result
-        }).collect();
-        Ok(TarPdfResultsMsg{
-            datas: data,
-        })
+        let data = self
+            .result
+            .iter()
+            .map(|x| {
+                let file_name = x
+                    .file_path
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+                let mut ocr_result = TarPdfResultMsg::default();
+                ocr_result.file_name = file_name;
+                match &x.ocr_result {
+                    Ok(r) => {
+                        ocr_result.company = r.company_name.clone();
+                        ocr_result.title = r.title.clone();
+                        ocr_result.no = r.no.clone();
+                        ocr_result.error_msg = String::with_capacity(0);
+                        ocr_result.pages = r.pages;
+                    }
+                    Err(e) => {
+                        ocr_result.error_msg = e.to_string();
+                    }
+                };
+                ocr_result
+            })
+            .collect();
+        Ok(TarPdfResultsMsg { datas: data })
     }
 
     /// 导出结果并重命名文件
@@ -287,24 +323,29 @@ impl TarPdfService {
 
         // 1. 重命名文件
         for pdf in self.result.iter_mut() {
-           if let Err(e) = Self::rename_pdf(pdf, &self.config.export_file_name_rule).await {
-               pdf.ocr_result = Err(e);
-           }
+            if let Err(e) = Self::rename_pdf(pdf, &self.config.export_file_name_rule).await {
+                pdf.ocr_result = Err(e);
+            }
         }
 
         // 2. 导出excel表格
         let file = self.write_excel_file().await?;
-        let name = file.file_name().unwrap_or_default().to_str().unwrap_or_default().to_string();
-        Ok(StringMsg{
-            value: name,
-        })
+        let name = file
+            .file_name()
+            .unwrap_or_default()
+            .to_str()
+            .unwrap_or_default()
+            .to_string();
+        Ok(StringMsg { value: name })
     }
-
 }
 
 impl TarPdfService {
     pub async fn new(global_data: GlobalData) -> Self {
-        let config = global_data.get_data(CONFIG_CACHE.to_string()).await.unwrap_or_default();
+        let config = global_data
+            .get_data(CONFIG_CACHE.to_string())
+            .await
+            .unwrap_or_default();
         TarPdfService {
             global_data,
             config,
@@ -319,9 +360,9 @@ impl TarPdfService {
         let pdf_password = self.config.pdf_password.clone();
         let (img, pages) = tokio::task::spawn_blocking(move || {
             export_pdf_to_jpegs(&pdf_file, pdf_password.as_deref())
-        }).await??;
-        let form = reqwest::multipart::Form::new()
-            .file("file", img).await?;
+        })
+        .await??;
+        let form = reqwest::multipart::Form::new().file("file", img).await?;
         let result = reqwest::Client::new()
             .post(url)
             .header("api-key", &self.config.api_key)
@@ -347,7 +388,7 @@ impl TarPdfService {
             no,
             pages,
             company_name: company,
-            title
+            title,
         })
     }
 
@@ -367,6 +408,11 @@ impl TarPdfService {
         if file.exists() {
             return Err(anyhow!("无法重命名【{}】文件已存在", &file_name));
         }
+        debug!(
+            "重命名【{}】为【{}】",
+            &pdf.file_path.to_str().unwrap_or_default(),
+            &file.to_str().unwrap_or_default()
+        );
         tokio::fs::rename(&pdf.file_path, &file).await?;
 
         Ok(())
@@ -380,7 +426,10 @@ impl TarPdfService {
         let mut file = self.result.get(0).unwrap().file_path.clone();
         file.pop();
         let now = SystemTime::now();
-        file.push(format!("检测报告识别结果_{}.xlsx",now.duration_since(UNIX_EPOCH)?.as_millis()));
+        file.push(format!(
+            "检测报告识别结果_{}.xlsx",
+            now.duration_since(UNIX_EPOCH)?.as_millis()
+        ));
 
         // 2. 写入数据
         let mut workbook = Workbook::new();
@@ -390,10 +439,9 @@ impl TarPdfService {
             .set_bold()
             .set_background_color(rust_xlsxwriter::Color::RGB(0xD9E1F2))
             .set_border(rust_xlsxwriter::FormatBorder::Thin);
-        let error_format = Format::new()
-            .set_background_color(rust_xlsxwriter::Color::RGB(0xFFC7CE));
-        let number_format = Format::new()
-            .set_num_format("0");
+        let error_format =
+            Format::new().set_background_color(rust_xlsxwriter::Color::RGB(0xFFC7CE));
+        let number_format = Format::new().set_num_format("0");
 
         // 创建表头
         worksheet.write_with_format(0, 0, "原始文件", &header_format)?;
@@ -406,13 +454,26 @@ impl TarPdfService {
         // 创建数据行
         for (index, pdf) in self.result.iter().enumerate() {
             let row = (index + 1) as u32;
-            worksheet.write(row, 0, pdf.file_path.file_name().unwrap_or_default().to_str().unwrap_or_default())?;
-            worksheet.write_number_with_format(row, 1, (index+1) as f64, &number_format)?;
+            worksheet.write(
+                row,
+                0,
+                pdf.file_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_str()
+                    .unwrap_or_default(),
+            )?;
+            worksheet.write_number_with_format(row, 1, (index + 1) as f64, &number_format)?;
             match &pdf.ocr_result {
                 Ok(data) => {
                     worksheet.write(row, 2, format!("{}{}", data.company_name, data.title))?;
                     worksheet.write(row, 3, &data.no)?;
-                    worksheet.write_number_with_format(row, 4, data.pages as f64, &number_format)?;
+                    worksheet.write_number_with_format(
+                        row,
+                        4,
+                        data.pages as f64,
+                        &number_format,
+                    )?;
                 }
                 Err(e) => {
                     worksheet.write_with_format(row, 5, e.to_string(), &error_format)?;
@@ -449,7 +510,7 @@ impl PartialOrd for PdfFile {
 
 impl PartialEq for PdfFile {
     fn eq(&self, other: &Self) -> bool {
-       self.created_time == other.created_time
+        self.created_time == other.created_time
     }
 }
 
@@ -461,7 +522,7 @@ struct OcrResult {
 }
 #[serde_as]
 #[derive(Debug, Deserialize)]
-struct OcrTexts{
+struct OcrTexts {
     texts: Vec<String>,
     #[serde_as(as = "Vec<DisplayFromStr>")]
     scores: Vec<f64>,
@@ -489,14 +550,13 @@ struct FontFeature {
 impl FontFeature {
     // 字体大小相似
     fn font_similar(&self, other: &Self) -> bool {
-        (self.width - other.width).abs() / self.width < 0.05 &&
-            (self.height - other.height).abs() / self.height < 0.05
+        (self.width - other.width).abs() / self.width < 0.05
+            && (self.height - other.height).abs() / self.height < 0.05
     }
 
     // 高度接近(上下行排列)
     fn height_nearest(&self, other: &Self) -> bool {
-        (self.y - other.y).abs() / self.height < 2.3 &&
-            (self.y - other.y).abs() / self.height > 1.0
+        (self.y - other.y).abs() / self.height < 2.3 && (self.y - other.y).abs() / self.height > 1.0
     }
 
     // 同行数据
@@ -522,7 +582,12 @@ impl OcrTexts {
     }
 
     // 获取附近的文本
-    fn operate_text(&self, index: usize, result: &mut Vec<usize>, func: fn(&FontFeature, &FontFeature) -> bool) -> Result<()> {
+    fn operate_text(
+        &self,
+        index: usize,
+        result: &mut Vec<usize>,
+        func: fn(&FontFeature, &FontFeature) -> bool,
+    ) -> Result<()> {
         if index > self.texts.len() {
             return Err(anyhow!("索引{index}超出范围"));
         }
@@ -544,8 +609,10 @@ impl OcrTexts {
 
     /// 获取最接近的文本
     pub fn get_nearest_text(&self, index: usize) -> Result<String> {
-        let mut tmp =vec![];
-        self.operate_text(index, &mut tmp, |a, b| a.font_similar(b) && a.height_nearest(b))?;
+        let mut tmp = vec![];
+        self.operate_text(index, &mut tmp, |a, b| {
+            a.font_similar(b) && a.height_nearest(b)
+        })?;
         let mut r = String::default();
         for i in tmp {
             r.push_str(&self.texts.get(i).unwrap());
@@ -558,7 +625,7 @@ impl OcrTexts {
         let text = self.texts.get(index).unwrap();
         let boxes = self.boxes.get(index).unwrap();
         FontFeature {
-            width: boxes.width / text.len() as f64 ,
+            width: boxes.width / text.len() as f64,
             height: boxes.height,
             y: boxes.y,
         }
@@ -566,7 +633,7 @@ impl OcrTexts {
 
     // 获取同一行的其它数据（获取公司名称）
     pub fn get_same_line(&self, index: usize) -> Result<Vec<usize>> {
-        let mut tmp =vec![];
+        let mut tmp = vec![];
         self.operate_text(index, &mut tmp, |a, b| a.same_line(b))?;
         tmp.retain(|x| *x != index);
         Ok(tmp)
@@ -601,12 +668,16 @@ impl OcrResult {
 
     /// 获取公司名称
     pub fn get_company_name(&self) -> Result<String> {
-        let flag_index = self.result.texts.iter().position(|x| x.ends_with("名称："))
+        let flag_index = self
+            .result
+            .texts
+            .iter()
+            .position(|x| x.ends_with("名称："))
             .ok_or_else(|| anyhow!("未找到[企业名称]"))?;
         if flag_index == self.result.texts.len() - 1 {
             return Err(anyhow!("未找到[企业名称]"));
         }
-        let same_lines =  self.result.get_same_line(flag_index)?;
+        let same_lines = self.result.get_same_line(flag_index)?;
         if same_lines.len() != 1 {
             let mut r = String::new();
             for line in same_lines.iter() {
@@ -620,7 +691,11 @@ impl OcrResult {
 
     /// 获取标题
     fn get_title(&self) -> Result<String> {
-        let flag_index = self.result.texts.iter().position(|x| x.ends_with("检测报告"))
+        let flag_index = self
+            .result
+            .texts
+            .iter()
+            .position(|x| x.ends_with("检测报告"))
             .ok_or_else(|| anyhow!("未找到[标题]"))?;
         if flag_index == self.result.texts.len() - 1 {
             return Err(anyhow!("未找到[标题]"));
@@ -630,9 +705,7 @@ impl OcrResult {
 }
 
 // 非递归获取指定目录中的所有PDF文件
-async fn get_pdf_files_in_directory(
-    dir: &Path,
-) -> Result<Vec<PdfFile>> {
+async fn get_pdf_files_in_directory(dir: &Path) -> Result<Vec<PdfFile>> {
     let mut pdf_files = Vec::new();
 
     if !dir.is_dir() {
@@ -656,10 +729,7 @@ async fn get_pdf_files_in_directory(
                 if ext.eq_ignore_ascii_case("pdf") {
                     // 获取创建时间
                     if let Ok(created_time) = metadata.created() {
-                        pdf_files.push(PdfFile {
-                            path,
-                            created_time,
-                        });
+                        pdf_files.push(PdfFile { path, created_time });
                     }
                 }
             }
@@ -684,11 +754,12 @@ mod test {
 
     #[test]
     fn test() {
-        use regex::Regex;
         use crate::service::pdf::tar_pdf::OcrResult;
+        use regex::Regex;
 
         let texts: OcrResult = serde_json::from_str(r#"这里是mock的数据"#).unwrap();
-        let res = vec![ Regex::new(r"[\(|（]\d{4}[\)|）].*[\(|（].*[\)|）].*[\(|（].*[)|）].*").unwrap() ];
+        let res =
+            vec![Regex::new(r"[\(|（]\d{4}[\)|）].*[\(|（].*[\)|）].*[\(|（].*[)|）].*").unwrap()];
 
         let no = texts.get_no(&res).unwrap();
         println!("no : {no}");
