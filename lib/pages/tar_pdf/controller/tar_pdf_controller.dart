@@ -32,7 +32,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
   void start() async {
     final Stream<TarPdfMsg> stream;
     try {
-      stream = $api.start(state.pdfDirTextController.text);
+      stream = $api.handle(state.pdfDirTextController.text);
     } catch (e) {
       return;
     }

@@ -20,7 +20,6 @@ class TarPdfState {
   TextEditingController urlTextController = TextEditingController();
   TextEditingController apiKeyTextController = TextEditingController();
   TextEditingController pdfPasswordTextController = TextEditingController();
-
   List<TextEditingController> regexTextControllers = [TextEditingController()];
 
   void reset() {
