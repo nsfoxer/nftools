@@ -129,10 +129,16 @@ impl Service for TarPdfService {
 impl TarPdfService {
 
     fn set_config(&mut self, config: OcrConfigMsg) -> Result<()> {
+        for regex in &config.no_regex {
+            if let Err(e) = Regex::new(regex) {
+                return Err(anyhow!("正则表达式错误：{}", e));
+            }
+        }
         let config = OcrConfig::from(config);
         if !config.has_data() {
             Err(anyhow!("配置不正确"))
         } else {
+            self.config = config;
             Ok(())
         }
     }
