@@ -348,10 +348,16 @@ impl TarPdfService {
 
 impl TarPdfService {
     pub async fn new(global_data: GlobalData) -> Self {
-        let config = global_data
+        let mut config: OcrConfig = global_data
             .get_data(CONFIG_CACHE.to_string())
             .await
             .unwrap_or_default();
+        config.no_regex_match = config
+            .no_regex
+            .iter()
+            .map(|x| Regex::new(x))
+            .filter_map(|r| r.ok())
+            .collect();
         TarPdfService {
             global_data,
             config,
