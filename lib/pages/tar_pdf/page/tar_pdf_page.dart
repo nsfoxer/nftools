@@ -103,7 +103,7 @@ class TarPdfPage extends StatelessWidget {
                   spacing: NFLayout.v0,
                   children: [
                 Text(
-                  "processing...   ${logic.state.current}/${logic.state.sum}",
+                  "处理中...   ${logic.state.current}/${logic.state.sum}",
                 ),
                 ProgressBar(
                     value: logic.state.sum == 0
