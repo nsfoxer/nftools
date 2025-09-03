@@ -261,7 +261,7 @@ impl TarPdfService {
                 .unwrap_or_default()
                 .to_string();
             let msg = rinf::serialize(&TarPdfMsg {
-                now: index as u32,
+                now: (index+1) as u32,
                 sum: count as u32,
                 current_file: file_name,
             });
@@ -420,11 +420,6 @@ impl TarPdfService {
         if file.exists() {
             return Err(anyhow!("无法重命名【{}】文件已存在", &file_name));
         }
-        debug!(
-            "重命名【{}】为【{}】",
-            &pdf.file_path.to_str().unwrap_or_default(),
-            &file.to_str().unwrap_or_default()
-        );
         tokio::fs::rename(&pdf.file_path, &file).await?;
 
         Ok(())
@@ -562,13 +557,13 @@ struct FontFeature {
 impl FontFeature {
     // 字体大小相似
     fn font_similar(&self, other: &Self) -> bool {
-        (self.width - other.width).abs() / self.width < 0.05
-            && (self.height - other.height).abs() / self.height < 0.05
+        (self.width - other.width).abs() / self.width < 0.14
+            && (self.height - other.height).abs() / self.height < 0.14
     }
 
     // 高度接近(上下行排列)
     fn height_nearest(&self, other: &Self) -> bool {
-        (self.y - other.y).abs() / self.height < 2.3 && (self.y - other.y).abs() / self.height > 1.0
+        (self.y - other.y).abs() / self.height < 2.8 && (self.y - other.y).abs() / self.height > 1.0
     }
 
     // 同行数据
