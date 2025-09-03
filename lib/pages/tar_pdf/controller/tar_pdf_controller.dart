@@ -29,6 +29,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     state.pdfDirTextController.text = path;
   }
 
+  // 开始处理
   void start() async {
     final Stream<TarPdfMsg> stream;
     try {
@@ -52,19 +53,22 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     }, cancelOnError: true);
   }
 
+  // 结束处理
   void _end() async {
     state.processEnum = DisplayProcessEnum.end;
     state.ocrResult = await $api.ocrResult();
+    state.canExport = true;
     update();
   }
 
   void reset() async {
     state.reset();
     await $api.clearResult();
+    await configReset();
     update();
   }
 
-  void configReset() async {
+  Future<void> configReset() async {
     final OcrConfigMsg config;
     try {
       config = await $api.getConfig();
@@ -102,10 +106,15 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
       return false;
     }
 
+    state.isConfigLoading = true;
+    update();
+
     try {
       await $api.setConfig(url, urlKey, regex, passwd, nameRule);
     } catch (e) {
       error("服务器配置失败,请检查配置!");
+      state.isConfigLoading = false;
+      update();
       return false;
     }
 
@@ -113,9 +122,13 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
       await $api.ocrCheck();
     } catch (e) {
       error("文字识别服务检查失败,请检查配置!");
+      state.isConfigLoading = false;
+      update();
       return false;
     }
     info("服务器配置成功");
+    state.isConfigLoading = false;
+    update();
     return true;
   }
 
@@ -146,6 +159,8 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
 
   void exportResult() async {
     final file = await $api.exportResult();
+    state.canExport = false;
+    update();
     info("导出成功,文件路径:$file");
   }
 }

@@ -30,19 +30,20 @@ class TarPdfPage extends StatelessWidget {
                     CommandBarButton(
                       icon: const Icon(FluentIcons.next),
                       label: const Text('开始处理'),
-                      onPressed: () {
-                        logic.start();
-                      },
+                      onPressed: logic.state.pdfDirTextController.text.isEmpty
+                          ? null
+                          : () {
+                              logic.start();
+                            },
                     ),
                     CommandBarButton(
                       icon: const Icon(FluentIcons.excel_document),
                       label: const Text('导出结果'),
-                      onPressed:
-                          logic.state.processEnum == DisplayProcessEnum.end
-                              ? () {
-                                  logic.exportResult();
-                                }
-                              : null,
+                      onPressed: logic.state.canExport
+                          ? () {
+                              logic.exportResult();
+                            }
+                          : null,
                     ),
                     CommandBarButton(
                       icon: const Icon(FluentIcons.reset),
@@ -79,7 +80,8 @@ class TarPdfPage extends StatelessWidget {
                   InfoLabel(
                     label: "请选择pdf存储路径",
                     child: TextBox(
-                      maxLines: 1,
+                      maxLines: 5,
+                      placeholder: "请选择pdf存储路径",
                       readOnly: true,
                       onTap: logic.selectPdfDir,
                       controller: logic.state.pdfDirTextController,
@@ -213,105 +215,107 @@ class TarPdfPage extends StatelessWidget {
     await showDialog<String>(
         context: context,
         builder: (context) => GetBuilder<TarPdfController>(builder: (logic) {
-              return ContentDialog(
-                title: Text("网络配置", style: typography.subtitle),
-                content: SingleChildScrollView(
-                    child: Form(
-                  key: logic.state.formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    spacing: NFLayout.v0,
-                    children: [
-                      InfoLabel(
-                          label: "服务器地址",
-                          child: TextFormBox(
-                            controller: logic.state.urlTextController,
-                            cursorColor: color,
-                            keyboardType: TextInputType.text,
-                            placeholder: "https://xxx.xxxx.com/xxx/",
-                            enableSuggestions: false,
-                            validator: (v) {
-                              if (v!.startsWith("http://") ||
-                                  v.startsWith("https://")) {
+              return NFLoadingWidgets(
+                  loading: logic.state.isConfigLoading,
+                  child: ContentDialog(
+                    title: Text("网络配置", style: typography.subtitle),
+                    content: SingleChildScrollView(
+                        child: Form(
+                      key: logic.state.formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: NFLayout.v0,
+                        children: [
+                          InfoLabel(
+                              label: "服务器地址",
+                              child: TextFormBox(
+                                controller: logic.state.urlTextController,
+                                cursorColor: color,
+                                keyboardType: TextInputType.text,
+                                placeholder: "https://xxx.xxxx.com/xxx/",
+                                enableSuggestions: false,
+                                validator: (v) {
+                                  if (v!.startsWith("http://") ||
+                                      v.startsWith("https://")) {
+                                    return null;
+                                  }
+                                  return "必须以http://或https://开头";
+                                },
+                              )),
+                          InfoLabel(
+                              label: "密钥",
+                              child: PasswordFormBox(
+                                controller: logic.state.apiKeyTextController,
+                                cursorColor: color,
+                                placeholder: "XXXXXXXXXXXXXXXXXXX",
+                                validator: (v) {
+                                  if (v == '') {
+                                    return "数据不能为空";
+                                  }
+                                  return null;
+                                },
+                              )),
+                          InfoLabel(
+                            label: "pdf密码",
+                            child: PasswordFormBox(
+                              controller: logic.state.pdfPasswordTextController,
+                              cursorColor: color,
+                              placeholder: "请输入pdf密码(没有则不填)",
+                            ),
+                          ),
+                          InfoLabel(
+                            label: "文件重命名规则",
+                            child: TextFormBox(
+                              controller: logic.state.nameRuleTextController,
+                              cursorColor: color,
+                              validator: (v) {
+                                if (v == '') {
+                                  return "数据不能为空";
+                                }
                                 return null;
-                              }
-                              return "必须以http://或https://开头";
-                            },
-                          )),
-                      InfoLabel(
-                          label: "密钥",
-                          child: PasswordFormBox(
-                            controller: logic.state.apiKeyTextController,
-                            cursorColor: color,
-                            placeholder: "XXXXXXXXXXXXXXXXXXX",
-                            validator: (v) {
-                              if (v == '') {
-                                return "数据不能为空";
-                              }
-                              return null;
-                            },
-                          )),
-                      InfoLabel(
-                        label: "pdf密码",
-                        child: PasswordFormBox(
-                          controller: logic.state.pdfPasswordTextController,
-                          cursorColor: color,
-                          placeholder: "请输入pdf密码(没有则不填)",
-                        ),
+                              },
+                            ),
+                          ),
+                          InfoLabel(
+                              label: "编号正则配置",
+                              child: _MultiText(
+                                controllers: logic.state.regexTextControllers,
+                                onTapOutside: (i) {
+                                  debug("editing complete $i");
+                                  if (logic.state.regexTextControllers[i].text
+                                      .isEmpty) {
+                                    logic.removeRegex(i);
+                                  } else {
+                                    logic.trySupplyNewText();
+                                  }
+                                },
+                                remove: (i) {
+                                  logic.removeRegex(i);
+                                },
+                              )),
+                        ],
                       ),
-                      InfoLabel(
-                        label: "文件重命名规则",
-                        child: TextFormBox(
-                          controller: logic.state.nameRuleTextController,
-                          cursorColor: color,
-                          validator: (v) {
-                            if (v == '') {
-                              return "数据不能为空";
+                    )),
+                    actions: [
+                      FilledButton(
+                          onPressed: () async {
+                            if (!logic.state.formKey.currentState!.validate()) {
+                              return;
                             }
-                            return null;
+                            if (await logic.setConfig() && context.mounted) {
+                              context.pop();
+                            }
                           },
-                        ),
-                      ),
-                      InfoLabel(
-                          label: "编号正则配置",
-                          child: _MultiText(
-                            controllers: logic.state.regexTextControllers,
-                            onTapOutside: (i) {
-                              debug("editing complete $i");
-                              if (logic
-                                  .state.regexTextControllers[i].text.isEmpty) {
-                                logic.removeRegex(i);
-                              } else {
-                                logic.trySupplyNewText();
-                              }
-                            },
-                            remove: (i) {
-                              logic.removeRegex(i);
-                            },
-                          )),
+                          child: const Text("提交")),
+                      Button(
+                          child: const Text("取消"),
+                          onPressed: () {
+                            logic.configReset();
+                            context.pop();
+                          })
                     ],
-                  ),
-                )),
-                actions: [
-                  FilledButton(
-                      onPressed: () async {
-                        if (!logic.state.formKey.currentState!.validate()) {
-                          return;
-                        }
-                        if (await logic.setConfig() && context.mounted) {
-                          context.pop();
-                        }
-                      },
-                      child: const Text("提交")),
-                  Button(
-                      child: const Text("取消"),
-                      onPressed: () {
-                        logic.configReset();
-                        context.pop();
-                      })
-                ],
-              );
+                  ));
             }));
   }
 }

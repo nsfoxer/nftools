@@ -12,6 +12,9 @@ class TarPdfState {
   int current = 0;
   List<TarPdfResultMsg> ocrResult = [];
 
+  // 配置框是否正在加载
+  bool isConfigLoading = false;
+
   // 地址框
   TextEditingController pdfDirTextController = TextEditingController();
 
@@ -22,6 +25,9 @@ class TarPdfState {
   TextEditingController pdfPasswordTextController = TextEditingController();
   TextEditingController nameRuleTextController = TextEditingController();
   List<TextEditingController> regexTextControllers = [TextEditingController()];
+
+  // 是否可导出
+  bool canExport = false;
 
   void reset() {
     isProcess = false;
@@ -37,7 +43,7 @@ class TarPdfState {
       element.dispose();
     }
     regexTextControllers = [TextEditingController()];
-
+    canExport = false;
   }
 
 
