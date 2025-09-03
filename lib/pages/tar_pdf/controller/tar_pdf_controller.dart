@@ -58,8 +58,9 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     update();
   }
 
-  void reset() {
+  void reset() async {
     state.reset();
+    await $api.clearResult();
     update();
   }
 
