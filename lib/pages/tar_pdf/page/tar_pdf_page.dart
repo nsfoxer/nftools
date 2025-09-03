@@ -30,7 +30,7 @@ class TarPdfPage extends StatelessWidget {
                     CommandBarButton(
                       icon: const Icon(FluentIcons.next),
                       label: const Text('开始处理'),
-                      onPressed: logic.state.pdfDirTextController.text.isEmpty
+                      onPressed: (logic.state.pdfDirTextController.text.isEmpty || logic.state.processEnum != DisplayProcessEnum.start)
                           ? null
                           : () {
                               logic.start();
@@ -95,25 +95,27 @@ class TarPdfPage extends StatelessWidget {
 
   Widget _buildProcessing(TarPdfController logic) {
     return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-      Expanded(flex: 1, child: Container()),
+      Expanded(flex: 2, child: Container()),
       Expanded(
-          flex: 3,
-          child: Center(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  spacing: NFLayout.v0,
-                  children: [
+          flex: 4,
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: NFLayout.v0,
+              children: [
                 Text(
-                  "处理中...   ${logic.state.current}/${logic.state.sum}",
+                  "处理中......   ${logic.state.current}/${logic.state.sum}",
                 ),
-                ProgressBar(
-                    value: logic.state.sum == 0
-                        ? 0
-                        : logic.state.current / logic.state.sum * 100),
-              ]))),
+                SizedBox(
+                    width: double.infinity,
+                    child: ProgressBar(
+                        backgroundColor: Colors.grey,
+                        value: logic.state.sum == 0
+                            ? 0
+                            : logic.state.current / logic.state.sum * 100)),
+              ])),
       Expanded(
-        flex: 1,
+        flex: 2,
         child: Container(),
       ),
     ]);
@@ -126,8 +128,13 @@ class TarPdfPage extends StatelessWidget {
         .length;
     final fail = count - success;
     final typography = FluentTheme.of(context).typography;
-    return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-      Text("处理已完成, 共发现$count个pdf文件,成功处理$success个,失败$fail个"),
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        spacing: NFLayout.v1,
+        children: [
+      Text("处理已完成, 共发现$count个pdf文件,成功处理$success个,失败$fail个", style: typography.caption?.copyWith(
+        decoration: TextDecoration.underline,
+      ),),
       Expanded(
         child: NFTable(
           minWidth: 800,
@@ -329,7 +336,6 @@ class _DataSource extends NFDataTableSource {
   @override
   NFRow getRow(BuildContext context, int index) {
     final item = data[index];
-    debug("msg: ${item.errorMsg}");
     return NFRow(children: [
       Text(
         "${index + 1}",
