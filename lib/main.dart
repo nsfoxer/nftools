@@ -13,6 +13,7 @@ import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/router_controller.dart';
 import 'package:nftools/router/router.dart';
 import 'package:nftools/src/bindings/bindings.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/utils.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:rinf/rinf.dart';
@@ -199,13 +200,37 @@ class _MainAppState extends State<MainApp>
     Get.find<RouterController>().updatePrimaryColor();
     super.didChangePlatformBrightness();
   }
+  FluentThemeData _getTheme(context, RouterController routerLogic) {
+    final primaryColor = routerLogic.primaryColor;
+    final Map<String, Color> swatch = {
+      "normal": primaryColor,
+    };
+    final fonts = "oppo_sans";
+    final FluentThemeData theme;
+    if (!isDark(context)) {
+      //  light
+      theme =  FluentThemeData.light().copyWith(
+        accentColor: AccentColor.swatch(swatch),
+      );
+    } else {
+      theme = FluentThemeData.dark().copyWith(
+        accentColor: AccentColor.swatch(swatch),
+      );
+    }
 
+    return theme.copyWith(
+      typography: theme.typography.apply(fontFamily: fonts),
+      tooltipTheme: const TooltipThemeData(waitDuration: Duration(milliseconds: 300)),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return GetBuilder<RouterController>(
        builder:  (routerLogic) => _build(context, routerLogic)
     );
   }
+
+
 
   Widget _build(BuildContext context, RouterController routerLogic) {
     final primaryColor = routerLogic.primaryColor;
@@ -307,6 +332,9 @@ class MainPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = FluentTheme.of(context).typography;
+    debug("build ${typography.caption}");
+    FluentThemeData theme = FluentTheme.of(context);
+    debug("color ${theme.navigationPaneTheme.tileColor}");
     final bg = FluentTheme.of(context).navigationPaneTheme.backgroundColor;
     return GetBuilder<RouterController>(
         builder: (logic) => NavigationView(

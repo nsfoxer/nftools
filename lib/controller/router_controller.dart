@@ -10,7 +10,7 @@ import '../router/router.dart';
 
 class RouterController extends GetxController {
   final routerState = RouterState();
-  Color primaryColor = Colors.blue;
+  Color primaryColor = Colors.red;
 
   // 已初始化过的服务
   final Set<String> _alreadyInitService = {};

@@ -34,4 +34,5 @@ final class NFLayout {
 final class NFColor {
   static const Color textUserLightBackground = Color(0xff95ec69);
   static const Color textUserDarkBackground = Color(0xff3eb575);
+  static const Color inactiveBackground = Color(0xFF333333);
 }
