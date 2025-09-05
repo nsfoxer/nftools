@@ -58,7 +58,7 @@ class TarPdfPage extends StatelessWidget {
           case DisplayProcessEnum.start:
             return _buildStart(logic);
           case DisplayProcessEnum.processing:
-            return _buildProcessing(logic);
+            return _buildProcessing(logic, context);
           case DisplayProcessEnum.end:
             return _buildEnd(logic, context);
         }
@@ -93,7 +93,7 @@ class TarPdfPage extends StatelessWidget {
     );
   }
 
-  Widget _buildProcessing(TarPdfController logic) {
+  Widget _buildProcessing(TarPdfController logic, context) {
     return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
       Expanded(flex: 2, child: Container()),
       Expanded(
@@ -109,7 +109,7 @@ class TarPdfPage extends StatelessWidget {
                 SizedBox(
                     width: double.infinity,
                     child: ProgressBar(
-                        backgroundColor: Colors.grey,
+                        backgroundColor: isDark(context) ? NFColor.inactiveBackground : null,
                         value: logic.state.sum == 0
                             ? 0
                             : logic.state.current / logic.state.sum * 100)),

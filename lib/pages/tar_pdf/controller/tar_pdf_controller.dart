@@ -27,6 +27,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
       return;
     }
     state.pdfDirTextController.text = path;
+    update();
   }
 
   // 开始处理
