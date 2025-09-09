@@ -67,6 +67,7 @@ flutter:
   shaders:
     - assets/shaders/wrap.frag
   fonts:
-    - family: oppo_sans
+    - family: mi_sans
       fonts:
-        - asset: assets/fonts/OPPOSans-Regular.ttf
+#        - asset: assets/fonts/OPPOSans-Regular.ttf
+        - asset: assets/fonts/MiSans-Regular.ttf

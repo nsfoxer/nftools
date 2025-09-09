@@ -212,7 +212,7 @@ class _MainAppState extends State<MainApp>
     final Map<String, Color> swatch = {
       "normal":  primaryColor,
     };
-    final fonts = "oppo_sans";
+    final fonts = "mi_sans";
 
     var m = FluentThemeData(
         brightness: Brightness.light,
