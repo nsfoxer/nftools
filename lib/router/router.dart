@@ -14,8 +14,10 @@ import 'package:nftools/pages/sync_file_page.dart';
 import 'package:nftools/pages/utils/page/qr_page.dart';
 import 'package:nftools/pages/utils/page/text_diff_page.dart';
 import 'package:nftools/pages/utils/page/text_tool_page.dart';
+import 'package:nftools/pages/work/controller/cd_bug_monitor_controller.dart';
 import 'package:nftools/pages/work/controller/pwd_expire_controller.dart';
 import 'package:nftools/pages/work/controller/work_controller.dart';
+import 'package:nftools/pages/work/page/cd_bug_monitor_page.dart';
 import 'package:nftools/pages/work/page/pwd_expire_page.dart';
 import 'package:nftools/pages/work/page/sms_limit_page.dart';
 import 'package:nftools/pages/work/page/work_page.dart';
@@ -59,6 +61,9 @@ class RouterServiceData {
     }),
     "/pwdExpireReset": MenuData("/pwdExpireReset", Icons.password, "密码过期重置", const PwdExpirePage(), [ ServiceNameConstant.utils], () {
       Get.lazyPut<PwdExpireController>(()=>PwdExpireController(), fenix: true);
+    }),
+    "/cdBugMMonitor": MenuData("/cdBugMMonitor", Icons.monitor, "禅道bug监控", const CdBugMonitorPage(), [ ServiceNameConstant.utils], () {
+      Get.put<CdBugMonitorController>(CdBugMonitorController(), permanent: true);
     }),
   };
 }
