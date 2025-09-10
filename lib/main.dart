@@ -307,6 +307,7 @@ class MainPage extends StatelessWidget {
         children.add(PaneItem(
             icon: Icon(value.icon),
             title: Text(value.label),
+            infoBadge: value.infoBadge != null ? InfoBadge(source: Text(value.infoBadge!)) : null,
             body: value.body,
             onTap: () {
               if (MyRouterConfig.currentUrl != value.url) {
