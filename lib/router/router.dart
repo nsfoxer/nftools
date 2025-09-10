@@ -79,7 +79,6 @@ class MyRouterConfig {
 }
 
 // 路由数据
-@Immutable()
 class MenuData {
   // 页面名称
   final String label;
@@ -98,12 +97,41 @@ class MenuData {
   // 是否为底部
   final bool isFooter;
 
+  // 显示的角标
+  final String? infoBadge;
+
   const MenuData(this.url, this.icon, this.label, this.body, this.services,
       this.builderController,
-      {this.children, this.isFooter = false});
+      {this.children, this.isFooter = false, this.infoBadge});
+
+  MenuData copyWith({
+    String? label,
+    String? url,
+    IconData? icon,
+    Widget? body,
+    List<String>? services,
+    Function? builderController,
+    Map<String, MenuData>? children,
+    bool? isFooter,
+    String? infoBadge,
+  }) {
+    return MenuData(
+      url ?? this.url,
+      icon ?? this.icon,
+      label ?? this.label,
+      body ?? this.body,
+      services ?? this.services,
+      builderController ?? this.builderController,
+      infoBadge: infoBadge,
+      children: children ?? this.children,
+      isFooter: isFooter ?? this.isFooter,
+    );
+  }
 
   @override
   String toString() {
-    return 'MenuData{label: $label, url: $url, icon: $icon, body: $body, services: $services, builderController: $builderController, children: $children, isFooter: $isFooter}';
+    return 'MenuData{label: $label, url: $url, icon: $icon, body: $body, services: $services, builderController: $builderController, children: $children, isFooter: $isFooter, infoBadge: $infoBadge}';
   }
+
+
 }

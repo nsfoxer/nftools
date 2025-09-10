@@ -127,4 +127,45 @@ class RouterController extends GetxController {
     update();
   }
 
+  // 根据url查找menuData
+  bool _updateMenuData(String url, MenuData Function(MenuData data) operate) {
+    // 1. 查找一般性menuData
+    for (int i = 0; i < routerState.menuData.length; i++) {
+      final value = routerState.menuData[i];
+      if (value.url == url) {
+        // value = value.copyWith(infoBadge: "0");
+        routerState.menuData[i] = operate(value);
+        return true;
+      }
+      if (value.children != null) {
+        var datas = value.children!.values.toList();
+        for (int j = 0; j < datas.length; j++) {
+          final value2 = datas[j];
+          if (value2.url == url) {
+            datas[j] = operate(value2);
+            return true;
+          }
+        }
+      }
+    }
+    // 2. 查找footer中数据
+    for (int i = 0; i < routerState.footerData.length; i++) {
+      final value = routerState.footerData[i];
+      if (value.url == url) {
+        routerState.footerData[i] = operate(value);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // 设置角标
+  bool setInfoBadge(String url, String? infoBadge) {
+    final result = _updateMenuData(url, (data) => data.copyWith(infoBadge: infoBadge));
+    if (result) {
+      update();
+    }
+    return result;
+  }
+
 }
