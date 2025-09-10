@@ -62,7 +62,7 @@ class RouterServiceData {
     "/pwdExpireReset": MenuData("/pwdExpireReset", Icons.password, "密码过期重置", const PwdExpirePage(), [ ServiceNameConstant.utils], () {
       Get.lazyPut<PwdExpireController>(()=>PwdExpireController(), fenix: true);
     }),
-    "/cdBugMonitor": MenuData("/cdBugMonitor", Icons.monitor, "禅道bug监控", const CdBugMonitorPage(), [ ServiceNameConstant.utils], () {
+    "/cdBugMonitor": MenuData("/cdBugMonitor", FluentIcons.bug, "禅道bug监控", const CdBugMonitorPage(), [ ServiceNameConstant.utils], () {
       Get.put<CdBugMonitorController>(CdBugMonitorController(), permanent: true);
     }),
   };
