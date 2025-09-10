@@ -1,5 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:get/get_state_manager/src/simple/get_state.dart';
+import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/link.dart';
 
@@ -12,6 +12,7 @@ class CdBugMonitorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = FluentTheme.of(context).typography;
+    final ctrl = Get.find<CdBugMonitorController>();
     return ScaffoldPage.withPadding(
         header: PageHeader(
           title: Text("禅道bug监控"),
@@ -46,6 +47,7 @@ class CdBugMonitorPage extends StatelessWidget {
         content: Center(
           child: Column(spacing: NFLayout.v1, children: [
             Text("当前bug数量", style: typography.bodyStrong),
+            Obx(() => Text("更新时间: ${ctrl.updateTime.value.toString().substring(0, 19)}", style: typography.caption)),
             GetBuilder<CdBugMonitorController>(builder: (logic) {
               final count = logic.state.count;
               if (count == null) {

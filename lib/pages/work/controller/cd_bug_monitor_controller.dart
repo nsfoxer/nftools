@@ -1,16 +1,23 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
+import 'package:get/get.dart';
 import 'package:nftools/pages/work/state/cd_bug_monitor_state.dart';
 import 'package:nftools/utils/extension.dart';
 
 import 'package:nftools/api/utils.dart' as $api;
 import 'package:nftools/utils/log.dart';
 
+import '../../../controller/router_controller.dart';
+
 
 class CdBugMonitorController extends GetxController with GetxUpdateMixin {
   CdBugsMonitorState state = CdBugsMonitorState();
+
+  Rx<DateTime> updateTime = DateTime.now().obs;
+
+  // router
+  final RouterController _routerController = Get.find<RouterController>();
 
   // 配置存储
   static final String _chanDaoUrl = "ChanDaoUrl";
@@ -75,6 +82,7 @@ class CdBugMonitorController extends GetxController with GetxUpdateMixin {
 
   // 更新bug数量
   Future<int?> refreshBugCount() async {
+    updateTime.value = DateTime.now();
     final int count;
     try {
       count = await _getBugCount();
@@ -88,6 +96,8 @@ class CdBugMonitorController extends GetxController with GetxUpdateMixin {
     state.count = count;
     update();
     debug("bug数量: $count");
+
+   !_routerController.setInfoBadge("/cdBugMonitor", count > 0 ? count.toString() : null);
     return count;
   }
 
