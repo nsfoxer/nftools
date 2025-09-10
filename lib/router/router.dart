@@ -65,6 +65,13 @@ class RouterServiceData {
     "/cdBugMonitor": MenuData("/cdBugMonitor", FluentIcons.bug, "禅道bug监控", const CdBugMonitorPage(), [ ServiceNameConstant.utils], () {
       Get.put<CdBugMonitorController>(CdBugMonitorController(), permanent: true);
     }),
+    "/display": MenuData("/display", Icons.display_settings, "显示", const DisplayPage(), [
+      ServiceNameConstant.displayMode, ServiceNameConstant.displayLight, ServiceNameConstant.utils
+    ], () {
+      Get.lazyPut<DisplayController>(() => DisplayController(), fenix: true);
+      Get.lazyPut<DisplayModeController>(() => DisplayModeController(),  fenix: true);
+      Get.lazyPut<SystemModeController>(() => SystemModeController(), fenix: true);
+    }),
   };
 }
 
