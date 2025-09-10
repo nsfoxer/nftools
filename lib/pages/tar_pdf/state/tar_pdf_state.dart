@@ -1,7 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/src/bindings/bindings.dart';
 
-import '../../../utils/log.dart';
 
 class TarPdfState {
   bool isProcess = false;
