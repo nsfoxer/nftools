@@ -15,10 +15,10 @@ use serde_with::serde_as;
 use serde_with::DisplayFromStr;
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use strfmt::strfmt;
-use tempfile::NamedTempFile;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::wrappers::ReadDirStream;
 
@@ -370,11 +370,12 @@ impl TarPdfService {
         // 1. 文本识别
         let pdf_path = pdf_file.to_str().unwrap().to_string();
         let pdf_password = self.config.pdf_password.clone();
-        let (img, pages) = tokio::task::spawn_blocking(move || {
+        let (img_buf, pages) = tokio::task::spawn_blocking(move || {
             export_pdf_to_jpegs(&pdf_file, pdf_password.as_deref())
         })
         .await??;
-        let form = reqwest::multipart::Form::new().file("file", img).await?;
+        let form = reqwest::multipart::Form::new()
+            .part("file", reqwest::multipart::Part::bytes(img_buf).file_name("t.jpeg"));
         let result = reqwest::Client::new()
             .post(url)
             .header("api-key", &self.config.api_key)
@@ -746,18 +747,20 @@ async fn get_pdf_files_in_directory(dir: &Path) -> Result<Vec<PdfFile>> {
     Ok(pdf_files)
 }
 
-fn export_pdf_to_jpegs(path: &Path, password: Option<&str>) -> Result<(NamedTempFile, i32)> {
+fn export_pdf_to_jpegs(path: &Path, password: Option<&str>) -> Result<(Vec<u8>, i32)> {
     let pdf = PdfiumDocument::new_from_path(path, password)?;
     let page = pdf.page(0)?;
     let config = PdfiumRenderConfig::new().with_width(1920);
     let bitmap = page.render(&config)?;
-    let tmp_file = NamedTempFile::with_suffix("jpeg")?;
-    bitmap.save(tmp_file.path().to_str().unwrap(), image::ImageFormat::Jpeg)?;
-    Ok((tmp_file, pdf.page_count()))
+    let img = bitmap.as_rgb8_image()?;
+    let mut buf= Cursor::new(Vec::new());
+    img.write_to(&mut buf, image::ImageFormat::Jpeg)?;
+    Ok((buf.into_inner(), pdf.page_count()))
 }
 
 mod test {
-    use crate::service::pdf::tar_pdf::ExcelData;
+    use std::path::Path;
+    use crate::service::pdf::tar_pdf::{export_pdf_to_jpegs, ExcelData};
 
     #[test]
     fn test() {
