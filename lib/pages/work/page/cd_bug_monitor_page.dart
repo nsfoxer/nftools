@@ -38,7 +38,7 @@ class CdBugMonitorPage extends StatelessWidget {
                     icon: Icon(FluentIcons.refresh),
                     label: Text("刷新"),
                     onPressed: () async {
-                      await logic.refreshBugCount();
+                      await logic.refreshBugCount(false);
                     },
                   ),
                 ]);

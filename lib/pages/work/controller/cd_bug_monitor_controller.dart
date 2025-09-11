@@ -59,7 +59,7 @@ class CdBugMonitorController extends GetxController with GetxUpdateMixin {
     if (state.enableMonitor) {
       _enableTimer();
     }
-    refreshBugCount();
+    refreshBugCount(true);
   }
 
   // 设置配置
@@ -69,6 +69,7 @@ class CdBugMonitorController extends GetxController with GetxUpdateMixin {
     await $api.setData(_chanDaoCookie, state.cookieController.text);
     await $api.setData(_chanDaoEnable, state.enableMonitor.toString());
     _dio = null;
+    refreshBugCount(true);
   }
 
   // 获取配置
@@ -81,13 +82,16 @@ class CdBugMonitorController extends GetxController with GetxUpdateMixin {
   }
 
   // 更新bug数量
-  Future<int?> refreshBugCount() async {
+  Future<int?> refreshBugCount(bool notify) async {
     updateTime.value = DateTime.now();
     final int count;
     try {
       count = await _getBugCount();
-    } on Exception {
+    } on Exception catch (e) {
       warn("获取bug数量失败");
+      if (notify) {
+        $api.notify("🔔 禅道bug获取失败: $e");
+      }
       state.count = null;
       update();
       return null;
@@ -122,6 +126,10 @@ class CdBugMonitorController extends GetxController with GetxUpdateMixin {
       throw Exception("请求失败");
     }
     final htmlBody = rsp.data as String;
+    if (htmlBody.contains("<script>self.location='/zentao/user-login")) {
+      throw Exception("禅道cookie可能失效");
+    }
+
     Match? match = _regex.firstMatch(htmlBody);
     if (match == null || match.groupCount < 1) {
       throw Exception("请求失败, 无法获取bug数量");
@@ -168,7 +176,7 @@ class CdBugMonitorController extends GetxController with GetxUpdateMixin {
   void _enableTimer() {
     _closeTimer();
     _timer = Timer.periodic(Duration(seconds: _delay), (timer) async {
-      int? count =  await refreshBugCount();
+      int? count =  await refreshBugCount(false);
 
       // 获取bug数量失败
       if (count == null) {
@@ -210,7 +218,7 @@ class CdBugMonitorController extends GetxController with GetxUpdateMixin {
 
   // 通知
   void _notify(int bugCount) {
-    $api.notify("🔴🔴🔴当前存在 $bugCount个禅道Bug需要处理！");
+    $api.notify("🔔🔔🔔当前存在 $bugCount个禅道Bug需要处理！");
   }
 
 }
