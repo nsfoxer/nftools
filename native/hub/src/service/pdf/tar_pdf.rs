@@ -11,8 +11,6 @@ use regex::Regex;
 use rust_xlsxwriter::{Format, Workbook};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use serde_with::serde_as;
-use serde_with::DisplayFromStr;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -21,6 +19,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use strfmt::strfmt;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::wrappers::ReadDirStream;
+use crate::service::pdf::ocr::{OcrResult};
 
 #[derive(Debug)]
 struct PdfResult {
@@ -387,22 +386,15 @@ impl TarPdfService {
         let mut ocr_result: OcrResult = serde_json::from_str(&text)?;
 
         // 2. 识别数据
-        ocr_result.result.clear_fuzzy_data();
-        // a. 识别编号
-        let no = ocr_result.get_no(&self.config.no_regex_match)?;
-        // b. 识别公司名称
-        let company = ocr_result.get_company_name()?;
-        // c. 识别标题
-        let title = ocr_result.get_title()?;
+        ocr_result.clear_fuzzy_data();
+        // // a. 识别编号
+        // let no = ocr_result.get_no(&self.config.no_regex_match)?;
+        // // b. 识别公司名称
+        // let company = ocr_result.get_company_name()?;
+        // // c. 识别标题
+        // let title = ocr_result.get_title()?;
 
-        Ok(ExcelData {
-            file_name: pdf_path,
-            index: index + 1,
-            no,
-            pages,
-            company_name: company,
-            title,
-        })
+        Err(anyhow!("识别结果为空"))
     }
 
     // 重命名文件
@@ -524,193 +516,6 @@ impl PartialEq for PdfFile {
 
 impl Eq for PdfFile {}
 
-#[derive(Debug, Deserialize)]
-struct OcrResult {
-    result: OcrTexts,
-}
-#[serde_as]
-#[derive(Debug, Deserialize)]
-struct OcrTexts {
-    texts: Vec<String>,
-    #[serde_as(as = "Vec<DisplayFromStr>")]
-    scores: Vec<f64>,
-    boxes: Vec<BoxPosition>,
-}
-#[serde_as]
-#[derive(Debug, Deserialize)]
-struct BoxPosition {
-    #[serde_as(as = "DisplayFromStr")]
-    x: f64,
-    #[serde_as(as = "DisplayFromStr")]
-    y: f64,
-    #[serde_as(as = "DisplayFromStr")]
-    width: f64,
-    #[serde_as(as = "DisplayFromStr")]
-    height: f64,
-}
-
-struct FontFeature {
-    width: f64,
-    height: f64,
-    y: f64,
-}
-
-impl FontFeature {
-    // 字体大小相似
-    fn font_similar(&self, other: &Self) -> bool {
-        (self.width - other.width).abs() / self.width < 0.14
-            && (self.height - other.height).abs() / self.height < 0.14
-    }
-
-    // 高度接近(上下行排列)
-    fn height_nearest(&self, other: &Self) -> bool {
-        (self.y - other.y).abs() / self.height < 2.8 && (self.y - other.y).abs() / self.height > 1.0
-    }
-
-    // 同行数据
-    fn same_line(&self, other: &Self) -> bool {
-        (self.y - other.y).abs() / self.height < 0.5
-    }
-}
-
-impl OcrTexts {
-    pub fn clear_fuzzy_data(&mut self) {
-        let mut locations = Vec::new();
-        for (i, scores) in self.scores.iter().enumerate() {
-            if *scores < 0.98 {
-                locations.push(i);
-            }
-        }
-        // 删除坐标在locations之内的数据
-        for i in locations.iter().rev() {
-            self.texts.remove(*i);
-            self.scores.remove(*i);
-            self.boxes.remove(*i);
-        }
-    }
-
-    // 获取附近的文本
-    fn operate_text(
-        &self,
-        index: usize,
-        result: &mut Vec<usize>,
-        func: fn(&FontFeature, &FontFeature) -> bool,
-    ) -> Result<()> {
-        if index > self.texts.len() {
-            return Err(anyhow!("索引{index}超出范围"));
-        }
-        result.push(index);
-
-        let feature = self.get_feature(index);
-        for i in 0..self.texts.len() {
-            if result.contains(&i) {
-                continue;
-            }
-            let feature2 = self.get_feature(i);
-            if func(&feature, &feature2) {
-                self.operate_text(i, result, func)?;
-            }
-        }
-        result.sort();
-        Ok(())
-    }
-
-    /// 获取最接近的文本
-    pub fn get_nearest_text(&self, index: usize) -> Result<String> {
-        let mut tmp = vec![];
-        self.operate_text(index, &mut tmp, |a, b| {
-            a.font_similar(b) && a.height_nearest(b)
-        })?;
-        let mut r = String::default();
-        for i in tmp {
-            r.push_str(&self.texts.get(i).unwrap());
-        }
-        Ok(r)
-    }
-
-    // 获取字体特征
-    fn get_feature(&self, index: usize) -> FontFeature {
-        let text = self.texts.get(index).unwrap();
-        let boxes = self.boxes.get(index).unwrap();
-        FontFeature {
-            width: boxes.width / text.len() as f64,
-            height: boxes.height,
-            y: boxes.y,
-        }
-    }
-
-    // 获取同一行的其它数据（获取公司名称）
-    pub fn get_same_line(&self, index: usize) -> Result<Vec<usize>> {
-        let mut tmp = vec![];
-        self.operate_text(index, &mut tmp, |a, b| a.same_line(b))?;
-        tmp.retain(|x| *x != index);
-        Ok(tmp)
-    }
-}
-
-impl OcrResult {
-    /// 获取编号
-    pub fn get_no(&self, res: &Vec<Regex>) -> Result<String> {
-        if self.result.texts.is_empty() {
-            return Err(anyhow!("未成功识别文字"));
-        }
-
-        let mut nos = Vec::new();
-        for re in res {
-            for text in self.result.texts.iter() {
-                if re.is_match(text) {
-                    nos.push(text);
-                }
-            }
-        }
-
-        if nos.is_empty() {
-            return Err(anyhow!("未成功识别编号"));
-        }
-        if nos.len() > 1 {
-            return Err(anyhow!("识别到多个编号"));
-        }
-
-        Ok(nos.get(0).unwrap().to_string())
-    }
-
-    /// 获取公司名称
-    pub fn get_company_name(&self) -> Result<String> {
-        let flag_index = self
-            .result
-            .texts
-            .iter()
-            .position(|x| x.ends_with("名称："))
-            .ok_or_else(|| anyhow!("未找到[企业名称]"))?;
-        if flag_index == self.result.texts.len() - 1 {
-            return Err(anyhow!("未找到[企业名称]"));
-        }
-        let same_lines = self.result.get_same_line(flag_index)?;
-        if same_lines.len() != 1 {
-            let mut r = String::new();
-            for line in same_lines.iter() {
-                r.push_str(&self.result.texts[*line]);
-            }
-            return Err(anyhow!("查找到多个企业名称，目前只允许一个：[{r}]"));
-        }
-
-        Ok(self.result.texts[same_lines[0]].to_string())
-    }
-
-    /// 获取标题
-    fn get_title(&self) -> Result<String> {
-        let flag_index = self
-            .result
-            .texts
-            .iter()
-            .position(|x| x.ends_with("检测报告"))
-            .ok_or_else(|| anyhow!("未找到[标题]"))?;
-        if flag_index == self.result.texts.len() - 1 {
-            return Err(anyhow!("未找到[标题]"));
-        }
-        self.result.get_nearest_text(flag_index)
-    }
-}
 
 // 非递归获取指定目录中的所有PDF文件
 async fn get_pdf_files_in_directory(dir: &Path) -> Result<Vec<PdfFile>> {
@@ -759,25 +564,9 @@ fn export_pdf_to_jpegs(path: &Path, password: Option<&str>) -> Result<(Vec<u8>, 
 }
 
 mod test {
-    use std::path::Path;
     use crate::service::pdf::tar_pdf::{export_pdf_to_jpegs, ExcelData};
 
-    #[test]
-    fn test() {
-        use crate::service::pdf::tar_pdf::OcrResult;
-        use regex::Regex;
 
-        let texts: OcrResult = serde_json::from_str(r#"这里是mock的数据"#).unwrap();
-        let res =
-            vec![Regex::new(r"[\(|（]\d{4}[\)|）].*[\(|（].*[\)|）].*[\(|（].*[)|）].*").unwrap()];
-
-        let no = texts.get_no(&res).unwrap();
-        println!("no : {no}");
-        let company = texts.get_company_name().unwrap();
-        println!("company : {company}");
-        let title = texts.get_title().unwrap();
-        println!("title : {title}");
-    }
 
     #[test]
     fn test2() {

@@ -1378,6 +1378,7 @@ dependencies = [
  "sha2",
  "simple-log",
  "strfmt",
+ "strsim",
  "sysinfo",
  "tempfile",
  "tokio",
