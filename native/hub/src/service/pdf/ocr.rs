@@ -4,6 +4,7 @@ use reqwest_dav::re_exports::serde::Deserialize;
 use serde_with::serde_as;
 use serde_with::DisplayFromStr;
 use strsim::levenshtein;
+use crate::messages::tar_pdf::BoxPositionMsg;
 
 /// 阈值比例
 const DISTANCE_RATIO: f64 = 0.8;
@@ -32,6 +33,19 @@ impl OcrTexts {
             texts.push(OcrData {
                 text: text.clone(),
                 location: self.boxes[i].clone(),
+            });
+        }
+        texts
+    }
+
+    /// 转换为OCR识别数据
+    pub fn into_ocr_data(self) -> Vec<OcrData> {
+        let boxes = self.boxes;
+        let mut texts = Vec::with_capacity(boxes.len());
+        for (text, location) in self.texts.into_iter().zip(boxes.into_iter()) {
+            texts.push(OcrData {
+                text,
+                location,
             });
         }
         texts
@@ -70,9 +84,10 @@ impl OcrResult {
 }
 
 /// OCR识别数据
+#[derive(Clone)]
 pub struct OcrData {
-    text: String,
-    location: BoxPosition,
+    pub text: String,
+    pub location: BoxPosition,
 }
 
 impl OcrData {
@@ -143,5 +158,17 @@ impl OcrData {
         let text_similar_score = 1.0 - (text_similar as f64 / max(ref_text.len(), text.text.len()) as f64);
 
         Ok(distance_score * DISTANCE_RATIO + text_similar_score * TEXT_SIMILARITY_RATIO)
+    }
+}
+
+
+impl From<BoxPosition> for BoxPositionMsg {
+    fn from(value: BoxPosition) -> Self {
+        Self {
+            x: value.x,
+            y: value.y,
+            width: value.width,
+            height: value.height,
+        }
     }
 }

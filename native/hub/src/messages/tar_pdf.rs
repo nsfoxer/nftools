@@ -31,3 +31,23 @@ pub struct OcrConfigMsg {
     pub no_regex: Vec<String>,
     pub export_file_name_rule: String,
 }
+
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct RefOcrDatasMsg {
+    pub data: Vec<OcrDataMsg>,
+}
+
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct OcrDataMsg {
+    pub id: u32,
+    pub text: String,
+    pub location: BoxPositionMsg,
+}
+
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct BoxPositionMsg {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
