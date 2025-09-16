@@ -3,8 +3,8 @@ import 'package:nftools/src/bindings/bindings.dart';
 
 
 class TarPdfState {
-  bool isProcess = false;
-  DisplayProcessEnum processEnum = DisplayProcessEnum.start;
+  bool isLoading = false;
+  DisplayProcessEnum processEnum = DisplayProcessEnum.order1;
 
   // 处理中展示数据
   int sum = 0;
@@ -28,9 +28,13 @@ class TarPdfState {
   // 是否可导出
   bool canExport = false;
 
+
+  // order2
+  List<String> pdfFiles = [];
+
   void reset() {
-    isProcess = false;
-    processEnum = DisplayProcessEnum.start;
+    isLoading = false;
+    processEnum = DisplayProcessEnum.order1;
     sum = 0;
     current = 0;
     ocrResult.clear();
@@ -45,7 +49,34 @@ class TarPdfState {
     canExport = false;
   }
 
-
 }
 
-enum DisplayProcessEnum { start, processing, end }
+enum DisplayProcessEnum {
+  order1(1, "选择文件夹"),
+  order2(2, "选择参考文件"),
+  order3(3, "选取参考文字"),
+  order4(4, "处理中"),
+  order5(5, "处理结果展示");
+
+
+  const DisplayProcessEnum(this.value, this.desc);
+  final String desc;
+  final int value;
+
+  static DisplayProcessEnum? fromValue(int value) {
+    for (var element in DisplayProcessEnum.values) {
+      if (element.value == value) {
+        return element;
+      }
+    }
+    return null;
+  }
+
+  DisplayProcessEnum? next() {
+    return DisplayProcessEnum.fromValue(value + 1);
+  }
+
+  DisplayProcessEnum? pre() {
+    return DisplayProcessEnum.fromValue(value - 1);
+  }
+}

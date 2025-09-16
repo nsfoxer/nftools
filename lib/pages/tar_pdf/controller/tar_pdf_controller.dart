@@ -11,6 +11,7 @@ import '../api/api.dart' as $api;
 class TarPdfController extends GetxController with GetxUpdateMixin {
   TarPdfState state = TarPdfState();
 
+
   @override
   void onReady() {
     _init();
@@ -19,6 +20,16 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
 
   void _init() async {
     configReset();
+  }
+
+  void _start() {
+    state.isLoading = true;
+    update();
+  }
+
+  void _end() {
+    state.isLoading = false;
+    update();
   }
 
   void selectPdfDir() async {
@@ -39,7 +50,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
       return;
     }
 
-    state.processEnum = DisplayProcessEnum.processing;
+    // state.processEnum = DisplayProcessEnum.processing;
     update();
     stream.listen((data) {
       state.sum = data.sum;
@@ -49,14 +60,14 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
       _end();
     }, onError: (e) {
       error(e.toString());
-      state.processEnum = DisplayProcessEnum.start;
+      // state.processEnum = DisplayProcessEnum.start;
       update();
     }, cancelOnError: true);
   }
 
   // 结束处理
-  void _end() async {
-    state.processEnum = DisplayProcessEnum.end;
+  void _end2() async {
+    // state.processEnum = DisplayProcessEnum.end;
     state.ocrResult = await $api.ocrResult();
     state.canExport = true;
     update();
@@ -163,5 +174,54 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     state.canExport = false;
     update();
     info("导出成功,文件路径:$file");
+  }
+
+  // 下一步
+  void next() {
+    switch (state.processEnum) {
+      case DisplayProcessEnum.order1:
+        _nextOrder1();
+        return;
+      case DisplayProcessEnum.order2:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case DisplayProcessEnum.order3:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case DisplayProcessEnum.order4:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case DisplayProcessEnum.order5:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+    }
+  }
+
+  void _nextOrder1() async {
+    if (state.pdfDirTextController.text.isEmpty) {
+      error("请选择PDF目录");
+      return;
+    }
+    _start();
+
+    try {
+      state.pdfFiles = await $api.listDirPdf(state.pdfDirTextController.text);
+    } catch (e) {
+      error(e.toString());
+      _end();
+      return;
+    }
+
+    state.processEnum = state.processEnum.next() ?? state.processEnum;
+    _end();
+  }
+
+
+  void order2Preview(String data) async{
+
+  }
+
+  void order2SelectRef(String data) async {
+
   }
 }

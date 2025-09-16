@@ -333,9 +333,6 @@ class MainPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = FluentTheme.of(context).typography;
-    debug("build ${typography.caption}");
-    FluentThemeData theme = FluentTheme.of(context);
-    debug("color ${theme.navigationPaneTheme.tileColor}");
     final bg = FluentTheme.of(context).navigationPaneTheme.backgroundColor;
     return GetBuilder<RouterController>(
         builder: (logic) => NavigationView(

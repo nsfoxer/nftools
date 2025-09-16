@@ -68,8 +68,8 @@ class NFLoadingWidgets extends StatelessWidget {
 
   const NFLoadingWidgets({
     super.key,
-    required this.child,
     required this.loading,
+    required this.child,
     this.hint = "加载中...",
   });
 

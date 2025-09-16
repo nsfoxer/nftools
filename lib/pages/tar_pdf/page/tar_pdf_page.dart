@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
+import 'package:path/path.dart' as path;
 import 'package:go_router/go_router.dart';
 import 'package:nftools/common/style.dart';
 import 'package:nftools/pages/tar_pdf/controller/tar_pdf_controller.dart';
@@ -15,6 +16,7 @@ class TarPdfPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = FluentTheme.of(context).typography;
     return ScaffoldPage.withPadding(
       header: PageHeader(
         title: Text('PDF归档'),
@@ -29,21 +31,10 @@ class TarPdfPage extends StatelessWidget {
                     ),
                     CommandBarButton(
                       icon: const Icon(FluentIcons.next),
-                      label: const Text('开始处理'),
-                      onPressed: (logic.state.pdfDirTextController.text.isEmpty || logic.state.processEnum != DisplayProcessEnum.start)
-                          ? null
-                          : () {
-                              logic.start();
-                            },
-                    ),
-                    CommandBarButton(
-                      icon: const Icon(FluentIcons.excel_document),
-                      label: const Text('导出结果'),
-                      onPressed: logic.state.canExport
-                          ? () {
-                              logic.exportResult();
-                            }
-                          : null,
+                      label: Text(logic.state.processEnum == DisplayProcessEnum.order5 ? '导出结果' : '下一步'),
+                      onPressed: () {
+                        logic.next();
+                      }
                     ),
                     CommandBarButton(
                       icon: const Icon(FluentIcons.reset),
@@ -54,20 +45,49 @@ class TarPdfPage extends StatelessWidget {
                 )),
       ),
       content: GetBuilder<TarPdfController>(builder: (logic) {
-        switch (logic.state.processEnum) {
-          case DisplayProcessEnum.start:
-            return _buildStart(logic);
-          case DisplayProcessEnum.processing:
-            return _buildProcessing(logic, context);
-          case DisplayProcessEnum.end:
-            return _buildEnd(logic, context);
+        List<BreadcrumbItem> breadItems = [];
+        for (final process in DisplayProcessEnum.values) {
+            breadItems.add(BreadcrumbItem(
+             label: Text(process.desc, style: typography.bodyStrong),
+              value: process.value,
+            ));
+          if (process == logic.state.processEnum) {
+            break;
+          }
         }
+        return Column(
+          spacing: NFLayout.v0,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            BreadcrumbBar(items: breadItems),
+            Expanded(child:
+              _buildContent(logic, context),
+            ),
+          ],
+        );
       }),
     );
   }
+  
+  Widget _buildContent(TarPdfController logic, BuildContext context) {
+    switch (logic.state.processEnum) {
+      case DisplayProcessEnum.order1:
+        return _buildOrder1(logic);
+      case DisplayProcessEnum.order2:
+        return _buildOrder2(logic, context);
+      case DisplayProcessEnum.order3:
+        return _buildEnd(logic, context);
+      case DisplayProcessEnum.order4:
+      // TODO: Handle this case.
+        throw UnimplementedError();
+      case DisplayProcessEnum.order5:
+      // TODO: Handle this case.
+        throw UnimplementedError();
+    }
+  }
 
-  Widget _buildStart(TarPdfController logic) {
-    return Row(
+  Widget _buildOrder1(TarPdfController logic) {
+    return NFLoadingWidgets(loading: logic.state.isLoading, child:  Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(flex: 1, child: Container()),
@@ -90,10 +110,23 @@ class TarPdfPage extends StatelessWidget {
                 ])),
         Expanded(flex: 1, child: Container()),
       ],
-    );
+    ));
   }
 
-  Widget _buildProcessing(TarPdfController logic, context) {
+
+  Widget _buildOrder2(TarPdfController logic, BuildContext context) {
+    final typography = FluentTheme.of(context).typography;
+    return NFTable(
+        minWidth: 750,
+        empty: Center(child: Text("empty")),
+        header: [
+          NFHeader(flex: 8, child: Text("文件名称", style: typography.bodyStrong)),
+          NFHeader(flex: 2, child: Text("操作", style: typography.bodyStrong)),
+        ],
+        source: _Order2DataSource(logic.state.pdfFiles, logic, typography));
+  }
+
+  Widget _buildOrder5(TarPdfController logic, context) {
     return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
       Expanded(flex: 2, child: Container()),
       Expanded(
@@ -426,4 +459,36 @@ class _MultiText extends StatelessWidget {
       ],
     );
   }
+}
+
+class _Order2DataSource extends NFDataTableSource {
+  final List<String> data;
+  final TarPdfController logic;
+  final Typography typography;
+  _Order2DataSource(this.data, this.logic, this.typography);
+
+  @override
+  NFRow getRow(BuildContext context, int index) {
+    final pdf = path.basename(data[index]);
+    return NFRow(children: [
+      Text(pdf, style: typography.caption,),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: NFLayout.v2,
+        children: [
+          Button(child: Text("预览", style: typography.caption,), onPressed: () {
+            logic.order2Preview(data[index]);
+          }),
+          FilledButton(child: Text("选中", style: typography.caption), onPressed: () {
+            logic.order2SelectRef(data[index]);
+          }),
+        ]),
+    ]);
+  }
+
+  @override
+  bool get isEmpty => data.isEmpty;
+
+  @override
+  int? get itemCount => data.length;
 }

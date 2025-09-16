@@ -11,6 +11,7 @@ const String _ocrCheck = "ocr_check";
 const String _ocrResult = "get_result";
 const String _exportResult = "export_result_and_rename_files";
 const String _clearResult = "clear_result";
+const String _scanPdf = "scan_pdf";
 
 
 // start
@@ -47,4 +48,10 @@ Future<String> exportResult() async {
 
 Future<void> clearResult() async {
   await sendEmptyRequest(_service, _clearResult);
+}
+
+// 获取指定文件夹下的所有pdf文件
+Future<List<String>> listDirPdf(String pdfDir) async{
+  final data = await sendRequest(_service, _scanPdf, StringMsg(value: pdfDir));
+  return VecStringMsg.bincodeDeserialize(data).values;
 }
