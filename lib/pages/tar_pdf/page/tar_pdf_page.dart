@@ -76,7 +76,7 @@ class TarPdfPage extends StatelessWidget {
       case DisplayProcessEnum.order2:
         return _buildOrder2(logic, context);
       case DisplayProcessEnum.order3:
-        return _buildEnd(logic, context);
+        return _buildOrder3(logic, context);
       case DisplayProcessEnum.order4:
       // TODO: Handle this case.
         throw UnimplementedError();
@@ -124,6 +124,20 @@ class TarPdfPage extends StatelessWidget {
           NFHeader(flex: 2, child: Text("操作", style: typography.bodyStrong)),
         ],
         source: _Order2DataSource(logic.state.pdfFiles, logic, context));
+  }
+
+  Widget _buildOrder3(TarPdfController logic, BuildContext context) {
+    List<Widget> textRects = logic.state.refOcrDatas.map((x) => _TextContainer(x.id, x.text, x.location)).toList();
+
+    return NFLoadingWidgets(loading: logic.state.isLoading, child: InteractiveViewer(child:  Stack(
+      children: [
+            Stack(children: [
+                   NFImagePainterPage(
+                      controller: logic.state.refImagePainterController),
+             ...textRects,
+            ])
+          ],
+    )));
   }
 
   Widget _buildOrder5(TarPdfController logic, context) {
@@ -556,3 +570,41 @@ class _PreviewButton extends StatelessWidget {
   }
 
 }
+
+
+class _TextContainer extends StatelessWidget {
+  final int id;
+  final String text;
+  final BoxPositionMsg position;
+
+  const _TextContainer(this.id, this.text, this.position);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = primaryColor(context);
+    final background = WidgetStateProperty.resolveWith((states) {
+      if (states.isEmpty) {
+        return theme.withAlpha(150);
+      }
+      return theme.withAlpha(80);
+    });
+    return Positioned(
+      left: position.x,
+      top: position.y,
+      width: position.width,
+      height: position.height,
+      child: Tooltip(
+          message: text,
+          child: Button(
+            style: ButtonStyle(backgroundColor: background),
+            child: Container(),
+            onPressed: () {
+              debug("id: $id");
+            },
+          )),
+    );
+  }
+
+
+
+ }

@@ -1,5 +1,9 @@
+
+import 'dart:typed_data';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/src/bindings/bindings.dart';
+import 'package:nftools/utils/nf_widgets.dart';
 
 
 class TarPdfState {
@@ -28,9 +32,14 @@ class TarPdfState {
   // 是否可导出
   bool canExport = false;
 
-
   // order2
   List<String> pdfFiles = [];
+
+  // order3
+  bool isRefOcrLoading = false;
+  List<OcrDataMsg> refOcrDatas = [];
+  NFImagePainterController refImagePainterController = NFImagePainterController();
+
 
   void reset() {
     isLoading = false;
@@ -41,6 +50,10 @@ class TarPdfState {
     pdfDirTextController.clear();
     pdfPasswordTextController.clear();
     nameRuleTextController.clear();
+    isConfigLoading = false;
+    pdfFiles.clear();
+    refOcrDatas.clear();
+    refImagePainterController.reset();
 
     for (var element in regexTextControllers) {
       element.dispose();

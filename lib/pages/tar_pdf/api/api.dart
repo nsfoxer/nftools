@@ -13,6 +13,7 @@ const String _exportResult = "export_result_and_rename_files";
 const String _clearResult = "clear_result";
 const String _scanPdf = "scan_pdf";
 const String _getPdfCover = "get_pdf_cover";
+const String _setRefConfig = "set_ref_config";
 
 
 // start
@@ -61,4 +62,10 @@ Future<List<String>> listDirPdf(String pdfDir) async{
 Future<List<int>> getPdfCover(String pdfPath) async {
   final data = await sendRequest(_service, _getPdfCover, StringMsg(value: pdfPath));
   return DataMsg.bincodeDeserialize(data).value;
+}
+
+// 设置参考文件
+Future<List<OcrDataMsg>> setRefConfig(String pdfPath) async {
+  final data = await sendRequest(_service, _setRefConfig, StringMsg(value: pdfPath));
+  return RefOcrDatasMsg.bincodeDeserialize(data).data;
 }

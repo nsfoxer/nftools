@@ -607,6 +607,9 @@ class NFImagePainterController extends ChangeNotifier {
   /// 图片实际大小
   final ValueNotifier<Size> _imgSize = ValueNotifier(Size.zero);
 
+  /// 启用鼠标绘制
+  bool enableMouse = false;
+
   ImageProvider? _imageProvider;
 
   void _setDisplayRect(Rect rect, Size boardSize) {
@@ -632,6 +635,7 @@ class NFImagePainterController extends ChangeNotifier {
       {type = DrawType.none,
       double width = 0.0,
       color = Colors.transparent,
+      enableMouse = false,
       this.endType = _ignoreType,
       this.startType = _ignoreType}) {
     changeDrawType(type, width, color);
@@ -671,6 +675,9 @@ class NFImagePainterController extends ChangeNotifier {
   }
 
   void _handlePanStart(DragStartDetails details) {
+    if (!enableMouse) {
+      return;
+    }
     if (_points.value.last.type == DrawType.none ||
         !_displayRect.contains(details.localPosition)) {
       return;
@@ -680,6 +687,9 @@ class NFImagePainterController extends ChangeNotifier {
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
+    if (!enableMouse) {
+      return;
+    }
     if (_points.value.last.type == DrawType.none) {
       return;
     }
@@ -698,6 +708,9 @@ class NFImagePainterController extends ChangeNotifier {
   }
 
   void _handlePanEnd(DragEndDetails details) {
+    if (!enableMouse) {
+      return;
+    }
     if (_points.value.last.type == DrawType.none) {
       return;
     }
@@ -754,6 +767,22 @@ class NFImagePainterController extends ChangeNotifier {
     _points.value.last.points = [];
    _points.notifyListeners();
   }
+
+  /// 在图片上直接绘制
+  /// 此函数会直接计算偏移
+  void drawRectOnImg(Rect rect) {
+    changeDrawType(DrawType.rect, 3, Colors.red);
+    _points.value.last.points.add(rect.topLeft + _displayRect.topLeft);
+    _points.value.last.points.add(rect.bottomRight + _displayRect.topLeft);
+    _points.notifyListeners();
+  }
+
+  /// 获取图片实际展示坐标
+  Rect getImgRect() {
+    return _displayRect;
+  }
+
+
 }
 
 /// 绘制类型

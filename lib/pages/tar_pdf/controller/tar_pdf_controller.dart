@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -7,6 +8,7 @@ import 'package:nftools/pages/tar_pdf/state/tar_pdf_state.dart';
 import 'package:nftools/src/bindings/signals/signals.dart';
 import 'package:nftools/utils/extension.dart';
 import 'package:nftools/utils/log.dart';
+import 'package:nftools/utils/utils.dart';
 
 import '../api/api.dart' as $api;
 
@@ -77,8 +79,9 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
 
   void reset() async {
     state.reset();
-    await $api.clearResult();
+    // await $api.clearResult();
     await configReset();
+    state.reset();
     update();
   }
 
@@ -222,7 +225,49 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
   }
 
   // 选择参考文件
-  void order2SelectRef(String data) async {
+  void order2SelectRef(String pdfPath) async {
+    state.processEnum = state.processEnum.next() ?? state.processEnum;
+    _start();
+    final ImageProvider img;
+    try {
+      img = await order2Preview(pdfPath);
+      state.refImagePainterController.setImageProvider(img);
+    } finally {
+      _end();
+    }
+    
+    // 识别坐标
+    state.isRefOcrLoading = true;
+    update();
+    final data = await $api.setRefConfig(pdfPath);
+    state.isRefOcrLoading = false;
+    
+    // 设置OCR结果数据
+    state.refOcrDatas = await _convertOcrData(data, img);
+    debug("参考文件本地识别结果:$data");
 
+    update();
+  }
+
+
+
+  /// 转换文字识别结果为本地
+  Future<List<OcrDataMsg>> _convertOcrData(List<OcrDataMsg> data, ImageProvider img) async  {
+    final imgInfo = await getImageInfoFromProvider(img);
+    final ratio = state.refImagePainterController.getImgRect().width / imgInfo.image.width;
+    final picRect = state.refImagePainterController.getImgRect();
+    return data.map((e) {
+      return OcrDataMsg(id: e.id, text: e.text, location: _scaleLocation(e.location, ratio, Offset(picRect.left, picRect.top)));
+    }).toList();
+  }
+
+  // 缩放原始坐标为显示坐标
+  BoxPositionMsg _scaleLocation(BoxPositionMsg location, double ratio, Offset offset) {
+    return BoxPositionMsg(
+      x: location.x * ratio + offset.dx,
+      y: location.y * ratio + offset.dy,
+      width: location.width * ratio,
+      height: location.height * ratio,
+    );
   }
 }

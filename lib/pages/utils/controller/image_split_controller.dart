@@ -25,7 +25,7 @@ class ImageSplitController extends GetxController with GetxUpdateMixin {
   void onInit() {
     super.onInit();
     state = ImageSplitState(NFImagePainterController(
-        width: 5, endType: _listenDrawEnd, startType: _listenDrawStart));
+        width: 5, enableMouse: true, endType: _listenDrawEnd, startType: _listenDrawStart));
   }
 
   /// 从剪贴板中获取图像
