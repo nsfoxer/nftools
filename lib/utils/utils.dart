@@ -11,13 +11,6 @@ import 'package:nftools/utils/log.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
-Future<int> measureDelay(Future<void> Function() func) async {
-  var watch = Stopwatch()..start();
-  await func();
-  watch.stop();
-  return watch.elapsedMicroseconds;
-}
-
 // 确认弹出框
 Future<bool> confirmDialog(
     BuildContext context, String title, String content) async {
@@ -319,5 +312,81 @@ class NFImage {
         displayImgInfo: displayImgInfo,
         displayPath: compressedPath,
         originalPath: originalPath);
+  }
+}
+
+/// 计时结果封装类
+class NFTimingResult<T> {
+  /// 函数执行时间（微秒）
+  final int elapsedMicroseconds;
+
+  /// 函数执行结果（成功时不为null）
+  final T? result;
+
+  /// 函数执行过程中抛出的异常（失败时不为null）
+  final Object? error;
+
+  /// 是否执行成功
+  bool get isSuccess => error == null;
+
+  NFTimingResult({
+    required this.elapsedMicroseconds,
+    this.result,
+    this.error,
+  });
+
+  @override
+  String toString() {
+    final timeStr = switch (elapsedMicroseconds) {
+      > 1000000 => '${(elapsedMicroseconds / 1000000).toStringAsFixed(3)}s',
+      > 1000 => '${(elapsedMicroseconds / 1000).toStringAsFixed(3)}ms',
+      _ => '$elapsedMicrosecondsμs',
+    };
+
+    if (isSuccess) {
+      return '执行成功，耗时 $timeStr，结果: ${result ?? "无返回值"}';
+    } else {
+      return '执行失败，耗时 $timeStr，错误: $error';
+    }
+  }
+}
+
+/// 测量函数执行时间的通用工具
+/// [function] 要测试的函数
+/// [args] 函数参数列表
+/// 返回包含执行时间和结果的TimingResult对象
+Future<NFTimingResult<T>> measureFunctionTime<T>(
+    Function function, [
+      List<dynamic> args = const [],
+    ]) async {
+  final stopwatch = Stopwatch()..start();
+
+  try {
+    // 执行函数并传递参数
+    final result = Function.apply(function, args);
+
+    // 处理异步函数
+    if (result is Future) {
+      final asyncResult = await result as T;
+      stopwatch.stop();
+      return NFTimingResult<T>(
+        elapsedMicroseconds: stopwatch.elapsedMicroseconds,
+        result: asyncResult,
+      );
+    }
+    // 处理同步函数
+    else {
+      stopwatch.stop();
+      return NFTimingResult<T>(
+        elapsedMicroseconds: stopwatch.elapsedMicroseconds,
+        result: result as T,
+      );
+    }
+  } catch (e) {
+    stopwatch.stop();
+    return NFTimingResult<T>(
+      elapsedMicroseconds: stopwatch.elapsedMicroseconds,
+      error: e,
+    );
   }
 }

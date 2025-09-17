@@ -123,7 +123,7 @@ class TarPdfPage extends StatelessWidget {
           NFHeader(flex: 8, child: Text("文件名称", style: typography.bodyStrong)),
           NFHeader(flex: 2, child: Text("操作", style: typography.bodyStrong)),
         ],
-        source: _Order2DataSource(logic.state.pdfFiles, logic, typography));
+        source: _Order2DataSource(logic.state.pdfFiles, logic, context));
   }
 
   Widget _buildOrder5(TarPdfController logic, context) {
@@ -464,22 +464,23 @@ class _MultiText extends StatelessWidget {
 class _Order2DataSource extends NFDataTableSource {
   final List<String> data;
   final TarPdfController logic;
-  final Typography typography;
-  _Order2DataSource(this.data, this.logic, this.typography);
+  final BuildContext context;
+  _Order2DataSource(this.data, this.logic, this.context) {
+    _typography = FluentTheme.of(context).typography;
+  }
+  late Typography _typography;
 
   @override
   NFRow getRow(BuildContext context, int index) {
     final pdf = path.basename(data[index]);
     return NFRow(children: [
-      Text(pdf, style: typography.caption,),
+      Text(pdf, style: _typography.caption,),
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
         spacing: NFLayout.v2,
         children: [
-          Button(child: Text("预览", style: typography.caption,), onPressed: () {
-            logic.order2Preview(data[index]);
-          }),
-          FilledButton(child: Text("选中", style: typography.caption), onPressed: () {
+         _PreviewButton(data[index], logic),
+          FilledButton(child: Text("选中", style: _typography.caption), onPressed: () {
             logic.order2SelectRef(data[index]);
           }),
         ]),
@@ -491,4 +492,64 @@ class _Order2DataSource extends NFDataTableSource {
 
   @override
   int? get itemCount => data.length;
+}
+
+// 预览按钮
+class _PreviewButton extends StatelessWidget {
+  final String pdfPath;
+  final TarPdfController logic;
+
+  final Rx<bool> _isLoading = false.obs;
+
+  _PreviewButton(this.pdfPath, this.logic);
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = FluentTheme.of(context).typography;
+    return Button(
+        child: Obx(() => _isLoading.value ? SizedBox(height: 15, width: 15, child: ProgressRing(strokeWidth: 2)) : Text("预览", style: typography.caption)),
+        onPressed: () async {
+          _isLoading.value = true;
+          final timeResult =
+              await measureFunctionTime(logic.order2Preview, [pdfPath]);
+          debug("time: $timeResult");
+          _isLoading.value = false;
+          final img = timeResult.result;
+          if (context.mounted) {
+            _showPdfCover(context, img);
+          } else {
+            warn("context is not mounted");
+          }
+        });
+  }
+
+  static void _showPdfCover(BuildContext context, ImageProvider imageProvider) async {
+    await showDialog(
+      barrierDismissible: true,
+      context: context,
+      builder: (context) {
+        return Column(
+          spacing: NFLayout.v2,
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            InteractiveViewer(child:
+            Image(
+              image: imageProvider,
+              fit: BoxFit.contain,
+              width: MediaQuery.of(context).size.width * 0.9,
+              height: MediaQuery.of(context).size.height * 0.8,
+            )),
+            IconButton(
+              icon: const Icon(FluentIcons.chrome_close, size: 16),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 }

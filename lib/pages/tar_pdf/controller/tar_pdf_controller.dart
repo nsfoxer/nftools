@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
@@ -206,19 +208,17 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
 
     try {
       state.pdfFiles = await $api.listDirPdf(state.pdfDirTextController.text);
-    } catch (e) {
-      error(e.toString());
+      state.processEnum = state.processEnum.next() ?? state.processEnum;
+    } finally {
       _end();
-      return;
     }
-
-    state.processEnum = state.processEnum.next() ?? state.processEnum;
-    _end();
   }
 
 
-  void order2Preview(String data) async{
-
+  // 获取pdf封面
+  Future<ImageProvider> order2Preview(String pdfPath) async {
+    final imgBuf = await $api.getPdfCover(pdfPath);
+    return MemoryImage(Uint8List.fromList(imgBuf));
   }
 
   void order2SelectRef(String data) async {
