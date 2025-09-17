@@ -24,7 +24,6 @@ Future<bool> confirmDialog(
           child: const Text('确认'),
           onPressed: () {
             context.pop(true);
-            // Delete file here
           },
         ),
         Button(

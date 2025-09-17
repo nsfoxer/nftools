@@ -221,6 +221,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     return MemoryImage(Uint8List.fromList(imgBuf));
   }
 
+  // 选择参考文件
   void order2SelectRef(String data) async {
 
   }

@@ -480,8 +480,11 @@ class _Order2DataSource extends NFDataTableSource {
         spacing: NFLayout.v2,
         children: [
          _PreviewButton(data[index], logic),
-          FilledButton(child: Text("选中", style: _typography.caption), onPressed: () {
-            logic.order2SelectRef(data[index]);
+          FilledButton(child: Text("选中", style: _typography.caption), onPressed: () async {
+            final result = await confirmDialog(context, "确认选中", "确认选择【$pdf】为参考吗?");
+            if (result) {
+              logic.order2SelectRef(data[index]);
+            }
           }),
         ]),
     ]);
