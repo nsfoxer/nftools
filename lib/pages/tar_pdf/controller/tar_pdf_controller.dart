@@ -270,4 +270,14 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
       height: location.height * ratio,
     );
   }
+
+  // 添加或删除标签
+  void selectTag(String string, bool isSelected) {
+    if (isSelected) {
+      state.selectedTags.add(string);
+    } else {
+      state.selectedTags.remove(string);
+    }
+    update();
+  }
 }

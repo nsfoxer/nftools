@@ -40,6 +40,9 @@ class TarPdfState {
   List<OcrDataMsg> refOcrDatas = [];
   NFImagePainterController refImagePainterController = NFImagePainterController();
 
+  // order3 选中标签框
+  Set<String> selectedTags = {};
+
 
   void reset() {
     isLoading = false;

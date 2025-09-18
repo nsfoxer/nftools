@@ -30,12 +30,14 @@ class TarPdfPage extends StatelessWidget {
                       onPressed: () => _showSetting(context),
                     ),
                     CommandBarButton(
-                      icon: const Icon(FluentIcons.next),
-                      label: Text(logic.state.processEnum == DisplayProcessEnum.order5 ? '导出结果' : '下一步'),
-                      onPressed: () {
-                        logic.next();
-                      }
-                    ),
+                        icon: const Icon(FluentIcons.next),
+                        label: Text(
+                            logic.state.processEnum == DisplayProcessEnum.order5
+                                ? '导出结果'
+                                : '下一步'),
+                        onPressed: () {
+                          logic.next();
+                        }),
                     CommandBarButton(
                       icon: const Icon(FluentIcons.reset),
                       label: const Text('重置'),
@@ -47,10 +49,10 @@ class TarPdfPage extends StatelessWidget {
       content: GetBuilder<TarPdfController>(builder: (logic) {
         List<BreadcrumbItem> breadItems = [];
         for (final process in DisplayProcessEnum.values) {
-            breadItems.add(BreadcrumbItem(
-             label: Text(process.desc, style: typography.bodyStrong),
-              value: process.value,
-            ));
+          breadItems.add(BreadcrumbItem(
+            label: Text(process.desc, style: typography.bodyStrong),
+            value: process.value,
+          ));
           if (process == logic.state.processEnum) {
             break;
           }
@@ -60,15 +62,15 @@ class TarPdfPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             BreadcrumbBar(items: breadItems),
-            Expanded(child:
-              _buildContent(logic, context),
+            Expanded(
+              child: _buildContent(logic, context),
             ),
           ],
         );
       }),
     );
   }
-  
+
   Widget _buildContent(TarPdfController logic, BuildContext context) {
     switch (logic.state.processEnum) {
       case DisplayProcessEnum.order1:
@@ -78,41 +80,42 @@ class TarPdfPage extends StatelessWidget {
       case DisplayProcessEnum.order3:
         return _buildOrder3(logic, context);
       case DisplayProcessEnum.order4:
-      // TODO: Handle this case.
+        // TODO: Handle this case.
         throw UnimplementedError();
       case DisplayProcessEnum.order5:
-      // TODO: Handle this case.
+        // TODO: Handle this case.
         throw UnimplementedError();
     }
   }
 
   Widget _buildOrder1(TarPdfController logic) {
-    return NFLoadingWidgets(loading: logic.state.isLoading, child:  Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(flex: 1, child: Container()),
-        Expanded(
-            flex: 3,
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: NFLayout.v0,
-                children: [
-                  InfoLabel(
-                    label: "请选择pdf存储路径",
-                    child: TextBox(
-                      maxLines: 5,
-                      placeholder: "请选择pdf存储路径",
-                      readOnly: true,
-                      onTap: logic.selectPdfDir,
-                      controller: logic.state.pdfDirTextController,
-                    ),
-                  ),
-                ])),
-        Expanded(flex: 1, child: Container()),
-      ],
-    ));
+    return NFLoadingWidgets(
+        loading: logic.state.isLoading,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(flex: 1, child: Container()),
+            Expanded(
+                flex: 3,
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: NFLayout.v0,
+                    children: [
+                      InfoLabel(
+                        label: "请选择pdf存储路径",
+                        child: TextBox(
+                          maxLines: 5,
+                          placeholder: "请选择pdf存储路径",
+                          readOnly: true,
+                          onTap: logic.selectPdfDir,
+                          controller: logic.state.pdfDirTextController,
+                        ),
+                      ),
+                    ])),
+            Expanded(flex: 1, child: Container()),
+          ],
+        ));
   }
-
 
   Widget _buildOrder2(TarPdfController logic, BuildContext context) {
     final typography = FluentTheme.of(context).typography;
@@ -129,60 +132,93 @@ class TarPdfPage extends StatelessWidget {
   Widget _buildOrder3(TarPdfController logic, BuildContext context) {
     final typography = FluentTheme.of(context).typography;
     List<Widget> textRects = logic.state.refOcrDatas
-        .map((x) => _TextContainer(x.id, x.text, x.location))
+        .map((x) => _TextContainer(x.id.toString(), x.text, x.location, (id) {
+              logic.selectTag(id, !logic.state.selectedTags.contains(id));
+            }))
         .toList();
-
     return Row(
       children: [
         Expanded(
             flex: 8,
             child: NFLoadingWidgets(
-            loading: logic.state.isLoading,
-            child: InteractiveViewer(
-                child: Stack(
-              children: [
-                Stack(children: [
-                  NFImagePainterPage(
-                      controller: logic.state.refImagePainterController),
-                  ...textRects,
-                ])
-              ],
-            )))),
+                loading: logic.state.isLoading,
+                child: InteractiveViewer(
+                    child: Stack(
+                  children: [
+                    Stack(children: [
+                      NFImagePainterPage(
+                          controller: logic.state.refImagePainterController),
+                      ...textRects,
+                    ])
+                  ],
+                )))),
         Divider(direction: Axis.vertical),
-        Expanded(flex: 3, child: Column(
-          children: [
-            Expanded(flex: 1, child:
-               ListView.builder(
-                itemCount: logic.state.refOcrDatas.length + 1,
-                 itemBuilder: (ctx, index) {
-                    if (index == 0) {
-                      return _Order3DataDisplay(id: "标识", text: "文本", isTitle: true);
-                    }
-                    final data = logic.state.refOcrDatas[index - 1];
-                    return _Order3DataDisplay(
-                      id: data.id.toString(),
-                      text: data.text,
-                      isTitle: false
-                    );
-                  },
-              ),
-            ),
-            Divider(),
-            Expanded(flex: 1, child: Column(
+        Expanded(
+            flex: 3,
+            child: Column(
               children: [
-                Text("已选中标识", style: typography.bodyStrong),
+                Expanded(
+                  flex: 1,
+                  child: ListView.builder(
+                    itemCount: logic.state.refOcrDatas.length + 1,
+                    itemBuilder: (ctx, index) {
+                      if (index == 0) {
+                        return _Order3DataDisplay(
+                            id: "标识",
+                            text: "文本",
+                            isTitle: true,
+                            isSelected: false,
+                            onSelectionChange: null);
+                      }
+                      final data = logic.state.refOcrDatas[index - 1];
+                      return _Order3DataDisplay(
+                        id: data.id.toString(),
+                        text: data.text,
+                        isTitle: false,
+                        isSelected: logic.state.selectedTags
+                            .contains(data.id.toString()),
+                        onSelectionChange: (isSelected) {
+                          logic.selectTag(data.id.toString(), isSelected);
+                        },
+                      );
+                    },
+                  ),
+                ),
+                Divider(),
+                Expanded(
+                    flex: 1,
+                    child: SizedBox(
+                        width: double.infinity,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Center(
+                                  child: Text("已选中标识",
+                                      style: typography.bodyStrong)),
+                              Wrap(
+                                spacing: NFLayout.v3,
+                                children: logic.state.selectedTags
+                                    .map((tag) => NFCardContent(
+                                          noMargin: true,
+                                          child: Text(tag),
+                                        ))
+                                    .toList(),
+                              )
+                            ],
+                          ),
+                        ))),
+                Divider(),
+                Expanded(
+                  flex: 1,
+                  child: Container(),
+                ),
               ],
-            ),),
-            Divider(),
-            Expanded(flex: 1, child: Container(),),
-          ],
-        )),
+            )),
         Divider(direction: Axis.vertical),
       ],
     );
   }
-
-
 
   Widget _buildOrder5(TarPdfController logic, context) {
     return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
@@ -200,7 +236,8 @@ class TarPdfPage extends StatelessWidget {
                 SizedBox(
                     width: double.infinity,
                     child: ProgressBar(
-                        backgroundColor: isDark(context) ? NFColor.inactiveBackground : null,
+                        backgroundColor:
+                            isDark(context) ? NFColor.inactiveBackground : null,
                         value: logic.state.sum == 0
                             ? 0
                             : logic.state.current / logic.state.sum * 100)),
@@ -223,88 +260,91 @@ class TarPdfPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         spacing: NFLayout.v1,
         children: [
-      Text("处理已完成, 共发现$count个pdf文件,成功处理$success个,失败$fail个", style: typography.caption?.copyWith(
-        decoration: TextDecoration.underline,
-      ),),
-      Expanded(
-        child: NFTable(
-          minWidth: 800,
-          empty: Center(child: Text("empty")),
-          prototypeItem: NFRow(children: [
-            Text(
-              "Some",
-              maxLines: 2,
-            )
-          ]),
-          header: [
-            NFHeader(
-                flex: 1,
-                child: Tooltip(
-                    message: "序号(index)",
-                    child: Text(
-                      "序号",
-                      maxLines: 1,
-                      style: typography.bodyStrong,
-                    ))),
-            NFHeader(
-                flex: 2,
-                child: Tooltip(
-                    message: "原始文件名(file_name)",
-                    child: Text(
-                      "原始文件",
-                      maxLines: 1,
-                      style: typography.bodyStrong,
-                    ))),
-            NFHeader(
-                flex: 3,
-                child: Tooltip(
-                    message: "项目标题(title)",
-                    child: Text(
-                      "项目标题",
-                      maxLines: 1,
-                      style: typography.bodyStrong,
-                    ))),
-            NFHeader(
-                flex: 3,
-                child: Tooltip(
-                    message: "项目编号(no)",
-                    child: Text(
-                      "项目编号",
-                      maxLines: 1,
-                      style: typography.bodyStrong,
-                    ))),
-            NFHeader(
-                flex: 3,
-                child: Tooltip(
-                    message: "企业名称(company_name)",
-                    child: Text(
-                      "企业名称",
-                      maxLines: 1,
-                      style: typography.bodyStrong,
-                    ))),
-            NFHeader(
-                flex: 1,
-                child: Tooltip(
-                    message: "页数(pages)",
-                    child: Text(
-                      "页数",
-                      maxLines: 1,
-                      style: typography.bodyStrong,
-                    ))),
-            NFHeader(
-                flex: 3,
-                child: Tooltip(
-                    message: "错误信息",
-                    child: Text(
-                      "错误信息",
-                      maxLines: 1,
-                      style: typography.bodyStrong,
-                    ))),
-          ],
-          source: _DataSource(logic.state.ocrResult, logic),
-        ),
-      ),
-    ]);
+          Text(
+            "处理已完成, 共发现$count个pdf文件,成功处理$success个,失败$fail个",
+            style: typography.caption?.copyWith(
+              decoration: TextDecoration.underline,
+            ),
+          ),
+          Expanded(
+            child: NFTable(
+              minWidth: 800,
+              empty: Center(child: Text("empty")),
+              prototypeItem: NFRow(children: [
+                Text(
+                  "Some",
+                  maxLines: 2,
+                )
+              ]),
+              header: [
+                NFHeader(
+                    flex: 1,
+                    child: Tooltip(
+                        message: "序号(index)",
+                        child: Text(
+                          "序号",
+                          maxLines: 1,
+                          style: typography.bodyStrong,
+                        ))),
+                NFHeader(
+                    flex: 2,
+                    child: Tooltip(
+                        message: "原始文件名(file_name)",
+                        child: Text(
+                          "原始文件",
+                          maxLines: 1,
+                          style: typography.bodyStrong,
+                        ))),
+                NFHeader(
+                    flex: 3,
+                    child: Tooltip(
+                        message: "项目标题(title)",
+                        child: Text(
+                          "项目标题",
+                          maxLines: 1,
+                          style: typography.bodyStrong,
+                        ))),
+                NFHeader(
+                    flex: 3,
+                    child: Tooltip(
+                        message: "项目编号(no)",
+                        child: Text(
+                          "项目编号",
+                          maxLines: 1,
+                          style: typography.bodyStrong,
+                        ))),
+                NFHeader(
+                    flex: 3,
+                    child: Tooltip(
+                        message: "企业名称(company_name)",
+                        child: Text(
+                          "企业名称",
+                          maxLines: 1,
+                          style: typography.bodyStrong,
+                        ))),
+                NFHeader(
+                    flex: 1,
+                    child: Tooltip(
+                        message: "页数(pages)",
+                        child: Text(
+                          "页数",
+                          maxLines: 1,
+                          style: typography.bodyStrong,
+                        ))),
+                NFHeader(
+                    flex: 3,
+                    child: Tooltip(
+                        message: "错误信息",
+                        child: Text(
+                          "错误信息",
+                          maxLines: 1,
+                          style: typography.bodyStrong,
+                        ))),
+              ],
+              source: _DataSource(logic.state.ocrResult, logic),
+            ),
+          ),
+        ]);
   }
 
   void _showSetting(BuildContext context) async {
@@ -523,28 +563,36 @@ class _Order2DataSource extends NFDataTableSource {
   final List<String> data;
   final TarPdfController logic;
   final BuildContext context;
+
   _Order2DataSource(this.data, this.logic, this.context) {
     _typography = FluentTheme.of(context).typography;
   }
+
   late Typography _typography;
 
   @override
   NFRow getRow(BuildContext context, int index) {
     final pdf = path.basename(data[index]);
     return NFRow(children: [
-      Text(pdf, style: _typography.caption,),
+      Text(
+        pdf,
+        style: _typography.caption,
+      ),
       Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        spacing: NFLayout.v2,
-        children: [
-         _PreviewButton(data[index], logic),
-          FilledButton(child: Text("选中", style: _typography.caption), onPressed: () async {
-            final result = await confirmDialog(context, "确认选中", "确认选择【$pdf】为参考吗?");
-            if (result) {
-              logic.order2SelectRef(data[index]);
-            }
-          }),
-        ]),
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: NFLayout.v2,
+          children: [
+            _PreviewButton(data[index], logic),
+            FilledButton(
+                child: Text("选中", style: _typography.caption),
+                onPressed: () async {
+                  final result =
+                      await confirmDialog(context, "确认选中", "确认选择【$pdf】为参考吗?");
+                  if (result) {
+                    logic.order2SelectRef(data[index]);
+                  }
+                }),
+          ]),
     ]);
   }
 
@@ -568,7 +616,10 @@ class _PreviewButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final typography = FluentTheme.of(context).typography;
     return Button(
-        child: Obx(() => _isLoading.value ? SizedBox(height: 15, width: 15, child: ProgressRing(strokeWidth: 2)) : Text("预览", style: typography.caption)),
+        child: Obx(() => _isLoading.value
+            ? SizedBox(
+                height: 15, width: 15, child: ProgressRing(strokeWidth: 2))
+            : Text("预览", style: typography.caption)),
         onPressed: () async {
           _isLoading.value = true;
           final timeResult =
@@ -584,7 +635,8 @@ class _PreviewButton extends StatelessWidget {
         });
   }
 
-  static void _showPdfCover(BuildContext context, ImageProvider imageProvider) async {
+  static void _showPdfCover(
+      BuildContext context, ImageProvider imageProvider) async {
     await showDialog(
       barrierDismissible: true,
       context: context,
@@ -594,8 +646,8 @@ class _PreviewButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            InteractiveViewer(child:
-            Image(
+            InteractiveViewer(
+                child: Image(
               image: imageProvider,
               fit: BoxFit.contain,
               width: MediaQuery.of(context).size.width * 0.9,
@@ -612,16 +664,15 @@ class _PreviewButton extends StatelessWidget {
       },
     );
   }
-
 }
 
-
 class _TextContainer extends StatelessWidget {
-  final int id;
+  final String id;
   final String text;
   final BoxPositionMsg position;
+  final Function(String) onPress;
 
-  const _TextContainer(this.id, this.text, this.position);
+  const _TextContainer(this.id, this.text, this.position, this.onPress);
 
   @override
   Widget build(BuildContext context) {
@@ -643,20 +694,27 @@ class _TextContainer extends StatelessWidget {
             style: ButtonStyle(backgroundColor: background),
             child: Container(),
             onPressed: () {
-              debug("id: $id");
+              onPress(id);
             },
           )),
     );
   }
- }
+}
 
 class _Order3DataDisplay extends StatelessWidget {
   final String id;
   final String text;
   final bool isTitle;
+  final bool isSelected;
+  final Function(bool)? onSelectionChange;
 
   const _Order3DataDisplay(
-      {super.key, required this.id, required this.text, required this.isTitle});
+      {super.key,
+      required this.id,
+      required this.text,
+      required this.isTitle,
+      required this.isSelected,
+      required this.onSelectionChange});
 
   @override
   Widget build(BuildContext context) {
@@ -677,25 +735,10 @@ class _Order3DataDisplay extends StatelessWidget {
       ),
       margin: EdgeInsets.all(0),
       contentPadding: EdgeInsets.all(0),
-      onSelectionChange: isTitle ? null : (selected) {},
-      selectionMode: isTitle ? ListTileSelectionMode.none : ListTileSelectionMode.multiple,
+      onSelectionChange: isTitle ? null : onSelectionChange,
+      selectionMode:
+          isTitle ? ListTileSelectionMode.none : ListTileSelectionMode.multiple,
+      selected: isSelected,
     );
-  }
-}
-
-
-class _Order3Label extends StatelessWidget {
-  final String label;
-
-  const _Order3Label(this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    Typography typography = FluentTheme.of(context).typography;
-    return Padding(
-        padding: EdgeInsetsGeometry.only(bottom: NFLayout.v4),
-        child: Text(
-          label,
-        ));
   }
 }
