@@ -28,7 +28,7 @@ void initMsg() {
     }
     if (rsp.msg.isNotEmpty) {
       // 错误：处理错误
-      error(rsp.msg);
+      // error(rsp.msg);
       complete.completeError(rsp.msg);
     } else {
       complete.complete(data.binary);
@@ -96,7 +96,7 @@ void _handleStream(RustSignalPack<BaseResponse> data) {
   }
   if (rsp.msg.isNotEmpty) {
     // 错误：处理错误
-    error(rsp.msg);
+    // error(rsp.msg);
     controller.addError(rsp.msg);
   } else if (data.binary.isNotEmpty) {
     controller.add(data.binary);

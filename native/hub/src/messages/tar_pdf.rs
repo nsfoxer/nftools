@@ -39,7 +39,7 @@ pub struct RefOcrDatasMsg {
 
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]
 pub struct OcrDataMsg {
-    pub id: u32,
+    pub id: String,
     pub text: String,
     pub location: BoxPositionMsg,
 }

@@ -249,8 +249,6 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     update();
   }
 
-
-
   /// 转换文字识别结果为本地
   Future<List<OcrDataMsg>> _convertOcrData(List<OcrDataMsg> data, ImageProvider img) async  {
     final imgInfo = await getImageInfoFromProvider(img);
@@ -272,12 +270,26 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
   }
 
   // 添加或删除标签
-  void selectTag(String string, bool isSelected) {
+  void selectTag(String string, bool isSelected) async {
     if (isSelected) {
       state.selectedTags.add(string);
     } else {
       state.selectedTags.remove(string);
     }
     update();
+    await $api.setRefConfigTags(state.selectedTags.toList());
+    tryGetRefTemplateResult();
+  }
+
+  Future<String?> tryGetRefTemplateResult() async {
+    final template = state.refTemplateController.text;
+    try {
+      final result = await $api.setRefConfigTemplate(template);
+      state.refTemplateResultValue = result;
+      update();
+    } catch (e) {
+      return e.toString();
+    }
+    return null;
   }
 }

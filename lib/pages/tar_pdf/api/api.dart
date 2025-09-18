@@ -14,6 +14,8 @@ const String _clearResult = "clear_result";
 const String _scanPdf = "scan_pdf";
 const String _getPdfCover = "get_pdf_cover";
 const String _setRefConfig = "set_ref_config";
+const String _setRefConfigTags = "set_ref_config_tags";
+const String _setRefConfigTemplate = "set_ref_config_template";
 
 
 // start
@@ -68,4 +70,15 @@ Future<List<int>> getPdfCover(String pdfPath) async {
 Future<List<OcrDataMsg>> setRefConfig(String pdfPath) async {
   final data = await sendRequest(_service, _setRefConfig, StringMsg(value: pdfPath));
   return RefOcrDatasMsg.bincodeDeserialize(data).data;
+}
+
+// 设置参考文件标签
+Future<void> setRefConfigTags(List<String> tags) async{
+  await sendRequest(_service, _setRefConfigTags, VecStringMsg(values: tags));
+}
+
+// 设置参考文件模板
+Future<String> setRefConfigTemplate(String template) async{
+  final data = await sendRequest(_service, _setRefConfigTemplate, StringMsg(value: template));
+  return StringMsg.bincodeDeserialize(data).value;
 }

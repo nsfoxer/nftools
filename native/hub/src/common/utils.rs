@@ -87,3 +87,19 @@ pub fn generate_path(suffix: &str) -> Result<PathBuf> {
     path.push(format!("{}.{}", now.as_millis(), suffix));
     Ok(path)
 }
+
+/// 将索引转换为类似Excel列名的字符串（a, b, ..., z, aa, ab...）
+pub fn index_to_string(index: usize) -> String {
+    let mut n = index + 1; // 转换为1-based（1对应a，2对应b...）
+    let mut bytes = Vec::new();
+
+    while n > 0 {
+        n -= 1; // 转为0-based偏移量（0对应a，25对应z）
+        let remainder = n % 26; // 取余得到当前字符的偏移量（0-25）
+        bytes.push(b'a' + remainder as u8); // 转换为字符的ASCII码（a的ASCII是97）
+        n /= 26; // 处理更高位
+    }
+
+    bytes.reverse(); // 反转得到正确顺序
+    String::from_utf8(bytes).unwrap() // 转换为字符串
+}

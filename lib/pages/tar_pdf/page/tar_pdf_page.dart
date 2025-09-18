@@ -132,7 +132,7 @@ class TarPdfPage extends StatelessWidget {
   Widget _buildOrder3(TarPdfController logic, BuildContext context) {
     final typography = FluentTheme.of(context).typography;
     List<Widget> textRects = logic.state.refOcrDatas
-        .map((x) => _TextContainer(x.id.toString(), x.text, x.location, (id) {
+        .map((x) => _TextContainer(x.id, x.text, x.location, (id) {
               logic.selectTag(id, !logic.state.selectedTags.contains(id));
             }))
         .toList();
@@ -172,13 +172,13 @@ class TarPdfPage extends StatelessWidget {
                       }
                       final data = logic.state.refOcrDatas[index - 1];
                       return _Order3DataDisplay(
-                        id: data.id.toString(),
+                        id: data.id,
                         text: data.text,
                         isTitle: false,
                         isSelected: logic.state.selectedTags
-                            .contains(data.id.toString()),
+                            .contains(data.id),
                         onSelectionChange: (isSelected) {
-                          logic.selectTag(data.id.toString(), isSelected);
+                          logic.selectTag(data.id, isSelected);
                         },
                       );
                     },
@@ -227,9 +227,9 @@ class TarPdfPage extends StatelessWidget {
                                   label: "请输入命名表达式:",
                                   child: TextBox(
                                       controller:
-                                          logic.state.renameTextController,
+                                          logic.state.refTemplateController,
                                     onChanged: (value) {
-
+                                      logic.tryGetRefTemplateResult();
                                     },
                                   ))),
                           Expanded(
@@ -238,7 +238,7 @@ class TarPdfPage extends StatelessWidget {
                               spacing: NFLayout.v4,
                               children: [
                                 Text("表达式执行结果:", style: typography.caption),
-                                Text(logic.state.refRenameValue,
+                                Text(logic.state.refTemplateResultValue,
                                     style: typography.caption)
                               ],
                             ),

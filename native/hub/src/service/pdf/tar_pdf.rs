@@ -2,7 +2,7 @@ use crate::common::global_data::GlobalData;
 use crate::messages::common::{DataMsg, StringMsg, VecStringMsg};
 use crate::messages::tar_pdf::{OcrConfigMsg, OcrDataMsg, RefOcrDatasMsg, TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
 use crate::service::service::{Service, StreamService};
-use crate::{async_func_nono, async_func_notype, async_func_typetype, async_stream_func_typeno, func_end, func_nono, func_notype, func_typeno};
+use crate::{async_func_nono, async_func_notype, async_func_typetype, async_stream_func_typeno, func_end, func_nono, func_notype, func_typeno, func_typetype};
 use anyhow::{anyhow, Result};
 use futures_util::StreamExt;
 use log::debug;
@@ -16,10 +16,12 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
+use ahash::{AHashMap, AHashSet};
 use image::DynamicImage;
 use strfmt::strfmt;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::wrappers::ReadDirStream;
+use crate::common::utils::index_to_string;
 use crate::service::pdf::ocr::{OcrData, OcrResult};
 
 #[derive(Debug)]
@@ -140,10 +142,15 @@ impl Into<OcrConfigMsg> for OcrConfig {
 
 struct RefData {
     image: DynamicImage,
-    image_ocr: Vec<OcrData>,
+    // k: tag v: ocr结果
+    image_ocr: AHashMap<String, OcrData>,
 }
 
+#[derive(Debug, Default)]
 struct ExportConfig {
+    // 要使用的所有tag
+    tags: AHashSet<String>,
+    // 模板表达式
     template: String,
 }
 
@@ -154,9 +161,9 @@ pub struct TarPdfService {
     // ocr识别配置
     config: OcrConfig,
     // 参考数据
-    ref_data:  Option<RefData>,
+    ref_data: Option<RefData>,
     // 导出配置
-    export_config: Option<ExportConfig>,
+    ref_config: ExportConfig,
 
 }
 
@@ -178,8 +185,9 @@ impl StreamService for TarPdfService {
 #[async_trait::async_trait]
 impl Service for TarPdfService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        func_typeno!(self, func, req_data, set_config, OcrConfigMsg);
+        func_typeno!(self, func, req_data, set_config, OcrConfigMsg, set_ref_config_tags, VecStringMsg);
         func_notype!(self, func, get_config);
+        func_typetype!(self, func, req_data, set_ref_config_template, StringMsg);
         async_func_nono!(self, func, ocr_check);
         // async_func_notype!(self, func, export_result_and_rename_files);
         async_func_typetype!(self, func, req_data, scan_pdf, StringMsg, get_pdf_cover, StringMsg, set_ref_config, StringMsg);
@@ -414,25 +422,53 @@ impl TarPdfService {
         let (img, _pages, ocr_result) = self.ocr_pdf(pdf, &self.config.ocr_url()).await?;
         let data = ocr_result.result.into_ocr_data();
 
-
         // 3. 转换数据
         let result = RefOcrDatasMsg {
             data: data.iter().enumerate().map(|(i, x)| {
                 OcrDataMsg {
-                    id: i as u32,
+                    id: index_to_string(i),
                     text: x.text.clone(),
                     location: x.location.clone().into(),
                 }
             }).collect()
         };
 
+        let data: AHashMap<String, OcrData> = data.into_iter().enumerate().map(|(i, x)| {
+            (index_to_string(i), x)
+        }).collect();
         self.ref_data = Some(RefData {
             image: img,
             image_ocr: data,
         });
         Ok(result)
+    }
 
+    /// 设置参考tags
+    fn set_ref_config_tags(&mut self, tags: VecStringMsg) -> Result<()> {
+        self.ref_config.tags.clear();
+        for data in tags.values {
+            self.ref_config.tags.insert(data);
+        }
+        Ok(())
+    }
 
+    /// 设置模板
+    fn set_ref_config_template(&mut self, template: StringMsg) -> Result<StringMsg> {
+        if self.ref_config.tags.is_empty() {
+            return Err(anyhow!("请先设置参考tags"));
+        }
+        if self.ref_data.is_none() {
+            return Err(anyhow!("请先设置参考文件"));
+        }
+
+        let mut data_map = HashMap::new();
+        for (tag, data) in &self.ref_data.as_ref().unwrap().image_ocr {
+            data_map.insert(tag.clone(), data.text.as_str());
+        }
+        let result =  strfmt(&template.value, &data_map)?;
+        Ok(StringMsg{
+            value: result,
+        })
     }
 }
 
@@ -452,7 +488,7 @@ impl TarPdfService {
             global_data,
             config,
             ref_data: None,
-            export_config: None,
+            ref_config: Default::default(),
         }
     }
 
