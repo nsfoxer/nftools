@@ -189,29 +189,62 @@ class TarPdfPage extends StatelessWidget {
                     flex: 1,
                     child: SizedBox(
                         width: double.infinity,
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Center(
-                                  child: Text("已选中标识",
-                                      style: typography.bodyStrong)),
-                              Wrap(
-                                spacing: NFLayout.v3,
-                                children: logic.state.selectedTags
-                                    .map((tag) => NFCardContent(
-                                          noMargin: true,
-                                          child: Text(tag),
-                                        ))
-                                    .toList(),
-                              )
-                            ],
-                          ),
-                        ))),
+                        child: Padding(
+                            padding: EdgeInsetsGeometry.all(NFLayout.v3),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Center(
+                                      child: Text("已选中标识",
+                                          style: typography.bodyStrong)),
+                                  Wrap(
+                                    spacing: NFLayout.v3,
+                                    runSpacing: NFLayout.v3,
+                                    children: logic.state.selectedTags
+                                        .map((tag) => NFCardContent(
+                                              noMargin: true,
+                                              child: Text(tag),
+                                            ))
+                                        .toList(),
+                                  )
+                                ],
+                              ),
+                            )))),
                 Divider(),
                 Expanded(
                   flex: 1,
-                  child: Container(),
+                  child: Padding(
+                      padding: EdgeInsetsGeometry.all(NFLayout.v3),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        spacing: NFLayout.v3,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                              flex: 2,
+                              child: InfoLabel(
+                                  label: "请输入命名表达式:",
+                                  child: TextBox(
+                                      controller:
+                                          logic.state.renameTextController,
+                                    onChanged: (value) {
+
+                                    },
+                                  ))),
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              spacing: NFLayout.v4,
+                              children: [
+                                Text("表达式执行结果:", style: typography.caption),
+                                Text(logic.state.refRenameValue,
+                                    style: typography.caption)
+                              ],
+                            ),
+                          ),
+                        ],
+                      )),
                 ),
               ],
             )),

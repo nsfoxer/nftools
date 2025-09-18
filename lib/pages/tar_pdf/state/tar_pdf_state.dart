@@ -42,6 +42,9 @@ class TarPdfState {
 
   // order3 选中标签框
   Set<String> selectedTags = {};
+  TextEditingController renameTextController = TextEditingController();
+
+  String refRenameValue = "";
 
 
   void reset() {
