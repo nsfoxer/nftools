@@ -640,7 +640,7 @@ async fn get_pdf_files_in_directory(dir: &Path) -> Result<Vec<PdfFile>> {
 fn export_pdf_to_jpegs(path: &Path, password: Option<&str>) -> Result<(DynamicImage, i32)> {
     let pdf = PdfiumDocument::new_from_path(path, password)?;
     let page = pdf.page(0)?;
-    let config = PdfiumRenderConfig::new().with_width(1920);
+    let config = PdfiumRenderConfig::new().with_width(861);
     let bitmap = page.render(&config)?;
     let img = bitmap.as_rgb8_image()?;
     Ok((img, pdf.page_count()))

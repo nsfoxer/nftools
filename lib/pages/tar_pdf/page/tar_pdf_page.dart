@@ -127,18 +127,62 @@ class TarPdfPage extends StatelessWidget {
   }
 
   Widget _buildOrder3(TarPdfController logic, BuildContext context) {
-    List<Widget> textRects = logic.state.refOcrDatas.map((x) => _TextContainer(x.id, x.text, x.location)).toList();
+    final typography = FluentTheme.of(context).typography;
+    List<Widget> textRects = logic.state.refOcrDatas
+        .map((x) => _TextContainer(x.id, x.text, x.location))
+        .toList();
 
-    return NFLoadingWidgets(loading: logic.state.isLoading, child: InteractiveViewer(child:  Stack(
+    return Row(
       children: [
-            Stack(children: [
-                   NFImagePainterPage(
+        Expanded(
+            flex: 8,
+            child: NFLoadingWidgets(
+            loading: logic.state.isLoading,
+            child: InteractiveViewer(
+                child: Stack(
+              children: [
+                Stack(children: [
+                  NFImagePainterPage(
                       controller: logic.state.refImagePainterController),
-             ...textRects,
-            ])
+                  ...textRects,
+                ])
+              ],
+            )))),
+        Divider(direction: Axis.vertical),
+        Expanded(flex: 3, child: Column(
+          children: [
+            Expanded(flex: 1, child:
+               ListView.builder(
+                itemCount: logic.state.refOcrDatas.length + 1,
+                 itemBuilder: (ctx, index) {
+                    if (index == 0) {
+                      return _Order3DataDisplay(id: "标识", text: "文本", isTitle: true);
+                    }
+                    final data = logic.state.refOcrDatas[index - 1];
+                    return _Order3DataDisplay(
+                      id: data.id.toString(),
+                      text: data.text,
+                      isTitle: false
+                    );
+                  },
+              ),
+            ),
+            Divider(),
+            Expanded(flex: 1, child: Column(
+              children: [
+                Text("已选中标识", style: typography.bodyStrong),
+              ],
+            ),),
+            Divider(),
+            Expanded(flex: 1, child: Container(),),
           ],
-    )));
+        )),
+        Divider(direction: Axis.vertical),
+      ],
+    );
   }
+
+
 
   Widget _buildOrder5(TarPdfController logic, context) {
     return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
@@ -594,7 +638,7 @@ class _TextContainer extends StatelessWidget {
       width: position.width,
       height: position.height,
       child: Tooltip(
-          message: text,
+          message: "标识: $id\n$text",
           child: Button(
             style: ButtonStyle(backgroundColor: background),
             child: Container(),
@@ -604,7 +648,54 @@ class _TextContainer extends StatelessWidget {
           )),
     );
   }
-
-
-
  }
+
+class _Order3DataDisplay extends StatelessWidget {
+  final String id;
+  final String text;
+  final bool isTitle;
+
+  const _Order3DataDisplay(
+      {super.key, required this.id, required this.text, required this.isTitle});
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = FluentTheme.of(context).typography;
+    return ListTile.selectable(
+      title: Container(),
+      subtitle: Row(
+        children: [
+          Expanded(
+              flex: 1,
+              child: Text(id,
+                  style: isTitle ? typography.bodyStrong : typography.caption)),
+          Expanded(
+              flex: 5,
+              child: Text(text,
+                  style: isTitle ? typography.bodyStrong : typography.caption)),
+        ],
+      ),
+      margin: EdgeInsets.all(0),
+      contentPadding: EdgeInsets.all(0),
+      onSelectionChange: isTitle ? null : (selected) {},
+      selectionMode: isTitle ? ListTileSelectionMode.none : ListTileSelectionMode.multiple,
+    );
+  }
+}
+
+
+class _Order3Label extends StatelessWidget {
+  final String label;
+
+  const _Order3Label(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    Typography typography = FluentTheme.of(context).typography;
+    return Padding(
+        padding: EdgeInsetsGeometry.only(bottom: NFLayout.v4),
+        child: Text(
+          label,
+        ));
+  }
+}
