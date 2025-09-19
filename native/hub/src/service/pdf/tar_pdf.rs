@@ -473,6 +473,8 @@ impl TarPdfService {
         data_map.insert("pages".to_string(), 10.to_string());
         data_map.insert("order".to_string(), 1.to_string());
         let result = strfmt(&template.value, &data_map)?;
+
+        self.ref_config.template = template.value;
         Ok(StringMsg{
             value: result,
         })
