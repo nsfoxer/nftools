@@ -52,3 +52,9 @@ pub struct BoxPositionMsg {
     pub width: f64,
     pub height: f64,
 }
+
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct RenameFileMsg {
+    // 0: filename 1: error
+    pub value: Vec<(String, String)>,
+}

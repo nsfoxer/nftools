@@ -1,83 +1,28 @@
 use crate::common::global_data::GlobalData;
 use crate::messages::common::{DataMsg, StringMsg, VecStringMsg};
-use crate::messages::tar_pdf::{OcrConfigMsg, OcrDataMsg, RefOcrDatasMsg, TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
+use crate::messages::tar_pdf::{OcrConfigMsg, OcrDataMsg, RefOcrDatasMsg, RenameFileMsg, TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
 use crate::service::service::{Service, StreamService};
 use crate::{async_func_nono, async_func_notype, async_func_typetype, async_stream_func_typeno, func_end, func_nono, func_notype, func_typeno, func_typetype};
-use anyhow::{anyhow, Error, Result};
+use anyhow::{anyhow, Result};
 use futures_util::StreamExt;
-use log::debug;
 use pdfium::{PdfiumDocument, PdfiumRenderConfig};
 use regex::Regex;
 use rust_xlsxwriter::{Format, Workbook};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
-use std::result;
 use std::time::{SystemTime, UNIX_EPOCH};
 use ahash::{AHashMap, AHashSet};
+use calamine::{Data, Reader, Xlsx};
 use image::DynamicImage;
+use log::warn;
 use strfmt::strfmt;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::wrappers::ReadDirStream;
 use crate::common::utils::{index_to_string, path_to_file_name};
 use crate::service::pdf::ocr::{OcrData, OcrResult};
-
-#[derive(Debug)]
-struct PdfResult {
-    file_path: PathBuf,
-    ocr_result: Result<ExcelData>,
-}
-
-#[derive(Debug, Default, Serialize)]
-struct ExcelData {
-    // 原始文件名称
-    file_name: String,
-    // 序号
-    index: u32,
-    // 编号
-    no: String,
-    // 总页数
-    pages: i32,
-    // 公司名称
-    company_name: String,
-    // 标题
-    title: String,
-}
-
-impl ExcelData {
-    // 根据规则转换文件名
-    fn convert_file_name(&self, rule: &str) -> Result<String> {
-        let json = serde_json::to_value(&self)?;
-        let data = if let Value::Object(map) = json {
-            map.into_iter()
-                .map(|(k, v)| {
-                    let null = String::with_capacity(0);
-                    if v.is_null() {
-                        return (k, null);
-                    }
-                    let mut v = v.to_string();
-                    // 去除字符串的前后引号
-                    if v.starts_with('"') && v.ends_with('"'){
-                        v.pop();
-                        v.remove(0);
-                    }
-                    if v.is_empty() {
-                        (k, null)
-                    } else {
-                        (k, v)
-                    }
-                })
-                .collect()
-        } else {
-            HashMap::new()
-        };
-
-        Ok(strfmt(rule, &data)?)
-    }
-}
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 struct OcrConfig {
@@ -202,8 +147,8 @@ impl Service for TarPdfService {
         func_notype!(self, func, get_config, get_ocr_pdf_data);
         func_typetype!(self, func, req_data, set_ref_config_template, StringMsg);
         async_func_nono!(self, func, ocr_check);
-        // async_func_notype!(self, func, export_result_and_rename_files);
-        async_func_typetype!(self, func, req_data, scan_pdf, StringMsg, get_pdf_cover, StringMsg, set_ref_config, StringMsg);
+        async_func_notype!(self, func, export_excel);
+        async_func_typetype!(self, func, req_data, scan_pdf, StringMsg, get_pdf_cover, StringMsg, set_ref_config, StringMsg, rename_by_excel, StringMsg);
 
         func_end!(func)
     }
@@ -224,10 +169,6 @@ impl TarPdfService {
             if let Err(e) = Regex::new(regex) {
                 return Err(anyhow!("正则表达式错误：{}", e));
             }
-        }
-        let excel_data = ExcelData::default();
-        if let Err(e) = excel_data.convert_file_name(&config.export_file_name_rule) {
-            return Err(anyhow!("文件名规则错误：{}", e));
         }
 
         let config = OcrConfig::from(config);
@@ -347,28 +288,72 @@ impl TarPdfService {
 
     /// 导出结果并重命名文件
     /// return 导出后的文件
-    // async fn export_result_and_rename_files(&mut self) -> Result<StringMsg> {
-    //     if self.result.is_empty() {
-    //         return Err(anyhow!("无识别结果"));
-    //     }
-    //
-    //     // 1. 重命名文件
-    //     for pdf in self.result.iter_mut() {
-    //         if let Err(e) = Self::rename_pdf(pdf, &self.config.export_file_name_rule).await {
-    //             pdf.ocr_result = Err(e);
-    //         }
-    //     }
-    //
-    //     // 2. 导出excel表格
-    //     let file = self.write_excel_file().await?;
-    //     let name = file
-    //         .file_name()
-    //         .unwrap_or_default()
-    //         .to_str()
-    //         .unwrap_or_default()
-    //         .to_string();
-    //     Ok(StringMsg { value: name })
-    // }
+    async fn export_excel(&self) -> Result<StringMsg> {
+        if self.ocr_data.is_empty() {
+            return Err(anyhow!("无识别结果"));
+        }
+
+        let file = self.write_excel_file().await?;
+        Ok(StringMsg { value: path_to_file_name(&file)? })
+    }
+
+    /// 根据excel重命名文件
+    async fn rename_by_excel(&self, xlsx_file: StringMsg) -> Result<RenameFileMsg> {
+        // 1.解析excel
+        let mut workbook: Xlsx<_> = calamine::open_workbook(&xlsx_file.value)?;
+        let range = workbook.worksheet_range_at(0).ok_or_else(|| anyhow!("无法打开Sheet"))??;
+
+        let mut files = Vec::new();
+        for (row_index, row) in range.rows().enumerate() {
+            // 1. 检查首行数据是否正确
+            if row_index == 0 {
+                if row.len() < 2 {
+                    return Err(anyhow!("格式不正确,请不要修改首行数据"));
+                }
+                if let Ok(d) = Self::read_cell_as_string(row, 0) && d == "原始文件" {
+                } else {
+                    return Err(anyhow!("格式不正确,请不要修改首行数据"));
+                }
+                if let Ok(d) = Self::read_cell_as_string(row, 1) && d == "命名结果" {
+                } else {
+                    return Err(anyhow!("格式不正确,请不要修改首行数据"));
+                }
+            }
+
+            // 2. 读取数据
+            if row.len() < 2 {
+                continue;
+            }
+            if let Ok(d1) = Self::read_cell_as_string(row, 0) && let Ok(d2) = Self::read_cell_as_string(row, 1) {
+                files.push((d1, d2));
+            } else {
+                warn!("行[{}]数据错误", row_index+1);
+            }
+        }
+
+        // 2. 重命名
+        let mut result = Vec::new();
+        for (target, dest) in files {
+            if let Err(e) = tokio::fs::rename(target, dest).await {
+                result.push((target.clone(), e.to_string()));
+            }
+        }
+
+        Ok(RenameFileMsg {
+            value: result
+        })
+    }
+
+    // 读取单元格数据
+    fn read_cell_as_string(row: &[Data], index: usize) -> Result<&String> {
+        let data = row.get(index).ok_or_else(|| anyhow!("不能读取列： {}", index))?;
+        if let Data::String(data) = data {
+            return Ok(data);
+        }
+        Err(anyhow!("无法单元格为string"))
+    }
+
+
 
     /// 重置数据
     fn reset(&mut self) -> Result<()> {
@@ -593,95 +578,79 @@ impl TarPdfService {
         Ok((img, pages as usize, ocr_result))
     }
 
-    // 重命名文件
-    async fn rename_pdf(pdf: &PdfResult, rule: &str) -> Result<()> {
-        // 1. 生成文件名
-        if let Err(e) = &pdf.ocr_result {
-            return Err(anyhow!("{}", e.to_string()));
-        }
-        let pdf_result = pdf.ocr_result.as_ref().unwrap();
-        let file_name = pdf_result.convert_file_name(rule)?;
-
-        // 2. 重命名
-        let mut file = pdf.file_path.clone();
+    /// 导出结果
+    async fn write_excel_file(&self) -> Result<PathBuf> {
+        // 1. 创建文件
+        let mut file = self.ocr_data.get(0).unwrap().pdf.clone();
         file.pop();
-        file.push(&file_name);
-        if file.exists() {
-            return Err(anyhow!("无法重命名【{}】文件已存在", &file_name));
+        let now = SystemTime::now();
+        file.push(format!(
+            "检测报告识别结果_{}.xlsx",
+            now.duration_since(UNIX_EPOCH)?.as_millis()
+        ));
+
+        // 2. 写入数据
+        let mut workbook = Workbook::new();
+        let worksheet = workbook.add_worksheet().set_name("sheet1")?;
+        // 定义一些单元格样式
+        let header_format = Format::new()
+            .set_bold()
+            .set_background_color(rust_xlsxwriter::Color::RGB(0xD9E1F2))
+            .set_border(rust_xlsxwriter::FormatBorder::Thin);
+        let error_format =
+            Format::new().set_background_color(rust_xlsxwriter::Color::RGB(0xFFC7CE));
+        let number_format = Format::new().set_num_format("0");
+
+        // 创建表头
+        worksheet.write_with_format(0, 0, "原始文件", &header_format)?;
+        worksheet.write_with_format(0, 1, "命名结果", &header_format)?;
+        worksheet.write_with_format(0, 2, "错误信息", &header_format)?;
+        let mut tags = Vec::with_capacity(self.ref_config.tags.len());
+        for (i, tag) in self.ref_config.tags.iter().enumerate() {
+            worksheet.write_with_format(0, i as u16 + 3, tag, &header_format)?;
+            tags.push(tag);
         }
-        tokio::fs::rename(&pdf.file_path, &file).await?;
 
-        Ok(())
+        // 创建数据行
+        for (index, pdf) in self.ocr_data.iter().enumerate() {
+            let row = (index + 1) as u32;
+            worksheet.write(row, 0, path_to_file_name(&pdf.pdf)?)?;
+            match &pdf.template_result {
+                Ok(d) => {worksheet.write(row, 1, d)?;},
+                Err(e) => {worksheet.write_with_format(row, 2, e.to_string(), &error_format)?;}
+            };
+
+            match &pdf.datas {
+                Err(e) => {worksheet.write_with_format(row, 2, e.to_string(), &error_format)?;},
+                Ok(data) => {
+                    let mut column: u16 = 2;
+                    for tag in tags.iter() {
+                        column += 1;
+                        match data.get(*tag) {
+                            Some(item) => {
+                                match item {
+                                    Ok(item) => {
+                                        worksheet.write(row, column, item)?;
+                                    },
+                                    Err(e) => {
+                                        worksheet.write_with_format(row, column , e.to_string(), &error_format)?;
+                                    }
+                                };
+                            },
+                            None => {
+                                worksheet.write_with_format(row, column, "无法找到对应标签的值", &error_format)?;
+                            }
+                        };
+                    }
+                }
+            }
+        }
+
+        // 3. 保存文件
+        workbook.save(&file)?;
+
+        Ok(file)
     }
-
-    // async fn write_excel_file(&self) -> Result<PathBuf> {
-    //     if self.result.is_empty() {
-    //         return Err(anyhow!("无识别结果"));
-    //     }
-    //     // 1. 创建文件
-    //     let mut file = self.result.get(0).unwrap().file_path.clone();
-    //     file.pop();
-    //     let now = SystemTime::now();
-    //     file.push(format!(
-    //         "检测报告识别结果_{}.xlsx",
-    //         now.duration_since(UNIX_EPOCH)?.as_millis()
-    //     ));
-    //
-    //     // 2. 写入数据
-    //     let mut workbook = Workbook::new();
-    //     let worksheet = workbook.add_worksheet().set_name("sheet1")?;
-    //     // 定义一些单元格样式
-    //     let header_format = Format::new()
-    //         .set_bold()
-    //         .set_background_color(rust_xlsxwriter::Color::RGB(0xD9E1F2))
-    //         .set_border(rust_xlsxwriter::FormatBorder::Thin);
-    //     let error_format =
-    //         Format::new().set_background_color(rust_xlsxwriter::Color::RGB(0xFFC7CE));
-    //     let number_format = Format::new().set_num_format("0");
-    //
-    //     // 创建表头
-    //     worksheet.write_with_format(0, 0, "原始文件", &header_format)?;
-    //     worksheet.write_with_format(0, 1, "序号", &header_format)?;
-    //     worksheet.write_with_format(0, 2, "文件名称", &header_format)?;
-    //     worksheet.write_with_format(0, 3, "文件编号", &header_format)?;
-    //     worksheet.write_with_format(0, 4, "页数", &header_format)?;
-    //     worksheet.write_with_format(0, 5, "错误信息", &header_format)?;
-    //
-    //     // 创建数据行
-    //     for (index, pdf) in self.result.iter().enumerate() {
-    //         let row = (index + 1) as u32;
-    //         worksheet.write(
-    //             row,
-    //             0,
-    //             pdf.file_path
-    //                 .file_name()
-    //                 .unwrap_or_default()
-    //                 .to_str()
-    //                 .unwrap_or_default(),
-    //         )?;
-    //         worksheet.write_number_with_format(row, 1, (index + 1) as f64, &number_format)?;
-    //         match &pdf.ocr_result {
-    //             Ok(data) => {
-    //                 worksheet.write(row, 2, format!("{}{}", data.company_name, data.title))?;
-    //                 worksheet.write(row, 3, &data.no)?;
-    //                 worksheet.write_number_with_format(
-    //                     row,
-    //                     4,
-    //                     data.pages as f64,
-    //                     &number_format,
-    //                 )?;
-    //             }
-    //             Err(e) => {
-    //                 worksheet.write_with_format(row, 5, e.to_string(), &error_format)?;
-    //             }
-    //         };
-    //     }
-    //
-    //     // 3. 保存文件
-    //     workbook.save(&file)?;
-    //
-    //     Ok(file)
-    // }
 
     /// 转换数据为MSG
     fn ocr_data2msg(tags: &Vec<String>, data: &OcrPdfData) -> Result<TarPdfResultMsg> {
@@ -798,14 +767,4 @@ fn img_to_buf(img: &DynamicImage) -> Result<Vec<u8>> {
     Ok(buf.into_inner())
 }
 
-mod test {
-    use crate::service::pdf::tar_pdf::{export_pdf_to_jpegs, ExcelData};
 
-    #[test]
-    fn test2() {
-        let excel = ExcelData::default();
-        let rule = r#"{index}{no}{company_name}{title}-xxx.xlsx"#;
-        let r = excel.convert_file_name(rule).unwrap();
-        assert_eq!("0-xxx.xlsx", r);
-    }
-}
