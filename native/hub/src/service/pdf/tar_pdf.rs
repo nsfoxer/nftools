@@ -271,9 +271,7 @@ impl TarPdfService {
 
     fn get_ocr_pdf_data(&self) -> Result<TarPdfResultsMsg> {
         // 1. 查找所有tags
-        let mut tags: Vec<String> = self.ref_config.tags.iter().map(|x| x.clone()).collect();
-        tags.insert(0, "pages".to_string());
-        tags.insert(0, "order".to_string());
+        let tags: Vec<String> = self.ref_config.tags.iter().map(|x| x.clone()).collect();
 
         let mut result = Vec::with_capacity(self.ocr_data.len());
         for data in self.ocr_data.iter() {
@@ -443,6 +441,8 @@ impl TarPdfService {
         for data in tags.values {
             self.ref_config.tags.insert(data);
         }
+        self.ref_config.tags.insert("pages".to_string());
+        self.ref_config.tags.insert("order".to_string());
         Ok(())
     }
 
@@ -537,7 +537,7 @@ impl TarPdfService {
             result_datas.insert(tag.clone(), ref_data);
         }
         result_datas.insert("pages".to_string(), Ok(pages.to_string()));
-        result_datas.insert("order".to_string(), Ok(index.to_string()));
+        result_datas.insert("order".to_string(), Ok((index+1).to_string()));
 
         // 4. 模板处理
         let mut template_map = HashMap::new();
@@ -603,7 +603,6 @@ impl TarPdfService {
             .set_border(rust_xlsxwriter::FormatBorder::Thin);
         let error_format =
             Format::new().set_background_color(rust_xlsxwriter::Color::RGB(0xFFC7CE));
-        let number_format = Format::new().set_num_format("0");
 
         // 创建表头
         worksheet.write_with_format(0, 0, "原始文件", &header_format)?;
