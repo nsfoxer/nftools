@@ -16,7 +16,7 @@ const String _getPdfCover = "get_pdf_cover";
 const String _setRefConfig = "set_ref_config";
 const String _setRefConfigTags = "set_ref_config_tags";
 const String _setRefConfigTemplate = "set_ref_config_template";
-const String _exportExcel = "export_result";
+const String _exportExcel = "export_excel";
 const String _renameByExcel = "rename_by_excel";
 
 

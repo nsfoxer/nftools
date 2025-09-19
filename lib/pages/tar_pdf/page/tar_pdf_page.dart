@@ -464,17 +464,17 @@ class TarPdfPage extends StatelessWidget {
             maxLines: 5,
             placeholder: "请选择重命名xlsx文件",
             readOnly: true,
-            onTap: logic.selectPdfFile,
+            onTap: logic.selectExcelFile,
             controller: logic.state.renameFileController,
           ),
         ),
         if (logic.state.renameFileResult != null)
-          NFTable(minWidth: 800,
+          Expanded(child:  NFTable(minWidth: 800,
               empty: Text("全部成功"),
               header: [
             NFHeader(flex: 1, child: Text("原始文件", style: typography.bodyStrong)),
             NFHeader(flex: 1, child: Text("失败原因", style: typography.bodyStrong)),
-          ], source: _Order6DataSource(logic.state.renameFileResult!.value))
+          ], source: _Order6DataSource(logic.state.renameFileResult!.value)))
       ],
     ));
   }

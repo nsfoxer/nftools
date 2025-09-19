@@ -44,12 +44,12 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     update();
   }
 
-  void selectPdfFile() async {
+  void selectExcelFile() async {
     final path = await FilePicker.platform.pickFiles(dialogTitle: "请选择excel文件", allowedExtensions: ["xlsx"], type: FileType.custom);
     if (path == null) {
       return;
     }
-    state.renameFileController.text = path.files.first.name;
+    state.renameFileController.text = path.files.first.path ?? "";
   }
 
   void reset() async {
@@ -166,7 +166,6 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
       case DisplayProcessEnum.order5:
         _nextOrder5();
       case DisplayProcessEnum.order6:
-        // TODO: Handle this case.
         _nextOrder6();
     }
   }
