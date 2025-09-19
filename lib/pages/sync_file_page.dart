@@ -241,6 +241,7 @@ class SyncFilePage extends StatelessWidget {
       return NFLoadingWidgets(
         loading: logic.state.isLoading,
         child: NFTable(
+
           empty: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -265,6 +266,7 @@ class SyncFilePage extends StatelessWidget {
                 flex: 1, child: Text("新增 删除 变更", style: typography.bodyStrong))
           ],
           source: _DataSource(logic.state.fileList, logic),
+          isCompactMode: true,
         ),
       );
     });

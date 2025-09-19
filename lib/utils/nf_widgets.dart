@@ -294,6 +294,8 @@ class NFTable<T> extends StatefulWidget {
   final List<NFHeader> header;
   final Widget? empty;
   final NFDataTableSource source;
+  // 是否为紧凑模式
+  final bool isCompactMode;
 
   // 构造原型
   final NFRow? prototypeItem;
@@ -304,7 +306,8 @@ class NFTable<T> extends StatefulWidget {
       required this.header,
       this.empty,
       required this.source,
-      this.prototypeItem});
+      this.prototypeItem,
+      this.isCompactMode = false});
 
   @override
   State<NFTable<T>> createState() => _NFTableState<T>();
@@ -341,12 +344,17 @@ class _NFTableState<T> extends State<NFTable<T>> {
     final table = ListView.builder(
         prototypeItem: widget.prototypeItem != null
             ? ListTile(
+                margin: widget.isCompactMode ? EdgeInsets.zero : null,
+                contentPadding: widget.isCompactMode ? EdgeInsets.zero : kDefaultListTilePadding,
                 title: SizedBox(),
-                subtitle: Row(
+                subtitle: SizedBox(
+                  height: widget.prototypeItem!.height,
+                   child:  Row(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: widget.prototypeItem!.children,
-                ),
+                )),
+                shape: Border(bottom: BorderSide(width: 1, color: borderColor)),
               )
             : null,
         itemCount: widget.source.itemCount == null
@@ -356,8 +364,11 @@ class _NFTableState<T> extends State<NFTable<T>> {
           // 标题
           if (index == 0) {
             return ListTile(
+                margin: widget.isCompactMode ? EdgeInsets.zero : null,
+                contentPadding: widget.isCompactMode ? EdgeInsets.zero : kDefaultListTilePadding,
                 title: SizedBox(),
-                subtitle: Row(
+                subtitle:
+                 Row(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: widget.header
@@ -372,8 +383,12 @@ class _NFTableState<T> extends State<NFTable<T>> {
           assert(
               row.children.length == widget.header.length, "row长度与header长度不一致");
           return ListTile.selectable(
-            title: SizedBox(),
-            subtitle: Row(
+            margin: widget.isCompactMode ? EdgeInsets.zero : null,
+            contentPadding: widget.isCompactMode ? EdgeInsets.zero : kDefaultListTilePadding,
+            title: Container(),
+            subtitle: SizedBox(
+              height: row.height,
+              child: Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: row.children
@@ -383,9 +398,8 @@ class _NFTableState<T> extends State<NFTable<T>> {
                         child: Center(child: e),
                       )))
                   .toList(),
-            ),
+            )),
             shape: Border(bottom: BorderSide(width: 1, color: borderColor)),
-            margin: EdgeInsets.all(0),
             onSelectionChange: (v) {},
           );
         });
@@ -428,9 +442,10 @@ class NFHeader {
 
 @Immutable()
 class NFRow {
+  final double? height;
   final List<Widget> children;
 
-  const NFRow({required this.children});
+  const NFRow({this.height, required this.children});
 }
 // 表格组件  end
 

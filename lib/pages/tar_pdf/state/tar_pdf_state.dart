@@ -10,11 +10,6 @@ class TarPdfState {
   bool isLoading = false;
   DisplayProcessEnum processEnum = DisplayProcessEnum.order1;
 
-  // 处理中展示数据
-  int sum = 0;
-  int current = 0;
-  List<TarPdfResultMsg> ocrResult = [];
-
   // 配置框是否正在加载
   bool isConfigLoading = false;
 
@@ -45,13 +40,23 @@ class TarPdfState {
   TextEditingController refTemplateController = TextEditingController();
   String refTemplateResultValue = "";
 
+  // order4 进度
+  // 处理中展示数据
+  int sum = 0;
+  int current = 0;
+  String currentFile = "";
+
+  // order5 展示
+  TarPdfResultsMsg? ocrResults;
+
+
 
   void reset() {
     isLoading = false;
     processEnum = DisplayProcessEnum.order1;
     sum = 0;
     current = 0;
-    ocrResult.clear();
+    // ocrResult.clear();
     pdfDirTextController.clear();
     pdfPasswordTextController.clear();
     nameRuleTextController.clear();

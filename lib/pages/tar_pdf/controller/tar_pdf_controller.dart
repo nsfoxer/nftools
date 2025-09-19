@@ -45,34 +45,10 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     update();
   }
 
-  // 开始处理
-  void start() async {
-    final Stream<TarPdfMsg> stream;
-    try {
-      stream = $api.handle(state.pdfDirTextController.text);
-    } catch (e) {
-      return;
-    }
-
-    // state.processEnum = DisplayProcessEnum.processing;
-    update();
-    stream.listen((data) {
-      state.sum = data.sum;
-      state.current = data.now;
-      update();
-    }, onDone: () {
-      _end();
-    }, onError: (e) {
-      error(e.toString());
-      // state.processEnum = DisplayProcessEnum.start;
-      update();
-    }, cancelOnError: true);
-  }
-
   // 结束处理
   void _end2() async {
     // state.processEnum = DisplayProcessEnum.end;
-    state.ocrResult = await $api.ocrResult();
+    // state.ocrResult = await $api.ocrResult();
     state.canExport = true;
     update();
   }
@@ -188,11 +164,10 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
         _nextOrder1();
         return;
       case DisplayProcessEnum.order2:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        debug("下一步 order2 不生效");
+        return;
       case DisplayProcessEnum.order3:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        _nextOrder3();
       case DisplayProcessEnum.order4:
         // TODO: Handle this case.
         throw UnimplementedError();
@@ -217,6 +192,47 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     }
   }
 
+  void _nextOrder3() async {
+    // 检查数据是否正确
+    if (state.selectedTags.isEmpty) {
+      warn("请选择标签");
+      return;
+    }
+    state.refTemplateController.text = state.refTemplateController.text.trim();
+    if (state.refTemplateController.text.isEmpty) {
+      warn("请填写参考文件模板");
+      return;
+    }
+    final result = await tryGetRefTemplateResult();
+    if (result != null) {
+      error("模板填写错误: $result");
+      return;
+    }
+
+    // 开始处理
+    final Stream<TarPdfMsg> stream = $api.handle(state.pdfFiles);
+    state.processEnum = state.processEnum.next() ?? state.processEnum;
+    update();
+    stream.listen((data) {
+      state.current = data.now;
+      state.sum = data.sum;
+      state.currentFile = data.currentFile;
+      update();
+    }, onDone: () {
+      info("处理完成");
+      _getResult();
+    }, onError: (e) {
+      error("处理失败: $e");
+      state.processEnum = state.processEnum.pre() ?? state.processEnum;
+      update();
+    }, cancelOnError: true);
+  }
+
+  void _getResult() async {
+    state.ocrResults = await $api.getOcrPdfData();
+    state.processEnum = state.processEnum.next() ?? state.processEnum;
+    update();
+  }
 
   // 获取pdf封面
   Future<ImageProvider> order2Preview(String pdfPath) async {
@@ -281,6 +297,8 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     tryGetRefTemplateResult();
   }
 
+  /// 获取参考文件模板结果
+  /// 如果失败,则返回错误信息
   Future<String?> tryGetRefTemplateResult() async {
     final template = state.refTemplateController.text;
     try {
