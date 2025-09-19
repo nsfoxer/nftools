@@ -3,7 +3,7 @@ use crate::messages::common::{DataMsg, StringMsg, VecStringMsg};
 use crate::messages::tar_pdf::{OcrConfigMsg, OcrDataMsg, RefOcrDatasMsg, TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
 use crate::service::service::{Service, StreamService};
 use crate::{async_func_nono, async_func_notype, async_func_typetype, async_stream_func_typeno, func_end, func_nono, func_notype, func_typeno, func_typetype};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Error, Result};
 use futures_util::StreamExt;
 use log::debug;
 use pdfium::{PdfiumDocument, PdfiumRenderConfig};
@@ -15,13 +15,14 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
+use std::result;
 use std::time::{SystemTime, UNIX_EPOCH};
 use ahash::{AHashMap, AHashSet};
 use image::DynamicImage;
 use strfmt::strfmt;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::wrappers::ReadDirStream;
-use crate::common::utils::index_to_string;
+use crate::common::utils::{index_to_string, path_to_file_name};
 use crate::service::pdf::ocr::{OcrData, OcrResult};
 
 #[derive(Debug)]
@@ -154,6 +155,17 @@ struct ExportConfig {
     template: String,
 }
 
+/// OCR识别结果
+#[derive(Debug)]
+struct OcrPdfData {
+    // 文件路径
+    pdf: PathBuf,
+    // 识别数据 k: tag v: text
+    datas: Result<AHashMap<String, Result<String>>>,
+    // 格式化结果
+    template_result: Result<String>,
+}
+
 /// tar pdf服务
 pub struct TarPdfService {
     // 数据库配置
@@ -164,7 +176,8 @@ pub struct TarPdfService {
     ref_data: Option<RefData>,
     // 导出配置
     ref_config: ExportConfig,
-
+    // 识别结果
+    ocr_data: Vec<OcrPdfData>
 }
 
 const CONFIG_CACHE: &str = "tarPdfConfig";
@@ -177,7 +190,7 @@ impl StreamService for TarPdfService {
         req_data: Vec<u8>,
         tx: UnboundedSender<Result<Option<Vec<u8>>>>,
     ) -> Result<()> {
-        // async_stream_func_typeno!(self, func, req_data, handle, StringMsg, tx);
+        async_stream_func_typeno!(self, func, req_data, handle, VecStringMsg, tx);
         func_end!(func)
     }
 }
@@ -186,7 +199,7 @@ impl StreamService for TarPdfService {
 impl Service for TarPdfService {
     async fn handle(&mut self, func: &str, req_data: Vec<u8>) -> Result<Option<Vec<u8>>> {
         func_typeno!(self, func, req_data, set_config, OcrConfigMsg, set_ref_config_tags, VecStringMsg);
-        func_notype!(self, func, get_config);
+        func_notype!(self, func, get_config, get_ocr_pdf_data);
         func_typetype!(self, func, req_data, set_ref_config_template, StringMsg);
         async_func_nono!(self, func, ocr_check);
         // async_func_notype!(self, func, export_result_and_rename_files);
@@ -257,90 +270,80 @@ impl TarPdfService {
         Ok(())
     }
 
-    // async fn handle(
-    //     &mut self,
-    //     pdf_dir: StringMsg,
-    //     tx: UnboundedSender<Result<Option<Vec<u8>>>>,
-    // ) -> Result<()> {
-    //     self.ocr_check().await?;
-    //
-    //     let pdf_dir = PathBuf::from(pdf_dir.value);
-    //     if !pdf_dir.exists() || !pdf_dir.is_dir() {
-    //         return Err(anyhow!("pdf目录不存在或非目录"));
-    //     }
-    //
-    //     self.result.clear();
-    //
-    //     // 按创建时间从最新到最旧遍历所有后缀为pdf的文件
-    //     let mut pdf_files = get_pdf_files_in_directory(&pdf_dir).await?;
-    //     pdf_files.sort();
-    //
-    //     // handle
-    //     let url = format!("{}/ocr", &self.config.url);
-    //     let count = pdf_files.len();
-    //     for (index, pdf_file) in pdf_files.into_iter().enumerate() {
-    //         // send current process
-    //         let file_name = pdf_file
-    //             .path
-    //             .file_name()
-    //             .unwrap_or_default()
-    //             .to_str()
-    //             .unwrap_or_default()
-    //             .to_string();
-    //         let msg = rinf::serialize(&TarPdfMsg {
-    //             now: (index+1) as u32,
-    //             sum: count as u32,
-    //             current_file: file_name,
-    //         });
-    //         tx.send(Ok(Some(msg?)))?;
-    //
-    //         // 处理OCR
-    //         let ocr = self
-    //             .ocr_pdf(pdf_file.path.clone(), index as u32, &url)
-    //             .await;
-    //
-    //         // 保存结果
-    //         let r = PdfResult {
-    //             file_path: pdf_file.path,
-    //             ocr_result: ocr,
-    //         };
-    //         self.result.push(r);
-    //     }
-    //
-    //     Ok(())
-    // }
+    async fn handle(
+        &mut self,
+        pdf_files: VecStringMsg,
+        tx: UnboundedSender<Result<Option<Vec<u8>>>>,
+    ) -> Result<()> {
+        // 1. 配置检查
+        self.ocr_check().await?;
+        if self.ref_data.is_none() || self.ref_config.tags.is_empty() || self.ref_config.template.is_empty() {
+            return Err(anyhow!("请先设置参考数据"));
+        }
 
-    // fn get_result(&self) -> Result<TarPdfResultsMsg> {
-    //     let data = self
-    //         .result
-    //         .iter()
-    //         .map(|x| {
-    //             let file_name = x
-    //                 .file_path
-    //                 .file_name()
-    //                 .unwrap()
-    //                 .to_str()
-    //                 .unwrap()
-    //                 .to_string();
-    //             let mut ocr_result = TarPdfResultMsg::default();
-    //             ocr_result.file_name = file_name;
-    //             match &x.ocr_result {
-    //                 Ok(r) => {
-    //                     ocr_result.company = r.company_name.clone();
-    //                     ocr_result.title = r.title.clone();
-    //                     ocr_result.no = r.no.clone();
-    //                     ocr_result.error_msg = String::with_capacity(0);
-    //                     ocr_result.pages = r.pages;
-    //                 }
-    //                 Err(e) => {
-    //                     ocr_result.error_msg = e.to_string();
-    //                 }
-    //             };
-    //             ocr_result
-    //         })
-    //         .collect();
-    //     Ok(TarPdfResultsMsg { datas: data })
-    // }
+        // 2. 转换files文件为path,并排序
+        let pdf_files = {
+          let mut files =  Vec::with_capacity(pdf_files.values.len());
+            for file in pdf_files.values {
+                let path = PathBuf::from(file);
+                if path.is_dir() || !path.exists() {
+                    return Err(anyhow!("文件「{}」不存在", path.as_os_str().to_str().unwrap()));
+                }
+                if path.is_file() {
+                    files.push(path.to_path_buf());
+                }
+            }
+
+            // 对文件进行排序
+            sort_pdf_files(&mut files).await?;
+            files
+        };
+
+        // 3. handle
+        self.ocr_data.clear();
+        let url = self.config.ocr_url();
+        let count = pdf_files.len();
+        for (index, pdf_file) in pdf_files.into_iter().enumerate() {
+            // 发送当前处理进度
+            let file_name = pdf_file
+                .file_name()
+                .unwrap_or_default()
+                .to_str()
+                .unwrap_or_default()
+                .to_string();
+            let msg = rinf::serialize(&TarPdfMsg {
+                now: (index+1) as u32,
+                sum: count as u32,
+                current_file: file_name,
+            });
+            tx.send(Ok(Some(msg?)))?;
+
+            // 文本处理
+            let ocr_data = self.handle_pdf(pdf_file, &url, index).await;
+
+            // 保存结果
+            self.ocr_data.push(ocr_data);
+        }
+
+        Ok(())
+    }
+
+    fn get_ocr_pdf_data(&self) -> Result<TarPdfResultsMsg> {
+        // 1. 查找所有tags
+        let mut tags: Vec<String> = self.ref_config.tags.iter().map(|x| x.clone()).collect();
+        tags.insert(0, "pages".to_string());
+        tags.insert(0, "order".to_string());
+
+        let mut result = Vec::with_capacity(self.ocr_data.len());
+        for data in self.ocr_data.iter() {
+           result.push(Self::ocr_data2msg(&tags, data)?);
+        }
+
+        Ok(TarPdfResultsMsg{
+            tags,
+            datas: result,
+        })
+    }
 
     /// 导出结果并重命名文件
     /// return 导出后的文件
@@ -367,11 +370,13 @@ impl TarPdfService {
     //     Ok(StringMsg { value: name })
     // }
 
-    /// 清除识别结果
-    // fn clear_result(&mut self) -> Result<()> {
-    //     self.result.clear();
-    //     Ok(())
-    // }
+    /// 重置数据
+    fn reset(&mut self) -> Result<()> {
+        self.ocr_data.clear();
+        self.ref_data = None;
+        self.ref_config = Default::default();
+        Ok(())
+    }
 
     /// 扫描指定文件夹下的文件
     ///
@@ -385,7 +390,7 @@ impl TarPdfService {
         }
         let pdf_files = get_pdf_files_in_directory(&pdf_dir).await?;
         Ok(VecStringMsg {
-            values: pdf_files.into_iter().map(|x| x.path.into_os_string().into_string().unwrap()).collect()
+            values: pdf_files.into_iter().map(|x| x.into_os_string().into_string().unwrap()).collect()
         })
     }
 
@@ -419,7 +424,7 @@ impl TarPdfService {
         }
 
         // 2. 识别数据
-        let (img, _pages, ocr_result) = self.ocr_pdf(pdf, &self.config.ocr_url()).await?;
+        let (img, _pages, ocr_result) = self.ocr_pdf(&pdf, &self.config.ocr_url()).await?;
         let data = ocr_result.result.into_ocr_data();
 
         // 3. 转换数据
@@ -463,9 +468,11 @@ impl TarPdfService {
 
         let mut data_map = HashMap::new();
         for (tag, data) in &self.ref_data.as_ref().unwrap().image_ocr {
-            data_map.insert(tag.clone(), data.text.as_str());
+            data_map.insert(tag.clone(), data.text.clone());
         }
-        let result =  strfmt(&template.value, &data_map)?;
+        data_map.insert("pages".to_string(), 10.to_string());
+        data_map.insert("order".to_string(), 1.to_string());
+        let result = strfmt(&template.value, &data_map)?;
         Ok(StringMsg{
             value: result,
         })
@@ -489,13 +496,79 @@ impl TarPdfService {
             config,
             ref_data: None,
             ref_config: Default::default(),
+            ocr_data: Default::default(),
+        }
+    }
+
+
+    const MIN_SCORE: f64 = 0.9;
+    /// 处理一个pdf
+    async fn handle_pdf(&self, pdf: PathBuf, url: &str, index: usize) -> OcrPdfData {
+        // 1. ocr pdf
+        let (_, pages, ocr_result) = match self.ocr_pdf(&pdf, url).await {
+            Ok(r) => r,
+            Err(e) => {
+                return OcrPdfData {
+                    pdf,
+                    datas: Err(e),
+                    template_result: Ok(String::with_capacity(0)),
+                };
+            }
+        };
+
+        // 2. 对比数据
+        let target_ocr_data = ocr_result.result.into_ocr_data();
+        let mut tmp_result = Vec::with_capacity(target_ocr_data.len());
+        for tag in &self.ref_config.tags {
+            let ref_data = match self.ref_data.as_ref().unwrap().image_ocr.get(tag) {
+                None => {Err(anyhow!("未找到参考标签：{}", tag))},
+                Some(ref_data) => {
+                  match ref_data.find_similar_text(&target_ocr_data, Self::MIN_SCORE) {
+                      Ok(data) => {
+                          match data {
+                              None => {Err(anyhow!("未找到相似文本:{}", tag))}
+                              Some(d) => {Ok(d)}
+                          }
+                      }
+                      Err(e) => {Err(e)},
+                  }
+                },
+            };
+            tmp_result.push((tag, ref_data));
+        }
+
+        // 3. 构造数据
+        let mut result_datas = AHashMap::with_capacity(tmp_result.len());
+        for (tag, ref_data) in tmp_result {
+            let ref_data = ref_data.map(|x| {
+                x.text.clone()
+            }).map_err(|e| anyhow!(e));
+            result_datas.insert(tag.clone(), ref_data);
+        }
+        result_datas.insert("pages".to_string(), Ok(pages.to_string()));
+        result_datas.insert("order".to_string(), Ok(index.to_string()));
+
+        // 4. 模板处理
+        let mut template_map = HashMap::new();
+        for (tag, data) in result_datas.iter() {
+            if let Ok(data) = data {
+                template_map.insert(tag.clone(), data.clone());
+            }
+        }
+        let template_result = strfmt(&self.ref_config.template, &mut template_map).map_err(|e| anyhow!(e));
+
+        OcrPdfData {
+            pdf,
+            datas: Ok(result_datas),
+            template_result,
         }
     }
 
     /// ocr_pdf
-    async fn ocr_pdf(&self, pdf_file: PathBuf, url: &str) -> Result<(DynamicImage, usize, OcrResult)> {
+    async fn ocr_pdf(&self, pdf_file: &PathBuf, url: &str) -> Result<(DynamicImage, usize, OcrResult)> {
         // 1. 文本识别
         let pdf_password = self.config.pdf_password.clone();
+        let pdf_file = pdf_file.clone();
         let (img, pages) = tokio::task::spawn_blocking(move || {
             export_pdf_to_jpegs(&pdf_file, pdf_password.as_deref())
         })
@@ -607,39 +680,62 @@ impl TarPdfService {
     //
     //     Ok(file)
     // }
-}
 
-// 存储文件路径和创建时间的结构体
-#[derive(Debug)]
-struct PdfFile {
-    path: PathBuf,
-    created_time: SystemTime,
-}
+    /// 转换数据为MSG
+    fn ocr_data2msg(tags: &Vec<String>, data: &OcrPdfData) -> Result<TarPdfResultMsg> {
+        // 1. 获取文件名
+        let file_name = path_to_file_name(&data.pdf)?;
+        if let Err(e) = &data.datas {
+            return Ok(TarPdfResultMsg {
+                file_name,
+                datas: Default::default(),
+                template_result: Default::default(),
+                error: e.to_string(),
+            })
+        }
 
-impl Ord for PdfFile {
-    // 按创建时间从新到旧排序（逆序）
-    fn cmp(&self, other: &Self) -> Ordering {
-        other.created_time.cmp(&self.created_time)
+        // 2. 填充数据
+        let mut result_datas = HashMap::with_capacity(tags.len());
+        let datas = data.datas.as_ref().unwrap();
+        for tag in tags {
+            let r = match datas.get(tag) {
+                None => {
+                    (String::with_capacity(0), format!("未能查找到标识{}", tag))
+                }
+                Some(d) => {
+                    match d {
+                        Ok(r) => { (r.clone(), String::with_capacity(0))}
+                        Err(e) => {(String::with_capacity(0), e.to_string())}
+                    }
+                }
+            };
+            result_datas.insert(tag.clone(), r);
+        }
+
+        // 3. 填充模板
+        match &data.template_result {
+            Ok(d) => {
+                Ok(TarPdfResultMsg {
+                    file_name,
+                    datas: result_datas,
+                    template_result: d.clone(),
+                    error: String::with_capacity(0),
+                })
+            }
+            Err(e) => {
+                Ok(TarPdfResultMsg {
+                    file_name,
+                    datas: result_datas,
+                    template_result: String::with_capacity(0),
+                    error: e.to_string(),
+                })
+            }
+        }
     }
 }
-
-impl PartialOrd for PdfFile {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for PdfFile {
-    fn eq(&self, other: &Self) -> bool {
-        self.created_time == other.created_time
-    }
-}
-
-impl Eq for PdfFile {}
-
 
 // 非递归获取指定目录中的所有PDF文件
-async fn get_pdf_files_in_directory(dir: &Path) -> Result<Vec<PdfFile>> {
+async fn get_pdf_files_in_directory(dir: &Path) -> Result<Vec<PathBuf>> {
     let mut pdf_files = Vec::new();
 
     if !dir.is_dir() {
@@ -654,24 +750,36 @@ async fn get_pdf_files_in_directory(dir: &Path) -> Result<Vec<PdfFile>> {
     while let Some(entry) = entries.next().await {
         let entry = entry?;
         let path = entry.path();
-        let metadata = entry.metadata().await?;
 
         // 只处理文件，不递归处理子目录
-        if metadata.is_file() {
+        if path.is_file() {
             // 检查文件扩展名是否为PDF
-            if let Some(ext) = path.extension() {
-                if ext.eq_ignore_ascii_case("pdf") {
-                    // 获取创建时间
-                    if let Ok(created_time) = metadata.created() {
-                        pdf_files.push(PdfFile { path, created_time });
-                    }
-                }
+            if let Some(ext) = path.extension() && ext.eq_ignore_ascii_case("pdf") {
+                pdf_files.push(path);
             }
         }
     }
 
     Ok(pdf_files)
 }
+
+/// 按创建时间对文件进行排序
+async fn sort_pdf_files(pdf_files: &mut Vec<PathBuf>) -> Result<()> {
+    let mut pdf_files_with_time = Vec::with_capacity(pdf_files.len());
+
+    for pdf in pdf_files.drain(..) {
+        let metadata = tokio::fs::metadata(&pdf).await?;
+        let created_time = metadata.created().unwrap_or(UNIX_EPOCH);
+        pdf_files_with_time.push((pdf, created_time));
+    }
+
+    pdf_files_with_time.sort_by(|a, b| b.1.cmp(&a.1));
+
+    *pdf_files = pdf_files_with_time.into_iter().map(|x| x.0).collect();
+
+    Ok(())
+}
+
 
 fn export_pdf_to_jpegs(path: &Path, password: Option<&str>) -> Result<(DynamicImage, i32)> {
     let pdf = PdfiumDocument::new_from_path(path, password)?;
@@ -690,8 +798,6 @@ fn img_to_buf(img: &DynamicImage) -> Result<Vec<u8>> {
 
 mod test {
     use crate::service::pdf::tar_pdf::{export_pdf_to_jpegs, ExcelData};
-
-
 
     #[test]
     fn test2() {

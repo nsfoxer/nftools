@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use rinf::SignalPiece;
 use serde::{Deserialize, Serialize};
 
@@ -10,17 +11,17 @@ pub struct TarPdfMsg {
 
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]
 pub struct TarPdfResultsMsg {
-    pub datas: Vec<TarPdfResultMsg>
+    pub datas: Vec<TarPdfResultMsg>,
+    pub tags: Vec<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, SignalPiece)]
 pub struct TarPdfResultMsg {
     pub file_name: String,
-    pub title: String,
-    pub company: String,
-    pub no: String,
-    pub pages: i32,
-    pub error_msg: String,
+    // k: tag value: (value, errorMsg)
+    pub datas: HashMap<String, (String, String)>,
+    pub template_result: String,
+    pub error: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]

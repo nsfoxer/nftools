@@ -1,6 +1,6 @@
 use std::env;
 use std::fs::create_dir_all;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 use dirs::{cache_dir, config_dir};
 use anyhow::{anyhow, Result};
@@ -102,4 +102,12 @@ pub fn index_to_string(index: usize) -> String {
 
     bytes.reverse(); // 反转得到正确顺序
     String::from_utf8(bytes).unwrap() // 转换为字符串
+}
+
+/// path to file_name
+pub fn path_to_file_name(path: &Path) -> Result<String> {
+    Ok(path.file_name().ok_or_else(|| anyhow!("无法获取文件名"))?
+        .to_str()
+        .ok_or_else(|| anyhow!("无法将文件名转换为字符串"))?
+        .to_string())
 }
