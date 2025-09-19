@@ -326,7 +326,7 @@ class TarPdfPage extends StatelessWidget {
               isCompactMode: true,
               minWidth: 800,
               empty: Center(child: Text("无数据")),
-              prototypeItem: NFRow(height: 40, children: [
+              prototypeItem: NFRow(children: [
                 Text(
                   "Some",
                   maxLines: 2, style: typography.caption,
@@ -462,27 +462,45 @@ class _DataSource extends NFDataTableSource {
     final caption = FluentTheme.of(context).typography.caption;
     final item = data[index];
     List<Widget> children = [];
-    // children.add(Text(item.fileName, style: caption, maxLines: 1, overflow: TextOverflow.ellipsis,)));
-    // children.add(Text(item.templateResult, style: caption));
-    // for (final tag in tags) {
-    //   final data = item.datas[tag];
-    //   if (data == null) {
-    //     children.add(Text("-",  style: caption?.copyWith(color: Colors.grey)));
-    //   } else {
-    //     if (data.item2.isNotEmpty) {
-    //       children.add(Text(data.item2,
-    //           style: caption?.copyWith(color: Colors.red)));
-    //     } else {
-    //       children.add(Text(data.item1, style: caption, maxLines: 1,));
-    //     }
-    //   }
-    // }
-    // children.add(Text(item.error, style: caption?.copyWith(color: Colors.red)));
-    for (int i = 0; i < 3+tags.length; i++) {
-      children.add(Text("$i" * 30, style: caption, maxLines: 2, overflow: TextOverflow.ellipsis,));
+    children.add(Tooltip(
+        message: item.fileName,
+        child: Text(
+          item.fileName,
+          style: caption,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        )));
+    children.add(Tooltip(
+        message: item.templateResult,
+        child: Text(item.templateResult,
+            style: caption, maxLines: 2, overflow: TextOverflow.ellipsis)));
+    for (final tag in tags) {
+      final data = item.datas[tag];
+      if (data == null) {
+        children.add(Text("-", overflow: TextOverflow.ellipsis, style: caption?.copyWith(color: Colors.grey)));
+      } else {
+        if (data.item2.isNotEmpty) {
+          children.add(Tooltip(
+              message: data.item2,
+              child: Text(data.item2,  overflow: TextOverflow.ellipsis,
+                  style: caption?.copyWith(color: Colors.red))));
+        } else {
+          children.add(Tooltip(
+              message: data.item1,
+              child: Text(
+                data.item1,
+                overflow: TextOverflow.ellipsis,
+                style: caption,
+                maxLines: 2,
+              )));
+        }
+      }
     }
+    children.add(Tooltip(
+        message: item.error,
+        child: Text(item.error,  overflow: TextOverflow.ellipsis, style: caption?.copyWith(color: Colors.red))));
 
-    return NFRow(children: children, height: 40);
+    return NFRow(children: children);
   }
 
   @override
