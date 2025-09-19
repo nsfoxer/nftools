@@ -49,6 +49,9 @@ class TarPdfState {
   // order5 展示
   TarPdfResultsMsg? ocrResults;
 
+  // order6 文件重命名文件
+  TextEditingController renameFileController = TextEditingController();
+  RenameFileMsg? renameFileResult;
 
 
   void reset() {
@@ -79,7 +82,8 @@ enum DisplayProcessEnum {
   order2(2, "选择参考文件"),
   order3(3, "选取参考文字"),
   order4(4, "处理中"),
-  order5(5, "处理结果展示");
+  order5(5, "处理结果展示"),
+  order6(6, "重命名文件");
 
 
   const DisplayProcessEnum(this.value, this.desc);

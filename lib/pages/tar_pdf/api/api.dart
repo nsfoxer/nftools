@@ -16,6 +16,8 @@ const String _getPdfCover = "get_pdf_cover";
 const String _setRefConfig = "set_ref_config";
 const String _setRefConfigTags = "set_ref_config_tags";
 const String _setRefConfigTemplate = "set_ref_config_template";
+const String _exportExcel = "export_result";
+const String _renameByExcel = "rename_by_excel";
 
 
 // start
@@ -81,4 +83,16 @@ Future<void> setRefConfigTags(List<String> tags) async{
 Future<String> setRefConfigTemplate(String template) async{
   final data = await sendRequest(_service, _setRefConfigTemplate, StringMsg(value: template));
   return StringMsg.bincodeDeserialize(data).value;
+}
+
+// 导出Excel
+Future<String> exportExcel() async {
+  final data = await sendEmptyRequest(_service, _exportExcel);
+  return StringMsg.bincodeDeserialize(data).value;
+}
+
+// 根据excel重命名文件
+Future<RenameFileMsg> renameByExcel(String excelPath) async{
+  final data = await sendRequest(_service, _renameByExcel, StringMsg(value: excelPath));
+  return RenameFileMsg.bincodeDeserialize(data);
 }

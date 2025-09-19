@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -45,12 +44,12 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     update();
   }
 
-  // 结束处理
-  void _end2() async {
-    // state.processEnum = DisplayProcessEnum.end;
-    // state.ocrResult = await $api.ocrResult();
-    state.canExport = true;
-    update();
+  void selectPdfFile() async {
+    final path = await FilePicker.platform.pickFiles(dialogTitle: "请选择excel文件", allowedExtensions: ["xlsx"], type: FileType.custom);
+    if (path == null) {
+      return;
+    }
+    state.renameFileController.text = path.files.first.name;
   }
 
   void reset() async {
@@ -150,13 +149,6 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     trySupplyNewText();
   }
 
-  void exportResult() async {
-    final file = await $api.exportResult();
-    state.canExport = false;
-    update();
-    info("导出成功,文件路径:$file");
-  }
-
   // 下一步
   void next() {
     switch (state.processEnum) {
@@ -172,8 +164,10 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
         // TODO: Handle this case.
         throw UnimplementedError();
       case DisplayProcessEnum.order5:
+        _nextOrder5();
+      case DisplayProcessEnum.order6:
         // TODO: Handle this case.
-        throw UnimplementedError();
+        _nextOrder6();
     }
   }
 
@@ -309,5 +303,24 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
       return e.toString();
     }
     return null;
+  }
+
+  void _nextOrder5() async {
+    state.processEnum = state.processEnum.next() ?? state.processEnum;
+    update();
+    final file = await $api.exportExcel();
+    info("导出成功,文件路径:$file");
+
+  }
+
+  void _nextOrder6() async {
+    if (state.renameFileController.text.isEmpty) {
+      error("请设置文件");
+      return;
+    }
+
+    final data = await $api.renameByExcel(state.renameFileController.text);
+    state.renameFileResult = data;
+    update();
   }
 }

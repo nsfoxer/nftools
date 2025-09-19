@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:list_ext/list_ext.dart';
@@ -8,6 +10,7 @@ import 'package:nftools/pages/tar_pdf/controller/tar_pdf_controller.dart';
 import 'package:nftools/pages/tar_pdf/state/tar_pdf_state.dart';
 import 'package:nftools/src/bindings/bindings.dart';
 import 'package:nftools/utils/nf_widgets.dart';
+import 'package:tuple/tuple.dart';
 
 import '../../../utils/log.dart';
 import '../../../utils/utils.dart';
@@ -84,6 +87,8 @@ class TarPdfPage extends StatelessWidget {
         return _buildOrder4(logic, context);
       case DisplayProcessEnum.order5:
         return _buildOrder5(logic, context);
+      case DisplayProcessEnum.order6:
+        return _buildOrder6(logic, context);
     }
   }
 
@@ -448,6 +453,31 @@ class TarPdfPage extends StatelessWidget {
                   ));
             }));
   }
+
+  Widget _buildOrder6(TarPdfController logic, BuildContext context) {
+    final typography = FluentTheme.of(context).typography;
+    return NFLoadingWidgets(loading: logic.state.isLoading, child: Column(
+      children: [
+        InfoLabel(
+          label: "请选择重命名xlsx文件",
+          child: TextBox(
+            maxLines: 5,
+            placeholder: "请选择重命名xlsx文件",
+            readOnly: true,
+            onTap: logic.selectPdfFile,
+            controller: logic.state.renameFileController,
+          ),
+        ),
+        if (logic.state.renameFileResult != null)
+          NFTable(minWidth: 800,
+              empty: Text("全部成功"),
+              header: [
+            NFHeader(flex: 1, child: Text("原始文件", style: typography.bodyStrong)),
+            NFHeader(flex: 1, child: Text("失败原因", style: typography.bodyStrong)),
+          ], source: _Order6DataSource(logic.state.renameFileResult!.value))
+      ],
+    ));
+  }
 }
 
 class _DataSource extends NFDataTableSource {
@@ -743,4 +773,24 @@ class _Order3DataDisplay extends StatelessWidget {
       selected: isSelected,
     );
   }
+}
+
+class _Order6DataSource extends NFDataTableSource {
+  final List<Tuple2<String, String>> data;
+
+  _Order6DataSource(this.data);
+
+  @override
+  NFRow getRow(BuildContext context, int index) {
+    return NFRow(children: [
+      Text(data[index].item1),
+      Text(data[index].item2),
+    ]);
+  }
+
+  @override
+  bool get isEmpty => data.isEmpty;
+
+  @override
+  int? get itemCount => data.length;
 }
