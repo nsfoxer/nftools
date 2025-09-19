@@ -111,3 +111,10 @@ pub fn path_to_file_name(path: &Path) -> Result<String> {
         .ok_or_else(|| anyhow!("无法将文件名转换为字符串"))?
         .to_string())
 }
+/// path to string
+pub fn path_to_string(path: &Path) -> Result<String> {
+    Ok(path
+        .to_str()
+        .ok_or_else(|| anyhow!("无法将文件名转换为字符串"))?
+        .to_string())
+}

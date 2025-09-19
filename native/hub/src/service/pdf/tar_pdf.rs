@@ -21,7 +21,7 @@ use log::warn;
 use strfmt::strfmt;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::wrappers::ReadDirStream;
-use crate::common::utils::{index_to_string, path_to_file_name};
+use crate::common::utils::{index_to_string, path_to_file_name, path_to_string};
 use crate::service::pdf::ocr::{OcrData, OcrResult};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -294,7 +294,7 @@ impl TarPdfService {
         }
 
         let file = self.write_excel_file().await?;
-        Ok(StringMsg { value: path_to_file_name(&file)? })
+        Ok(StringMsg { value: path_to_string(&file)? })
     }
 
     /// 根据excel重命名文件
@@ -318,6 +318,7 @@ impl TarPdfService {
                 } else {
                     return Err(anyhow!("格式不正确,请不要修改首行数据"));
                 }
+                continue;
             }
 
             // 2. 读取数据
@@ -325,7 +326,10 @@ impl TarPdfService {
                 continue;
             }
             if let Ok(d1) = Self::read_cell_as_string(row, 0) && let Ok(d2) = Self::read_cell_as_string(row, 1) {
-                files.push((d1, d2));
+                let mut path = PathBuf::from(d1);
+                path.pop();
+                path.push(d2);
+                files.push((d1, path_to_string(&path)?));
             } else {
                 warn!("行[{}]数据错误", row_index+1);
             }
@@ -614,7 +618,7 @@ impl TarPdfService {
         // 创建数据行
         for (index, pdf) in self.ocr_data.iter().enumerate() {
             let row = (index + 1) as u32;
-            worksheet.write(row, 0, path_to_file_name(&pdf.pdf)?)?;
+            worksheet.write(row, 0, path_to_string(&pdf.pdf)?)?;
             match &pdf.template_result {
                 Ok(d) => {worksheet.write(row, 1, d)?;},
                 Err(e) => {worksheet.write_with_format(row, 2, e.to_string(), &error_format)?;}
