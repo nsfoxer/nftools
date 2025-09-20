@@ -5,7 +5,7 @@ use crate::service::service::{Service, StreamService};
 use crate::{async_func_nono, async_func_notype, async_func_typetype, async_stream_func_typeno, func_end, func_nono, func_notype, func_typeno, func_typetype};
 use anyhow::{anyhow, Result};
 use futures_util::StreamExt;
-use pdfium::{PdfiumDocument, PdfiumRenderConfig};
+use pdfium::{set_library_location, PdfiumDocument, PdfiumRenderConfig};
 use regex::Regex;
 use rust_xlsxwriter::{Format, Workbook};
 use serde::{Deserialize, Serialize};
@@ -17,7 +17,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use ahash::{AHashMap, AHashSet};
 use calamine::{Data, Reader, Xlsx};
 use image::DynamicImage;
-use log::warn;
+use log::{debug, warn};
 use strfmt::strfmt;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::wrappers::ReadDirStream;
@@ -578,6 +578,7 @@ impl TarPdfService {
 
         // 2. 识别数据
         ocr_result.clear_fuzzy_data();
+        debug!("识别数据: {:?}", ocr_result);
 
         Ok((img, pages as usize, ocr_result))
     }
@@ -756,6 +757,9 @@ async fn sort_pdf_files(pdf_files: &mut Vec<PathBuf>) -> Result<()> {
 
 
 fn export_pdf_to_jpegs(path: &Path, password: Option<&str>) -> Result<(DynamicImage, i32)> {
+    if cfg!(target_os = "linux") {
+        set_library_location("/home/nsfoxer/桌面/src/nftools/assets/bin/");
+    }
     let pdf = PdfiumDocument::new_from_path(path, password)?;
     let page = pdf.page(0)?;
     let config = PdfiumRenderConfig::new().with_width(861);

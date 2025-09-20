@@ -13,7 +13,7 @@ import '../../../api/image_split.dart' as $api2;
 import '../../../src/bindings/bindings.dart';
 import '../../../utils/log.dart';
 import '../../../utils/utils.dart';
-import '../state/Image_split_state.dart';
+import '../state/image_split_state.dart';
 
 /// 图片分割控制器
 class ImageSplitController extends GetxController with GetxUpdateMixin {

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:keymap/keymap.dart';
 import 'package:nftools/common/style.dart';
-import 'package:nftools/pages/utils/state/Image_split_state.dart';
+import 'package:nftools/pages/utils/state/image_split_state.dart';
 import 'package:nftools/utils/nf_widgets.dart';
 
 import '../controller/image_split_controller.dart';
