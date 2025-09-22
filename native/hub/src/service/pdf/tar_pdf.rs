@@ -6,7 +6,6 @@ use crate::{async_func_nono, async_func_notype, async_func_typetype, async_strea
 use anyhow::{anyhow, Result};
 use futures_util::StreamExt;
 use pdfium::{set_library_location, PdfiumDocument, PdfiumRenderConfig};
-use regex::Regex;
 use rust_xlsxwriter::{Format, Workbook};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -32,13 +31,6 @@ struct OcrConfig {
     url: String,
     // ocr识别密钥
     api_key: String,
-    // 编码匹配正则表达式字符串
-    no_regex: Vec<String>,
-    // 文件名修改规则
-    export_file_name_rule: String,
-    // 标题匹配正则表达式
-    #[serde(skip)]
-    no_regex_match: Vec<Regex>,
 }
 
 impl OcrConfig {
@@ -46,9 +38,6 @@ impl OcrConfig {
     fn has_data(&self) -> bool {
         !self.url.is_empty()
             && !self.api_key.is_empty()
-            && !self.export_file_name_rule.is_empty()
-            && !self.no_regex.is_empty()
-            && self.no_regex_match.len() == self.no_regex.len()
     }
 
     fn ocr_url(&self) -> String {
@@ -62,14 +51,6 @@ impl From<OcrConfigMsg> for OcrConfig {
             pdf_password: value.passwd,
             url: value.url,
             api_key: value.api_key,
-            no_regex_match: value
-                .no_regex
-                .iter()
-                .map(|x| Regex::new(x))
-                .filter_map(|r| r.ok())
-                .collect(),
-            no_regex: value.no_regex,
-            export_file_name_rule: value.export_file_name_rule,
         }
     }
 }
@@ -80,8 +61,6 @@ impl Into<OcrConfigMsg> for OcrConfig {
             passwd: self.pdf_password,
             url: self.url,
             api_key: self.api_key,
-            no_regex: self.no_regex,
-            export_file_name_rule: self.export_file_name_rule,
         }
     }
 }
@@ -146,6 +125,7 @@ impl Service for TarPdfService {
         func_typeno!(self, func, req_data, set_config, OcrConfigMsg, set_ref_config_tags, VecStringMsg);
         func_notype!(self, func, get_config, get_ocr_pdf_data);
         func_typetype!(self, func, req_data, set_ref_config_template, StringMsg);
+        func_nono!(self, func, reset);
         async_func_nono!(self, func, ocr_check);
         async_func_notype!(self, func, export_excel);
         async_func_typetype!(self, func, req_data, scan_pdf, StringMsg, get_pdf_cover, StringMsg, set_ref_config, StringMsg, rename_by_excel, StringMsg);
@@ -165,12 +145,6 @@ impl Service for TarPdfService {
 
 impl TarPdfService {
     fn set_config(&mut self, config: OcrConfigMsg) -> Result<()> {
-        for regex in &config.no_regex {
-            if let Err(e) = Regex::new(regex) {
-                return Err(anyhow!("正则表达式错误：{}", e));
-            }
-        }
-
         let config = OcrConfig::from(config);
         if !config.has_data() {
             Err(anyhow!("配置不正确"))
@@ -355,8 +329,6 @@ impl TarPdfService {
         Err(anyhow!("无法单元格为string"))
     }
 
-
-
     /// 重置数据
     fn reset(&mut self) -> Result<()> {
         self.ocr_data.clear();
@@ -456,9 +428,14 @@ impl TarPdfService {
         }
 
         let mut data_map = HashMap::new();
-        for (tag, data) in &self.ref_data.as_ref().unwrap().image_ocr {
-            data_map.insert(tag.clone(), data.text.clone());
+        let ref_data= self.ref_data.as_ref().unwrap();
+        for tag in self.ref_config.tags.iter() {
+            if tag == "pages" || tag == "order"{
+                continue;
+            }
+            data_map.insert(tag.clone(), ref_data.image_ocr.get(tag).ok_or_else(|| anyhow!("没有找到tag: {}", tag))?.text.clone());
         }
+
         data_map.insert("pages".to_string(), 10.to_string());
         data_map.insert("order".to_string(), 1.to_string());
         let result = strfmt(&template.value, &data_map)?;
@@ -472,16 +449,11 @@ impl TarPdfService {
 
 impl TarPdfService {
     pub async fn new(global_data: GlobalData) -> Self {
-        let mut config: OcrConfig = global_data
+        let config: OcrConfig = global_data
             .get_data(CONFIG_CACHE.to_string())
             .await
             .unwrap_or_default();
-        config.no_regex_match = config
-            .no_regex
-            .iter()
-            .map(|x| Regex::new(x))
-            .filter_map(|r| r.ok())
-            .collect();
+
         TarPdfService {
             global_data,
             config,
