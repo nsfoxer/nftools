@@ -68,17 +68,18 @@ class TarPdfState {
 }
 
 enum DisplayProcessEnum {
-  order1(1, "选择文件夹"),
-  order2(2, "选择参考文件"),
-  order3(3, "选取参考文字"),
-  order4(4, "处理中"),
-  order5(5, "处理结果展示"),
-  order6(6, "重命名文件");
+  order1(1, "选择文件夹", "下一步"),
+  order2(2, "选择参考文件", null),
+  order3(3, "选取参考文字", "下一步"),
+  order4(4, "处理中", null),
+  order5(5, "处理结果展示", "导出结果"),
+  order6(6, "重命名文件", "重命名");
 
 
-  const DisplayProcessEnum(this.value, this.desc);
+  const DisplayProcessEnum(this.value, this.desc, this.nextOrderText);
   final String desc;
   final int value;
+  final String? nextOrderText;
 
   static DisplayProcessEnum? fromValue(int value) {
     for (var element in DisplayProcessEnum.values) {

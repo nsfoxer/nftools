@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:list_ext/list_ext.dart';
@@ -24,31 +22,30 @@ class TarPdfPage extends StatelessWidget {
     return ScaffoldPage.withPadding(
       header: PageHeader(
         title: Text('PDF归档'),
-        commandBar: GetBuilder<TarPdfController>(
-            builder: (logic) => CommandBar(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  primaryItems: [
-                    CommandBarButton(
-                      icon: const Icon(FluentIcons.settings),
-                      label: const Text('配置'),
-                      onPressed: () => _showSetting(context),
-                    ),
-                    CommandBarButton(
-                        icon: const Icon(FluentIcons.next),
-                        label: Text(
-                            logic.state.processEnum == DisplayProcessEnum.order5
-                                ? '导出结果'
-                                : '下一步'),
-                        onPressed: () {
-                          logic.next();
-                        }),
-                    CommandBarButton(
-                      icon: const Icon(FluentIcons.reset),
-                      label: const Text('重置'),
-                      onPressed: logic.reset,
-                    ),
-                  ],
-                )),
+        commandBar: GetBuilder<TarPdfController>(builder: (logic) {
+          final processEnum = logic.state.processEnum;
+          return CommandBar(
+            mainAxisAlignment: MainAxisAlignment.end,
+            primaryItems: [
+              CommandBarButton(
+                icon: const Icon(FluentIcons.settings),
+                label: const Text('配置'),
+                onPressed: () => _showSetting(context),
+              ),
+              CommandBarButton(
+                  icon: const Icon(FluentIcons.next),
+                  label: Text(processEnum.nextOrderText ?? "不可操作"),
+                  onPressed: processEnum.nextOrderText == null ? null :() {
+                    logic.next();
+                  }),
+              CommandBarButton(
+                icon: const Icon(FluentIcons.reset),
+                label: const Text('重置'),
+                onPressed: logic.reset,
+              ),
+            ],
+          );
+        }),
       ),
       content: GetBuilder<TarPdfController>(builder: (logic) {
         List<BreadcrumbItem> breadItems = [];
