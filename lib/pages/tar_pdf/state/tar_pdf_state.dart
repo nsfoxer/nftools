@@ -1,6 +1,3 @@
-
-import 'dart:typed_data';
-
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/src/bindings/bindings.dart';
 import 'package:nftools/utils/nf_widgets.dart';
@@ -21,11 +18,6 @@ class TarPdfState {
   TextEditingController urlTextController = TextEditingController();
   TextEditingController apiKeyTextController = TextEditingController();
   TextEditingController pdfPasswordTextController = TextEditingController();
-  TextEditingController nameRuleTextController = TextEditingController();
-  List<TextEditingController> regexTextControllers = [TextEditingController()];
-
-  // 是否可导出
-  bool canExport = false;
 
   // order2
   List<String> pdfFiles = [];
@@ -57,24 +49,23 @@ class TarPdfState {
   void reset() {
     isLoading = false;
     processEnum = DisplayProcessEnum.order1;
+    pdfFiles.clear();
+    isRefOcrLoading = false;
+    refOcrDatas.clear();
+    selectedTags.clear();
     sum = 0;
     current = 0;
-    // ocrResult.clear();
+    currentFile = "";
     pdfDirTextController.clear();
     pdfPasswordTextController.clear();
-    nameRuleTextController.clear();
     isConfigLoading = false;
     pdfFiles.clear();
     refOcrDatas.clear();
     refImagePainterController.reset();
-
-    for (var element in regexTextControllers) {
-      element.dispose();
-    }
-    regexTextControllers = [TextEditingController()];
-    canExport = false;
+    ocrResults = null;
+    renameFileController.clear();
+    renameFileResult = null;
   }
-
 }
 
 enum DisplayProcessEnum {

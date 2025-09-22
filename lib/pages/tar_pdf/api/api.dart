@@ -26,11 +26,11 @@ Stream<TarPdfMsg> handle(List<String> pdfFiles) {
   return stream.map((x) => TarPdfMsg.bincodeDeserialize(x));
 }
 
-Future<void> setConfig(String url, String apiKey, List<String> noRegex, String? pdfPasswd, String nameRule) async{
+Future<void> setConfig(String url, String apiKey, String? pdfPasswd) async{
   if (pdfPasswd?.isEmpty ?? false) {
     pdfPasswd = null;
   }
-  await sendRequest(_service, _setConfig, OcrConfigMsg(url: url, apiKey: apiKey, noRegex: noRegex, exportFileNameRule: nameRule, passwd: pdfPasswd));
+  await sendRequest(_service, _setConfig, OcrConfigMsg(url: url, apiKey: apiKey, passwd: pdfPasswd));
 }
 
 Future<OcrConfigMsg> getConfig() async{

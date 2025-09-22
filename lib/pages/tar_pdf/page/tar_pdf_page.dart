@@ -159,7 +159,7 @@ class TarPdfPage extends StatelessWidget {
         Divider(direction: Axis.vertical),
         Expanded(
             flex: 3,
-            child: Column(
+            child: NFLoadingWidgets(loading: logic.state.isRefOcrLoading, hint: "文字识别中...", child: Column(
               children: [
                 Expanded(
                   flex: 1,
@@ -251,7 +251,7 @@ class TarPdfPage extends StatelessWidget {
                       )),
                 ),
               ],
-            )),
+            ))),
         Divider(direction: Axis.vertical),
       ],
     );
@@ -399,36 +399,6 @@ class TarPdfPage extends StatelessWidget {
                               placeholder: "请输入pdf密码(没有则不填)",
                             ),
                           ),
-                          InfoLabel(
-                            label: "文件重命名规则",
-                            child: TextFormBox(
-                              controller: logic.state.nameRuleTextController,
-                              cursorColor: color,
-                              validator: (v) {
-                                if (v == '') {
-                                  return "数据不能为空";
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          InfoLabel(
-                              label: "编号正则配置",
-                              child: _MultiText(
-                                controllers: logic.state.regexTextControllers,
-                                onTapOutside: (i) {
-                                  debug("editing complete $i");
-                                  if (logic.state.regexTextControllers[i].text
-                                      .isEmpty) {
-                                    logic.removeRegex(i);
-                                  } else {
-                                    logic.trySupplyNewText();
-                                  }
-                                },
-                                remove: (i) {
-                                  logic.removeRegex(i);
-                                },
-                              )),
                         ],
                       ),
                     )),
@@ -538,57 +508,6 @@ class _DataSource extends NFDataTableSource {
 
   @override
   int? get itemCount => data.length;
-}
-
-class _MultiText extends StatelessWidget {
-  final List<TextEditingController> controllers;
-  final void Function(int index) onTapOutside;
-  final void Function(int index) remove;
-
-  const _MultiText(
-      {required this.controllers,
-      required this.onTapOutside,
-      required this.remove});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      spacing: NFLayout.v2,
-      children: [
-        for (var i = 0; i < controllers.length; i++)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Flexible(
-                  child: TextFormBox(
-                controller: controllers[i],
-                cursorColor: primaryColor(context),
-                keyboardType: TextInputType.text,
-                placeholder: "请输入[编号]正则表达式",
-                enableSuggestions: false,
-                onTapOutside: (p) => onTapOutside(i),
-                validator: (v) {
-                  bool check = false;
-                  if (controllers.length == 1 || i != controllers.length - 1) {
-                    check = true;
-                  }
-                  if (check && v == '') {
-                    return "数据不能为空";
-                  }
-                  return null;
-                },
-              )),
-              if (i != controllers.length - 1)
-                IconButton(
-                    icon: Icon(FluentIcons.delete, color: Colors.red),
-                    onPressed: () => remove(i)),
-            ],
-          ),
-      ],
-    );
-  }
 }
 
 class _Order2DataSource extends NFDataTableSource {

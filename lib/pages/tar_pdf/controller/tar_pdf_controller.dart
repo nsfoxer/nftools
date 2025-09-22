@@ -56,7 +56,6 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     state.reset();
     // await $api.clearResult();
     await configReset();
-    state.reset();
     update();
   }
 
@@ -73,27 +72,14 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     state.urlTextController.text = config.url;
     state.apiKeyTextController.text = config.apiKey;
     state.pdfPasswordTextController.text = config.passwd ?? "";
-    state.nameRuleTextController.text = config.exportFileNameRule;
-
-    for (var element in state.regexTextControllers) {
-      element.dispose();
-    }
-    state.regexTextControllers.clear();
-    for (var element in config.noRegex) {
-      state.regexTextControllers.add(TextEditingController(text: element));
-    }
-    trySupplyNewText();
   }
 
   Future<bool> setConfig() async {
     final url = state.urlTextController.text;
     final urlKey = state.apiKeyTextController.text;
     final passwd = state.pdfPasswordTextController.text;
-    final nameRule = state.nameRuleTextController.text;
-    final regex = state.regexTextControllers.map((e) => e.text).toList();
-    regex.removeWhere((element) => element.isEmpty);
 
-    if (url.isEmpty || urlKey.isEmpty || regex.isEmpty || nameRule.isEmpty) {
+    if (url.isEmpty || urlKey.isEmpty) {
       error("请补全配置");
       return false;
     }
@@ -102,7 +88,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     update();
 
     try {
-      await $api.setConfig(url, urlKey, regex, passwd, nameRule);
+      await $api.setConfig(url, urlKey, passwd);
     } catch (e) {
       error("服务器配置失败,请检查配置!");
       state.isConfigLoading = false;
@@ -122,31 +108,6 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     state.isConfigLoading = false;
     update();
     return true;
-  }
-
-
-  // 添加正则输入框
-  void trySupplyNewText() {
-    if (state.regexTextControllers.isEmpty) {
-      state.regexTextControllers.add(TextEditingController());
-    } else if (state.regexTextControllers.last.text.isNotEmpty) {
-      state.regexTextControllers.add(TextEditingController());
-    }
-    update();
-  }
-
-  // 移除正则输入框
-  void removeRegex(int i) {
-    if (i < 0 || i > state.regexTextControllers.length - 1) {
-      fatal("移除输入框索引越界");
-      return;
-    }
-
-    if (state.regexTextControllers.length > 1) {
-      final controller = state.regexTextControllers.removeAt(i);
-      controller.dispose();
-    }
-    trySupplyNewText();
   }
 
   // 下一步
