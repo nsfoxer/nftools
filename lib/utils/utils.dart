@@ -187,8 +187,9 @@ class NFDebounce {
     }
 
     if (maxDuration <= duration) {
-      warn("maxDuration[$maxDuration] 必须大于 duration[$duration], 使用 duration");
-      maxDuration = duration * 2; // 默认设为 duration 的两倍
+      final tmpDuration = duration * 2; // 默认设为 duration 的两倍
+      warn("maxDuration[$maxDuration] 必须大于 duration[$duration], maxDuration已自动设为 [$tmpDuration]");
+      maxDuration = tmpDuration; // 默认设为 duration 的两倍
     }
 
     // 移除之前的定时器

@@ -148,7 +148,9 @@ class TarPdfPage extends StatelessWidget {
                     Stack(children: [
                       NFImagePainterPage(
                           controller: logic.state.refImagePainterController, onRendered: () {
-                            logic.mapRefOcrData2LocalData();
+                            NFDebounce.debounce("TarPdfPage-Order3-OnRender", Duration(milliseconds: 100), Duration(milliseconds: 150), () {
+                              logic.mapRefOcrData2LocalData();
+                            });
                       }),
                       GetBuilder<TarPdfController>(builder: (logic) {
                         List<Widget> textRects = logic.state.refOcrDatas
