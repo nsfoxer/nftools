@@ -7,12 +7,14 @@ import 'package:nftools/pages/tar_pdf/state/tar_pdf_state.dart';
 import 'package:nftools/src/bindings/signals/signals.dart';
 import 'package:nftools/utils/extension.dart';
 import 'package:nftools/utils/log.dart';
-import 'package:nftools/utils/utils.dart';
 
 import '../api/api.dart' as $api;
 
 class TarPdfController extends GetxController with GetxUpdateMixin {
   TarPdfState state = TarPdfState();
+
+  // 文本框渲染原始数据
+  List<OcrDataMsg> _originalOcrDatas = [];
 
 
   @override
@@ -54,7 +56,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
 
   void reset() async {
     state.reset();
-    // await $api.clearResult();
+    _originalOcrDatas.clear();
     await configReset();
     update();
   }
@@ -201,7 +203,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     final ImageProvider img;
     try {
       img = await order2Preview(pdfPath);
-      state.refImagePainterController.setImageProvider(img);
+      await state.refImagePainterController.setImageProvider(img);
     } finally {
       _end();
     }
@@ -209,24 +211,20 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     // 识别坐标
     state.isRefOcrLoading = true;
     update();
-    final data = await $api.setRefConfig(pdfPath);
+    _originalOcrDatas = await $api.setRefConfig(pdfPath);
     state.isRefOcrLoading = false;
-    
-    // 设置OCR结果数据
-    state.refOcrDatas = await _convertOcrData(data, img);
-    debug("参考文件本地识别结果:$data");
-
     update();
   }
 
   /// 转换文字识别结果为本地
-  Future<List<OcrDataMsg>> _convertOcrData(List<OcrDataMsg> data, ImageProvider img) async  {
-    final imgInfo = await getImageInfoFromProvider(img);
-    final ratio = state.refImagePainterController.getImgRect().width / imgInfo.image.width;
-    final picRect = state.refImagePainterController.getImgRect();
-    return data.map((e) {
+  void mapRefOcrData2LocalData() {
+    final picRect = state.refImagePainterController.displayRect;
+    final imgSize = state.refImagePainterController.imgSize;
+    final ratio = picRect.width / imgSize.width;
+    state.refOcrDatas = _originalOcrDatas.map((e) {
       return OcrDataMsg(id: e.id, text: e.text, location: _scaleLocation(e.location, ratio, Offset(picRect.left, picRect.top)));
     }).toList();
+    update(["TarPdfPage-Order3-TextRect"]);
   }
 
   // 缩放原始坐标为显示坐标
@@ -260,6 +258,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
       state.refTemplateResultValue = result;
       update();
     } catch (e) {
+      debug("模板填写错误: $e");
       return e.toString();
     }
     return null;

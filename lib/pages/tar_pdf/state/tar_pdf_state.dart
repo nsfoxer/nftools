@@ -60,7 +60,6 @@ class TarPdfState {
     pdfPasswordTextController.clear();
     isConfigLoading = false;
     pdfFiles.clear();
-    refOcrDatas.clear();
     refImagePainterController.reset();
     ocrResults = null;
     renameFileController.clear();

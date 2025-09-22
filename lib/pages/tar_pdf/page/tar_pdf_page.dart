@@ -82,7 +82,8 @@ class TarPdfPage extends StatelessWidget {
       case DisplayProcessEnum.order2:
         return _buildOrder2(logic, context);
       case DisplayProcessEnum.order3:
-        return _buildOrder3(logic, context);
+        return LayoutBuilder(builder: (ctx, constraints) => _buildOrder3(logic, context));
+        // return _buildOrder3(logic, context);
       case DisplayProcessEnum.order4:
         return _buildOrder4(logic, context);
       case DisplayProcessEnum.order5:
@@ -135,11 +136,6 @@ class TarPdfPage extends StatelessWidget {
 
   Widget _buildOrder3(TarPdfController logic, BuildContext context) {
     final typography = FluentTheme.of(context).typography;
-    List<Widget> textRects = logic.state.refOcrDatas
-        .map((x) => _TextContainer(x.id, x.text, x.location, (id) {
-              logic.selectTag(id, !logic.state.selectedTags.contains(id));
-            }))
-        .toList();
     return Row(
       children: [
         Expanded(
@@ -151,8 +147,21 @@ class TarPdfPage extends StatelessWidget {
                   children: [
                     Stack(children: [
                       NFImagePainterPage(
-                          controller: logic.state.refImagePainterController),
-                      ...textRects,
+                          controller: logic.state.refImagePainterController, onRendered: () {
+                            logic.mapRefOcrData2LocalData();
+                      }),
+                      GetBuilder<TarPdfController>(builder: (logic) {
+                        List<Widget> textRects = logic.state.refOcrDatas
+                            .map((x) =>
+                                _TextContainer(x.id, x.text, x.location, (id) {
+                                  logic.selectTag(id,
+                                      !logic.state.selectedTags.contains(id));
+                                }))
+                            .toList();
+                        return Stack(
+                          children: textRects,
+                        );
+                      }, id: "TarPdfPage-Order3-TextRect"),
                     ])
                   ],
                 )))),

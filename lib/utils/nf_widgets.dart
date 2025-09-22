@@ -452,12 +452,18 @@ class NFRow {
 /// 图片画画界面start
 /// 图片绘制页面
 class NFImagePainterPage extends StatelessWidget {
-  const NFImagePainterPage({super.key, required this.controller});
+  const NFImagePainterPage({super.key, required this.controller, this.onRendered});
 
   final NFImagePainterController controller;
+  // 新增：渲染完成回调
+  final VoidCallback? onRendered;
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 当回调不为空时执行
+      onRendered?.call();
+    });
     final painter = _ImageMaskPainter(points: controller._points);
     controller._painter = painter;
     return GestureDetector(
@@ -606,6 +612,7 @@ class NFImagePainterController extends ChangeNotifier {
 
   /// 图片展示区域
   Rect _displayRect = Rect.zero;
+  Rect get displayRect => _displayRect;
 
   /// 画板大小
   Size _boardSize = Size.zero;
@@ -619,8 +626,9 @@ class NFImagePainterController extends ChangeNotifier {
   /// 绘制开始回调
   Function(DrawType type) startType;
 
-  /// 图片实际大小
+  /// 图片真实大小(非显示大小)
   final ValueNotifier<Size> _imgSize = ValueNotifier(Size.zero);
+  Size get imgSize => _imgSize.value;
 
   /// 启用鼠标绘制
   bool enableMouse = false;
@@ -791,12 +799,6 @@ class NFImagePainterController extends ChangeNotifier {
     _points.value.last.points.add(rect.bottomRight + _displayRect.topLeft);
     _points.notifyListeners();
   }
-
-  /// 获取图片实际展示坐标
-  Rect getImgRect() {
-    return _displayRect;
-  }
-
 
 }
 
