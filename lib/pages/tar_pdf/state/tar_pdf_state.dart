@@ -31,6 +31,7 @@ class TarPdfState {
   Set<String> selectedTags = {};
   TextEditingController refTemplateController = TextEditingController();
   String refTemplateResultValue = "";
+  String refTemplateResultErrorMsg = "";
 
   // order4 进度
   // 处理中展示数据
@@ -44,6 +45,7 @@ class TarPdfState {
   // order6 文件重命名文件
   TextEditingController renameFileController = TextEditingController();
   RenameFileMsg? renameFileResult;
+  String exportFilePath = "";
 
 
   void reset() {
@@ -64,6 +66,9 @@ class TarPdfState {
     ocrResults = null;
     renameFileController.clear();
     renameFileResult = null;
+    refTemplateResultValue = "";
+    refTemplateResultErrorMsg = "";
+    exportFilePath = "";
   }
 }
 

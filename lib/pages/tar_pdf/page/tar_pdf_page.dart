@@ -250,9 +250,15 @@ class TarPdfPage extends StatelessWidget {
                               spacing: NFLayout.v4,
                               children: [
                                 Text("表达式执行结果:", style: typography.caption),
-                                Text(logic.state.refTemplateResultValue,
-                                    style: typography.caption)
-                              ],
+                                logic.state.refTemplateResultErrorMsg
+                                            .isNotEmpty
+                                        ? Text(
+                                            logic.state.refTemplateResultErrorMsg,
+                                            style: typography.caption?.copyWith(color: Colors.red),)
+                                        : Text(
+                                            logic.state.refTemplateResultValue,
+                                            style: typography.caption)
+                                  ],
                             ),
                           ),
                         ],
@@ -435,7 +441,14 @@ class TarPdfPage extends StatelessWidget {
   Widget _buildOrder6(TarPdfController logic, BuildContext context) {
     final typography = FluentTheme.of(context).typography;
     return NFLoadingWidgets(loading: logic.state.isLoading, child: Column(
+      spacing: NFLayout.v1,
       children: [
+        HyperlinkButton(
+          onPressed: logic.state.exportFilePath.isEmpty ? null : () {
+            logic.copyFilePath();
+          },
+          child: Text("已导出路径: ${logic.state.exportFilePath}"),
+        ),
         InfoLabel(
           label: "请选择重命名xlsx文件",
           child: TextBox(

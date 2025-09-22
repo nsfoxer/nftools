@@ -7,6 +7,7 @@ import 'package:nftools/pages/tar_pdf/state/tar_pdf_state.dart';
 import 'package:nftools/src/bindings/signals/signals.dart';
 import 'package:nftools/utils/extension.dart';
 import 'package:nftools/utils/log.dart';
+import 'package:pasteboard/pasteboard.dart';
 
 import '../api/api.dart' as $api;
 
@@ -256,9 +257,13 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     try {
       final result = await $api.setRefConfigTemplate(template);
       state.refTemplateResultValue = result;
+      state.refTemplateResultErrorMsg = "";
       update();
     } catch (e) {
       debug("模板填写错误: $e");
+      state.refTemplateResultValue = "";
+      state.refTemplateResultErrorMsg = e.toString();
+      update();
       return e.toString();
     }
     return null;
@@ -269,7 +274,8 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     update();
     final file = await $api.exportExcel();
     info("导出成功,文件路径:$file");
-
+    state.exportFilePath = file;
+    update();
   }
 
   void _nextOrder6() async {
@@ -281,5 +287,10 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     final data = await $api.renameByExcel(state.renameFileController.text);
     state.renameFileResult = data;
     update();
+  }
+
+  void copyFilePath() {
+    Pasteboard.writeText(state.exportFilePath);
+    info("已复制文件路径:${state.exportFilePath}");
   }
 }
