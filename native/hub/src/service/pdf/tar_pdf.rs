@@ -352,7 +352,8 @@ impl TarPdfService {
         if !pdf_dir.exists() || !pdf_dir.is_dir() {
             return Err(anyhow!("pdf目录不存在或非目录"));
         }
-        let pdf_files = get_pdf_files_in_directory(&pdf_dir).await?;
+        let mut pdf_files = get_pdf_files_in_directory(&pdf_dir).await?;
+        sort_pdf_files(&mut pdf_files).await?;
         Ok(VecStringMsg {
             values: pdf_files.into_iter().map(|x| x.into_os_string().into_string().unwrap()).collect()
         })
