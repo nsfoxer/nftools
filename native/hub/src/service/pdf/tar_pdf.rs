@@ -22,6 +22,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::wrappers::ReadDirStream;
 use crate::common::utils::{index_to_string, path_to_file_name, path_to_string};
 use crate::service::pdf::ocr::{OcrData, OcrResult};
+use crate::service::pdf::orb::OrbFeature;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 struct OcrConfig {
@@ -66,7 +67,7 @@ impl Into<OcrConfigMsg> for OcrConfig {
 }
 
 struct RefData {
-    image: DynamicImage,
+    orb_feature: OrbFeature,
     // k: tag v: ocr结果
     image_ocr: AHashMap<String, OcrData>,
 }
@@ -218,7 +219,8 @@ impl TarPdfService {
         self.ocr_data.clear();
         let url = self.config.ocr_url();
         let count = pdf_files.len();
-        for (index, pdf_file) in pdf_files.into_iter().enumerate() {
+        let mut order = 1;
+        for pdf_file in pdf_files.into_iter() {
             // 发送当前处理进度
             let file_name = pdf_file
                 .file_name()
@@ -227,14 +229,17 @@ impl TarPdfService {
                 .unwrap_or_default()
                 .to_string();
             let msg = rinf::serialize(&TarPdfMsg {
-                now: (index+1) as u32,
+                now: order,
                 sum: count as u32,
                 current_file: file_name,
             });
             tx.send(Ok(Some(msg?)))?;
 
             // 文本处理
-            let ocr_data = self.handle_pdf(pdf_file, &url, index).await;
+            let (ocr_data, next) = self.handle_pdf(pdf_file, &url, order).await;
+            if next {
+                order += 1;
+            }
 
             // 保存结果
             self.ocr_data.push(ocr_data);
@@ -387,6 +392,7 @@ impl TarPdfService {
         let data = ocr_result.result.into_ocr_data();
 
         // 3. 转换数据
+        let orb_feature = OrbFeature::from(img)?;
         let result = RefOcrDatasMsg {
             data: data.iter().enumerate().map(|(i, x)| {
                 OcrDataMsg {
@@ -401,7 +407,7 @@ impl TarPdfService {
             (index_to_string(i), x)
         }).collect();
         self.ref_data = Some(RefData {
-            image: img,
+            orb_feature,
             image_ocr: data,
         });
         Ok(result)
@@ -465,19 +471,51 @@ impl TarPdfService {
 
 
     const MIN_SCORE: f64 = 0.9;
+    const SIMILAR_SCORE: f64 = 0.2;
     /// 处理一个pdf
-    async fn handle_pdf(&self, pdf: PathBuf, url: &str, index: usize) -> OcrPdfData {
+    async fn handle_pdf(&self, pdf: PathBuf, url: &str, index: u32) -> (OcrPdfData, bool) {
         // 1. ocr pdf
-        let (_, pages, ocr_result) = match self.ocr_pdf(&pdf, url).await {
+        let (dest_img, pages, ocr_result) = match self.ocr_pdf(&pdf, url).await {
             Ok(r) => r,
             Err(e) => {
-                return OcrPdfData {
+                return (OcrPdfData {
                     pdf,
                     datas: Err(e),
                     template_result: Ok(String::with_capacity(0)),
-                };
+                }, false);
             }
         };
+
+        // 2. 对比图片相似度
+        let dest_orb = match OrbFeature::from(dest_img) {
+            Ok(k) => k,
+            Err(e) => {
+                return (OcrPdfData {
+                    pdf,
+                    datas: Err(e),
+                    template_result: Ok(String::with_capacity(0)),
+                }, false);
+            }
+        };
+        match self.ref_data.as_ref().unwrap().orb_feature.distance(&dest_orb) {
+            Ok(k) => {
+                debug!("图片相似度: {}", k.1);
+                if k.1 < Self::SIMILAR_SCORE {
+                    return (OcrPdfData {
+                        pdf,
+                        datas: Err(anyhow!("图片相似度过低，可能不为同一格式文件，忽略")),
+                        template_result: Ok(String::with_capacity(0)),
+                    }, false);
+                }
+            }
+            Err(e) => {
+                return (OcrPdfData {
+                    pdf,
+                    datas: Err(e),
+                    template_result: Ok(String::with_capacity(0)),
+                }, false);
+            }
+        }
 
         // 2. 对比数据
         let target_ocr_data = ocr_result.result.into_ocr_data();
@@ -509,7 +547,7 @@ impl TarPdfService {
             result_datas.insert(tag.clone(), ref_data);
         }
         result_datas.insert("pages".to_string(), Ok(pages.to_string()));
-        result_datas.insert("order".to_string(), Ok((index+1).to_string()));
+        result_datas.insert("order".to_string(), Ok(index.to_string()));
 
         // 4. 模板处理
         let mut template_map = HashMap::new();
@@ -520,11 +558,11 @@ impl TarPdfService {
         }
         let template_result = strfmt(&self.ref_config.template, &mut template_map).map_err(|e| anyhow!(e));
 
-        OcrPdfData {
+        (OcrPdfData {
             pdf,
             datas: Ok(result_datas),
             template_result,
-        }
+        }, true)
     }
 
     /// ocr_pdf
