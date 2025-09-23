@@ -748,13 +748,13 @@ async fn get_pdf_files_in_directory(dir: &Path) -> Result<Vec<PathBuf>> {
     Ok(pdf_files)
 }
 
-/// 按创建时间对文件进行排序
+/// 按修改时间对文件进行排序
 async fn sort_pdf_files(pdf_files: &mut Vec<PathBuf>) -> Result<()> {
     let mut pdf_files_with_time = Vec::with_capacity(pdf_files.len());
 
     for pdf in pdf_files.drain(..) {
         let metadata = tokio::fs::metadata(&pdf).await?;
-        let created_time = metadata.created().unwrap_or(UNIX_EPOCH);
+        let created_time = metadata.modified().unwrap_or(UNIX_EPOCH);
         pdf_files_with_time.push((pdf, created_time));
     }
 
