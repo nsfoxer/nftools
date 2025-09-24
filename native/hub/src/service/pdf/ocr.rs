@@ -1,6 +1,5 @@
 use std::cmp::max;
 use anyhow::{anyhow, Result};
-use log::debug;
 use reqwest_dav::re_exports::serde::Deserialize;
 use serde_with::serde_as;
 use serde_with::DisplayFromStr;
@@ -126,7 +125,6 @@ impl OcrData {
         let mut max_score = 0.0;
         for text in texts.iter() {
             let score = Self::cal_score(ref_x, ref_y, self.text.as_str(), max_distance, min_score, text)?;
-            debug!("dest_text: {} target_text: {} score: {}", self.text, text.text, score);
             if score > max_score {
                 max_score = score;
                 result = Some(text);
@@ -146,7 +144,6 @@ impl OcrData {
         // 2. 计算距离评分
         let distance = ((target_x-ref_x).powi(2) + (target_y-ref_y).powi(2)).sqrt();
         let distance_score =  0.0f64.max(1.0f64 - distance / max_distance);
-        debug!("distance_score: {}", distance_score);
 
         // 3. 筛选掉距离评分低于阈值的数据
         if ref_text.len() < MIN_TEXT_LEN || text.text.len() < MIN_TEXT_LEN {
@@ -159,7 +156,6 @@ impl OcrData {
         // 4. 计算文本相似度评分
         let text_similar = levenshtein(ref_text, text.text.as_str());
         let text_similar_score = 1.0 - (text_similar as f64 / max(ref_text.len(), text.text.len()) as f64);
-        debug!("text_similar_score: {}", text_similar_score);
 
         Ok(distance_score * DISTANCE_RATIO + text_similar_score * TEXT_SIMILARITY_RATIO)
     }
