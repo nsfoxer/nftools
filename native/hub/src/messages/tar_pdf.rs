@@ -65,3 +65,19 @@ pub struct PdfFilesMsg {
     /// 是否启用图片相似度检查
     pub enable_similarity: bool,
 }
+
+/// 相似性检查
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct SimilarityMsg {
+    /// 参考文件
+    pub ref_pdf: String,
+    /// 要检测的文件列表
+    pub files: Vec<String>,
+}
+
+/// 相似性检查结果
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct SimilarityResultMsg {
+    /// k: 相似度 v: error msg
+    pub values: Vec<(f64, String)>,
+}

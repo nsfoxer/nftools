@@ -1,6 +1,6 @@
 use crate::common::global_data::GlobalData;
 use crate::messages::common::{DataMsg, StringMsg, VecStringMsg};
-use crate::messages::tar_pdf::{OcrConfigMsg, OcrDataMsg, PdfFilesMsg, RefOcrDatasMsg, RenameFileMsg, TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
+use crate::messages::tar_pdf::{OcrConfigMsg, OcrDataMsg, PdfFilesMsg, RefOcrDatasMsg, RenameFileMsg, SimilarityMsg, SimilarityResultMsg, TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
 use crate::service::service::{Service, StreamService};
 use crate::{async_func_nono, async_func_notype, async_func_typetype, async_stream_func_typeno, func_end, func_nono, func_notype, func_typeno, func_typetype};
 use anyhow::{anyhow, Result};
@@ -129,7 +129,8 @@ impl Service for TarPdfService {
         func_nono!(self, func, reset);
         async_func_nono!(self, func, ocr_check);
         async_func_notype!(self, func, export_excel);
-        async_func_typetype!(self, func, req_data, scan_pdf, StringMsg, get_pdf_cover, StringMsg, set_ref_config, StringMsg, rename_by_excel, StringMsg);
+        async_func_typetype!(self, func, req_data, scan_pdf, StringMsg, get_pdf_cover, StringMsg,
+            set_ref_config, StringMsg, rename_by_excel, StringMsg, similar_pdf, SimilarityMsg);
 
         func_end!(func)
     }
@@ -454,6 +455,36 @@ impl TarPdfService {
             value: result,
         })
     }
+
+    /// 文件相似性结果
+    async fn similar_pdf(&self, similar_pdf: SimilarityMsg) -> Result<SimilarityResultMsg> {
+        // 1. 计算参考文件数据
+        let path = PathBuf::from(&similar_pdf.ref_pdf);
+        if !path.exists() {
+            return Err(anyhow!("参考文件{}不存在", similar_pdf.ref_pdf));
+        }
+        let (img, _) = self.convert_pdf_to_img(&path).await?;
+        let ref_orb = OrbFeature::from(&img)?;
+
+        // 2. 分别计算各个文件相似度
+        let mut result = Vec::with_capacity(similar_pdf.files.len());
+        for pdf in similar_pdf.files {
+            match self.cal_similar(&ref_orb, &pdf).await {
+                Ok(similarity) => {
+                    result.push((similarity, String::with_capacity(0)));
+                },
+                Err(err) => {
+                    result.push((0.0, err.to_string()))
+                }
+            };
+        }
+
+        // 3. 返回结果
+        Ok(SimilarityResultMsg{
+            values: result
+        })
+    }
+
 }
 
 impl TarPdfService {
@@ -714,6 +745,20 @@ impl TarPdfService {
                 })
             }
         }
+    }
+
+    /// 计算相似度
+    ///
+    /// `ref_orb`: 参考特征
+    ///
+    /// `dest_path`:目标文件路径
+    ///
+    async fn cal_similar(&self, ref_orb: &OrbFeature, dest_path: &str) -> Result<f64> {
+        let path = PathBuf::from(dest_path);
+        let (img, _) = self.convert_pdf_to_img(&path).await?;
+        let target_orb = OrbFeature::from(&img)?;
+        let (_, score) = ref_orb.distance(&target_orb)?;
+        Ok(score)
     }
 }
 
