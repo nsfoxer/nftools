@@ -21,8 +21,8 @@ const String _renameByExcel = "rename_by_excel";
 
 
 // start
-Stream<TarPdfMsg> handle(List<String> pdfFiles) {
-  var stream = sendRequestStream(_service, _handle, VecStringMsg(values: pdfFiles));
+Stream<TarPdfMsg> handle(List<String> pdfFiles, bool enableSimilar) {
+  var stream = sendRequestStream(_service, _handle, PdfFilesMsg(files: pdfFiles, enableSimilarity: enableSimilar));
   return stream.map((x) => TarPdfMsg.bincodeDeserialize(x));
 }
 

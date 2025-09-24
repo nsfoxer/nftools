@@ -36,7 +36,7 @@ class TarPdfPage extends StatelessWidget {
                   icon: const Icon(FluentIcons.next),
                   label: Text(processEnum.nextOrderText ?? "不可操作"),
                   onPressed: processEnum.nextOrderText == null ? null :() {
-                    logic.next();
+                    logic.next(context);
                   }),
               CommandBarButton(
                 icon: const Icon(FluentIcons.reset),

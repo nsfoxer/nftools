@@ -13,7 +13,6 @@ import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/router_controller.dart';
 import 'package:nftools/router/router.dart';
 import 'package:nftools/src/bindings/bindings.dart';
-import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/utils.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:rinf/rinf.dart';

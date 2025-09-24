@@ -7,6 +7,7 @@ import 'package:nftools/pages/tar_pdf/state/tar_pdf_state.dart';
 import 'package:nftools/src/bindings/signals/signals.dart';
 import 'package:nftools/utils/extension.dart';
 import 'package:nftools/utils/log.dart';
+import 'package:nftools/utils/utils.dart';
 import 'package:pasteboard/pasteboard.dart';
 
 import '../api/api.dart' as $api;
@@ -114,7 +115,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
   }
 
   // 下一步
-  void next() {
+  void next(BuildContext context) async {
     switch (state.processEnum) {
       case DisplayProcessEnum.order1:
         _nextOrder1();
@@ -123,7 +124,9 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
         debug("下一步 order2 不生效");
         return;
       case DisplayProcessEnum.order3:
-        _nextOrder3();
+        if ((await _nextOrder3Check())) {
+          _nextOrder3(context);
+        }
       case DisplayProcessEnum.order4:
         // TODO: Handle this case.
         throw UnimplementedError();
@@ -149,25 +152,35 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     }
   }
 
-  void _nextOrder3() async {
+  // next3 check
+  Future<bool> _nextOrder3Check() async {
     // 检查数据是否正确
     if (state.selectedTags.isEmpty) {
       warn("请选择标签");
-      return;
+      return false;
     }
     state.refTemplateController.text = state.refTemplateController.text.trim();
     if (state.refTemplateController.text.isEmpty) {
       warn("请填写参考文件模板");
-      return;
+      return false;
     }
     final result = await tryGetRefTemplateResult();
     if (result != null) {
       error("模板填写错误: $result");
-      return;
+      return false;
     }
 
+    return true;
+  }
+
+  void _nextOrder3(BuildContext context) async {
+    if (!context.mounted) {
+      return;
+    }
+    final enable = await confirmDialog(context, "是否启用相似性检查", "启用后将根据参考文件进行相似性对比,跳过不相似的pdf文件\n\n默认不检查");
+
     // 开始处理
-    final Stream<TarPdfMsg> stream = $api.handle(state.pdfFiles);
+    final Stream<TarPdfMsg> stream = $api.handle(state.pdfFiles, enable);
     state.processEnum = state.processEnum.next() ?? state.processEnum;
     update();
     stream.listen((data) {
