@@ -18,6 +18,7 @@ const String _setRefConfigTags = "set_ref_config_tags";
 const String _setRefConfigTemplate = "set_ref_config_template";
 const String _exportExcel = "export_excel";
 const String _renameByExcel = "rename_by_excel";
+const String _reset = "reset";
 
 
 // start
@@ -95,4 +96,9 @@ Future<String> exportExcel() async {
 Future<RenameFileMsg> renameByExcel(String excelPath) async{
   final data = await sendRequest(_service, _renameByExcel, StringMsg(value: excelPath));
   return RenameFileMsg.bincodeDeserialize(data);
+}
+
+// 重置
+Future<void> reset() async {
+  await sendEmptyRequest(_service, _reset);
 }

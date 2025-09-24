@@ -60,6 +60,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     state.reset();
     _originalOcrDatas.clear();
     await configReset();
+    await $api.reset();
     update();
   }
 
@@ -177,7 +178,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     if (!context.mounted) {
       return;
     }
-    final enable = await confirmDialog(context, "是否启用相似性检查", "启用后将根据参考文件进行相似性对比,跳过不相似的pdf文件\n\n默认不检查");
+    final enable = await confirmDialog(context, "是否启用相似性检查", "启用后将根据参考文件进行相似性对比,跳过不相似的pdf文件");
 
     // 开始处理
     final Stream<TarPdfMsg> stream = $api.handle(state.pdfFiles, enable);
@@ -227,6 +228,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     update();
     _originalOcrDatas = await $api.setRefConfig(pdfPath);
     state.isRefOcrLoading = false;
+    state.refOcrDatas = _originalOcrDatas;
     update();
   }
 
