@@ -56,3 +56,12 @@ pub struct RenameFileMsg {
     // 0: filename 1: error
     pub value: Vec<(String, String)>,
 }
+
+/// 请求检测的文件
+#[derive(Debug, Serialize, Deserialize, SignalPiece)]
+pub struct PdfFilesMsg {
+    /// 要检测的文件 （依顺序）
+    pub files: Vec<String>,
+    /// 是否启用图片相似度检查
+    pub enable_similarity: bool,
+}
