@@ -57,15 +57,6 @@ pub struct RenameFileMsg {
     pub value: Vec<(String, String)>,
 }
 
-/// 请求检测的文件
-#[derive(Debug, Serialize, Deserialize, SignalPiece)]
-pub struct PdfFilesMsg {
-    /// 要检测的文件 （依顺序）
-    pub files: Vec<String>,
-    /// 是否启用图片相似度检查
-    pub enable_similarity: bool,
-}
-
 /// 相似性检查
 #[derive(Debug, Serialize, Deserialize, SignalPiece)]
 pub struct SimilarityMsg {

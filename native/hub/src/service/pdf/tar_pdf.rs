@@ -1,6 +1,6 @@
 use crate::common::global_data::GlobalData;
 use crate::messages::common::{DataMsg, StringMsg, VecStringMsg};
-use crate::messages::tar_pdf::{OcrConfigMsg, OcrDataMsg, PdfFilesMsg, RefOcrDatasMsg, RenameFileMsg, SimilarityMsg, SimilarityResultMsg, TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
+use crate::messages::tar_pdf::{OcrConfigMsg, OcrDataMsg, RefOcrDatasMsg, RenameFileMsg, SimilarityMsg, SimilarityResultMsg, TarPdfMsg, TarPdfResultMsg, TarPdfResultsMsg};
 use crate::service::service::{Service, StreamService};
 use crate::{async_func_nono, async_func_notype, async_func_typetype, async_stream_func_typeno, func_end, func_nono, func_notype, func_typeno, func_typetype};
 use anyhow::{anyhow, Result};
@@ -189,7 +189,7 @@ impl TarPdfService {
 
     async fn handle(
         &mut self,
-        pdf_files: PdfFilesMsg,
+        pdf_files: VecStringMsg,
         tx: UnboundedSender<Result<Option<Vec<u8>>>>,
     ) -> Result<()> {
         // 1. 配置检查
@@ -199,10 +199,9 @@ impl TarPdfService {
         }
 
         // 2. 转换files文件为path,并排序
-        let enable_similar = pdf_files.enable_similarity;
         let pdf_files = {
-          let mut files =  Vec::with_capacity(pdf_files.files.len());
-            for file in pdf_files.files {
+          let mut files =  Vec::with_capacity(pdf_files.values.len());
+            for file in pdf_files.values {
                 let path = PathBuf::from(file);
                 if path.is_dir() || !path.exists() {
                     return Err(anyhow!("文件「{}」不存在", path.as_os_str().to_str().unwrap()));
@@ -238,7 +237,7 @@ impl TarPdfService {
             tx.send(Ok(Some(msg?)))?;
 
             // 文本处理
-            let (ocr_data, next) = self.handle_pdf(pdf_file, &url, order, enable_similar).await;
+            let (ocr_data, next) = self.handle_pdf(pdf_file, &url, order).await;
             if next {
                 order += 1;
             }
@@ -508,29 +507,19 @@ impl TarPdfService {
     const SIMILAR_SCORE: f64 = 0.2;
 
     /// ocr一个pdf 基本检查
-    async fn base_handle_pdf(&self, pdf: &Path, url: &str, enable_similar: bool) -> Result<(usize, OcrResult)> {
+    async fn base_handle_pdf(&self, pdf: &Path, url: &str) -> Result<(usize, OcrResult)> {
         // 1. pdf to img
         let (img, pages) = self.convert_pdf_to_img(pdf).await?;
-
-        // 2. 图像相似度检查
-        if enable_similar {
-            let dest_orb = OrbFeature::from(&img)?;
-            let (_, similar) = self.ref_data.as_ref().unwrap().orb_feature.distance(&dest_orb)?;
-            if similar < Self::SIMILAR_SCORE {
-                return Err(anyhow!("图像相似度检查失败 {similar:.2}"));
-            }
-        }
-
-        // 3. ocr 结果识别
+        // 2. ocr 结果识别
         let ocr_result = self.ocr_pdf(&img, url).await?;
 
         Ok((pages, ocr_result))
     }
 
     /// 处理一个pdf
-    async fn handle_pdf(&self, pdf: PathBuf, url: &str, index: u32, enable_similar: bool) -> (OcrPdfData, bool) {
+    async fn handle_pdf(&self, pdf: PathBuf, url: &str, index: u32) -> (OcrPdfData, bool) {
         // 1. 基本处理 获得ocr结果
-        let (pages, ocr_result) = match self.base_handle_pdf(&pdf, url, enable_similar).await {
+        let (pages, ocr_result) = match self.base_handle_pdf(&pdf, url).await {
             Ok(r) => r,
             Err(e) => {
                 return (OcrPdfData {
