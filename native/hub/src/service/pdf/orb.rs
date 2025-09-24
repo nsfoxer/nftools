@@ -17,7 +17,7 @@ pub struct OrbFeature {
 impl OrbFeature {
 
     /// 计算image的Orb特征点和描述子
-    pub fn from(image: DynamicImage) -> Result<OrbFeature> {
+    pub fn from(image: &DynamicImage) -> Result<OrbFeature> {
         // 1. 转为灰度图片
         let img = dynamic_image_to_mat_gray(image)?;
 
@@ -74,7 +74,7 @@ impl OrbFeature {
 }
 
 /// 转换灰度图（单通道）
-fn dynamic_image_to_mat_gray(img: DynamicImage) -> Result<Mat> {
+fn dynamic_image_to_mat_gray(img: &DynamicImage) -> Result<Mat> {
     // 转换为灰度图（L8 格式：单通道，8位）
     let gray_img = img.to_luma8();
     let (width, height) = (gray_img.width() as i32, gray_img.height() as i32);
@@ -95,9 +95,9 @@ mod test {
     #[test]
     fn test_orb_feature() {
         let img1 = image::open(r"C:\Users\12618\Desktop\tmp\test\1.png").unwrap();
-        let orb1 = OrbFeature::from(img1).unwrap();
+        let orb1 = OrbFeature::from(&img1).unwrap();
         let img2 = image::open(r"C:\Users\12618\Desktop\tmp\test\2.png").unwrap();
-        let orb2 = OrbFeature::from(img2).unwrap();
+        let orb2 = OrbFeature::from(&img2).unwrap();
         let (count, similarity) = orb1.distance(&orb2).unwrap();
         println!("count: {}, similarity: {}", count, similarity);
         assert!(similarity > 1.0);

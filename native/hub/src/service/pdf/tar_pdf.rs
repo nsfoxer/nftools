@@ -390,11 +390,12 @@ impl TarPdfService {
         }
 
         // 2. 识别数据
-        let (img, _pages, ocr_result) = self.ocr_pdf(&pdf, &self.config.ocr_url()).await?;
+        let (img, _pages) = self.convert_pdf_to_img(&pdf).await?;
+        let ocr_result = self.ocr_pdf(&img, &self.config.ocr_url()).await?;
         let data = ocr_result.result.into_ocr_data();
 
         // 3. 转换数据
-        let orb_feature = OrbFeature::from(img)?;
+        let orb_feature = OrbFeature::from(&img)?;
         let result = RefOcrDatasMsg {
             data: data.iter().enumerate().map(|(i, x)| {
                 OcrDataMsg {
@@ -477,17 +478,20 @@ impl TarPdfService {
 
     /// ocr一个pdf 基本检查
     async fn base_handle_pdf(&self, pdf: &Path, url: &str, enable_similar: bool) -> Result<(usize, OcrResult)> {
-        // 1. ocr pdf
-        let (dest_img, pages, ocr_result) = self.ocr_pdf(pdf, url).await?;
+        // 1. pdf to img
+        let (img, pages) = self.convert_pdf_to_img(pdf).await?;
 
         // 2. 图像相似度检查
         if enable_similar {
-            let dest_orb = OrbFeature::from(dest_img)?;
+            let dest_orb = OrbFeature::from(&img)?;
             let (_, similar) = self.ref_data.as_ref().unwrap().orb_feature.distance(&dest_orb)?;
             if similar < Self::SIMILAR_SCORE {
-                return Err(anyhow!("图像相似度检查失败"));
+                return Err(anyhow!("图像相似度检查失败 {similar:.2}"));
             }
         }
+
+        // 3. ocr 结果识别
+        let ocr_result = self.ocr_pdf(&img, url).await?;
 
         Ok((pages, ocr_result))
     }
@@ -554,15 +558,20 @@ impl TarPdfService {
         }, true)
     }
 
-    /// ocr_pdf
-    async fn ocr_pdf(&self, pdf_file: &Path, url: &str) -> Result<(DynamicImage, usize, OcrResult)> {
-        // 1. 文本识别
+    /// convert pdf to img
+    async fn convert_pdf_to_img(&self, pdf: &Path) -> Result<(DynamicImage, usize)> {
         let pdf_password = self.config.pdf_password.clone();
-        let pdf_file = pdf_file.to_path_buf();
+        let pdf_file = pdf.to_path_buf();
         let (img, pages) = tokio::task::spawn_blocking(move || {
             export_pdf_to_jpegs(&pdf_file, pdf_password.as_deref())
         })
         .await??;
+        Ok((img, pages as usize))
+    }
+
+    /// ocr_pdf
+    async fn ocr_pdf(&self, img: &DynamicImage, url: &str) -> Result<OcrResult> {
+        // 1. 文本识别
         let part = reqwest::multipart::Part::bytes(img_to_buf(&img)?).file_name("t.jpeg");
         let form = reqwest::multipart::Form::new()
             .part("file", part);
@@ -579,7 +588,7 @@ impl TarPdfService {
         ocr_result.clear_fuzzy_data();
         debug!("识别数据: {:?}", ocr_result);
 
-        Ok((img, pages as usize, ocr_result))
+        Ok(ocr_result)
     }
 
     /// 导出结果
