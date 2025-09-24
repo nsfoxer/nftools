@@ -36,6 +36,34 @@ Future<bool> confirmDialog(
   return result ?? false;
 }
 
+// 确认弹出框
+Future<bool?> confirmDialog2(
+    BuildContext context, String title, String content, {String enable = "启用", String disable = "禁用", String cancel = "取消"}) async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (context) => ContentDialog(
+      title: Text(title),
+      content: Text(content),
+      actions: [
+        FilledButton(
+          child: Text(enable),
+          onPressed: () {
+            context.pop(true);
+          },
+        ),
+        Button(child: Text(disable), onPressed: () {
+          context.pop(false);
+        }),
+        Button(
+          child: Text(cancel),
+          onPressed: () => context.pop(null),
+        ),
+      ],
+    ),
+  );
+  return result;
+}
+
 // 是否为黑色模式
 bool isDark(BuildContext context) {
   return View.of(context).platformDispatcher.platformBrightness.isDark;

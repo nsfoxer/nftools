@@ -125,7 +125,7 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
         debug("下一步 order2 不生效");
         return;
       case DisplayProcessEnum.order3:
-        if ((await _nextOrder3Check())) {
+        if ((await _nextOrder3Check()) && context.mounted) {
           _nextOrder3(context);
         }
       case DisplayProcessEnum.order4:
@@ -175,10 +175,10 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
   }
 
   void _nextOrder3(BuildContext context) async {
-    if (!context.mounted) {
+    final enable = await confirmDialog2(context, "是否启用相似性检查", "启用后将根据参考文件进行相似性对比,跳过不相似的pdf文件");
+    if (enable == null) {
       return;
     }
-    final enable = await confirmDialog(context, "是否启用相似性检查", "启用后将根据参考文件进行相似性对比,跳过不相似的pdf文件");
 
     // 开始处理
     final Stream<TarPdfMsg> stream = $api.handle(state.pdfFiles, enable);
