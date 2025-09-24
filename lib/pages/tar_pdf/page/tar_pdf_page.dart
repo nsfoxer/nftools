@@ -147,8 +147,7 @@ class TarPdfPage extends StatelessWidget {
             child: NFLoadingWidgets(
                 loading: logic.state.isLoading,
                 child: InteractiveViewer(
-                    child: Stack(
-                  children: [
+                    child:
                     Stack(children: [
                       NFImagePainterPage(
                           controller: logic.state.refImagePainterController, onRendered: () {
@@ -158,6 +157,7 @@ class TarPdfPage extends StatelessWidget {
                       }),
                       GetBuilder<TarPdfController>(builder: (logic) {
                         List<Widget> textRects = logic.state.refOcrDatas
+                            .skipWhile((x) => x.location.width == 0 || x.location.height == 0)
                             .map((x) =>
                                 _TextContainer(x.id, x.text, x.location, (id) {
                                   logic.selectTag(id,
@@ -169,8 +169,7 @@ class TarPdfPage extends StatelessWidget {
                         );
                       }, id: "TarPdfPage-Order3-TextRect"),
                     ])
-                  ],
-                )))),
+                ))),
         Divider(direction: Axis.vertical),
         Expanded(
             flex: 3,
@@ -564,9 +563,15 @@ class _Order2DataSource extends NFDataTableSource {
       if (score.item2.isNotEmpty) {
         scoreWidget = Text(score.item2, style: _typography.caption?.copyWith(color: Colors.red));
       } else if (score.item1 < 0.2) {
-        scoreWidget = Text("${score.item1} 相似度过低", style: _typography.caption?.copyWith(color: Colors.red));
+        scoreWidget = Tooltip(
+          message: "fail (${score.item1})",
+            child: Text("fail", style: _typography.caption?.copyWith(color: Colors.red))
+        );
       } else {
-        scoreWidget = Text("${score.item1} pass", style: _typography.caption?.copyWith(color: Colors.green));
+        scoreWidget = Tooltip(
+          message: "pass (${score.item1})",
+          child: Text("pass", style: _typography.caption?.copyWith(color: Colors.green)),
+        );
       }
     }
 

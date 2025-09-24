@@ -23,8 +23,8 @@ const String _similarPdf = "similar_pdf";
 
 
 // start
-Stream<TarPdfMsg> handle(List<String> pdfFiles, bool enableSimilar) {
-  var stream = sendRequestStream(_service, _handle, PdfFilesMsg(files: pdfFiles, enableSimilarity: enableSimilar));
+Stream<TarPdfMsg> handle(List<String> pdfFiles) {
+  var stream = sendRequestStream(_service, _handle, VecStringMsg(values: pdfFiles));
   return stream.map((x) => TarPdfMsg.bincodeDeserialize(x));
 }
 

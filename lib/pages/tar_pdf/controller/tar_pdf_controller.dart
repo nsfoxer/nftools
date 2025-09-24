@@ -122,15 +122,14 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
         _nextOrder1();
         return;
       case DisplayProcessEnum.order2:
-        debug("下一步 order2 不生效");
         return;
       case DisplayProcessEnum.order3:
         if ((await _nextOrder3Check()) && context.mounted) {
           _nextOrder3(context);
         }
       case DisplayProcessEnum.order4:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        error("order4 不存在");
+        return;
       case DisplayProcessEnum.order5:
         _nextOrder5();
       case DisplayProcessEnum.order6:
@@ -175,13 +174,12 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
   }
 
   void _nextOrder3(BuildContext context) async {
-    final enable = await confirmDialog2(context, "是否启用相似性检查", "启用后将根据参考文件进行相似性对比,跳过不相似的pdf文件");
-    if (enable == null) {
+    if (!similarityCheck() && !(await confirmDialog(context, "警告!!!", "存在不相似文件,继续可能导致识别错误,请再次确认!\n如要删除请在上一步骤中删除文件后重新选择!", titleColor: Colors.red))) {
       return;
     }
 
     // 开始处理
-    final Stream<TarPdfMsg> stream = $api.handle(state.pdfFiles, enable);
+    final Stream<TarPdfMsg> stream = $api.handle(state.pdfFiles);
     state.processEnum = state.processEnum.next() ?? state.processEnum;
     update();
     stream.listen((data) {
@@ -228,7 +226,9 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     update();
     _originalOcrDatas = await $api.setRefConfig(pdfPath);
     state.isRefOcrLoading = false;
-    state.refOcrDatas = _originalOcrDatas;
+    state.refOcrDatas = _originalOcrDatas.map((x) {
+      return OcrDataMsg(id: x.id, text: x.text, location: BoxPositionMsg(x: 0, y: 0, width: 0, height: 0));
+    }).toList(growable: false);
     update();
   }
 

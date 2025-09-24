@@ -13,11 +13,12 @@ import 'package:path_provider/path_provider.dart';
 
 // 确认弹出框
 Future<bool> confirmDialog(
-    BuildContext context, String title, String content) async {
+    BuildContext context, String title, String content, {Color? titleColor}) async {
+  final typography = FluentTheme.of(context).typography;
   final result = await showDialog<bool>(
     context: context,
     builder: (context) => ContentDialog(
-      title: Text(title),
+      title: Text(title, style: typography.subtitle?.copyWith(color: titleColor)),
       content: Text(content),
       actions: [
         FilledButton(
