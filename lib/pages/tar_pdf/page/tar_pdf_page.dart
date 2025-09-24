@@ -124,7 +124,7 @@ class TarPdfPage extends StatelessWidget {
     final typography = FluentTheme.of(context).typography;
     return NFLoadingWidgets(
         loading: logic.state.isLoading,
-        hint: "计算中...",
+        hint: "相似度计算中...",
         child: NFTable(
             minWidth: 750,
             empty: Center(child: Text("未能查找到pdf文件")),
@@ -278,6 +278,10 @@ class TarPdfPage extends StatelessWidget {
   }
 
   Widget _buildOrder4(TarPdfController logic, context) {
+    String hint = "处理中...";
+    if (logic.state.sum > 0) {
+      hint = "处理中...   ${logic.state.current}/${logic.state.sum}";
+    }
     return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
       Expanded(flex: 2, child: Container()),
       Expanded(
@@ -287,9 +291,7 @@ class TarPdfPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               spacing: NFLayout.v0,
               children: [
-                Text(
-                  "处理中......   ${logic.state.current}/${logic.state.sum}",
-                ),
+                Text(hint),
                 SizedBox(
                     width: double.infinity,
                     child: ProgressBar(
@@ -552,7 +554,6 @@ class _Order2DataSource extends NFDataTableSource {
 
   @override
   NFRow getRow(BuildContext context, int index) {
-    debug("$index");
     final file = data[index];
     final pdf = path.basename(file);
     final score = logic.state.similarityValues.safeGet(index);
@@ -586,32 +587,42 @@ class _Order2DataSource extends NFDataTableSource {
           spacing: NFLayout.v2,
           children: [
             _PreviewButton(data[index], logic),
-            FilledButton(
-                child: Text("选中", style: _typography.caption),
-                onPressed: () async {
-                  // 1. 相似性计算
-                  if (logic.state.selectedPdfFile != file) {
-                    logic.similarityCal(file);
-                    return;
-                  }
-
-                  // 2. 相似性检查
-                  final pass = logic.similarityCheck();
-                  if (!pass && !(await confirmDialog(context, "相似度过低", "存在不相似文件, 是否继续?"))) {
-                    return;
-                  }
-
-                  // 3. 再次检查确认
-                  final result = await confirmDialog(context, "确认选中", "确认选择【$pdf】为参考吗?");
-                  if (result) {
-                    logic.order2SelectRef(data[index]);
-                  }
-                }),
+            logic.state.selectedPdfFile == file
+                ? FilledButton(
+                    child: Text("选中", style: _typography.caption),
+                    onPressed: () {
+                      onSelect(context, file, pdf);
+                    })
+                : Button(
+                    child: Text("选择", style: _typography.caption),
+                    onPressed: () {
+                      onSelect(context, file, pdf);
+                    }),
             IconButton(icon: Icon(FluentIcons.delete, color: Colors.red), onPressed: () {
               logic.deleteFile(file);
             }),
           ]),
     ]);
+  }
+
+  void onSelect(BuildContext context, String file, String pdf) async {
+    // 1. 相似性计算
+    if (logic.state.selectedPdfFile != file) {
+      logic.similarityCal(file);
+      return;
+    }
+
+    // 2. 相似性检查
+    final pass = logic.similarityCheck();
+    if (!pass && !(await confirmDialog(context, "相似度过低", "存在不相似文件, 是否继续?"))) {
+      return;
+    }
+
+    // 3. 再次检查确认
+    final result = await confirmDialog(context, "确认选中", "确认选择【$pdf】为参考吗?");
+    if (result) {
+      logic.order2SelectRef(file);
+    }
   }
 
   @override
