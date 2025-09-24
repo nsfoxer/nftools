@@ -19,6 +19,7 @@ const String _setRefConfigTemplate = "set_ref_config_template";
 const String _exportExcel = "export_excel";
 const String _renameByExcel = "rename_by_excel";
 const String _reset = "reset";
+const String _similarPdf = "similar_pdf";
 
 
 // start
@@ -101,4 +102,10 @@ Future<RenameFileMsg> renameByExcel(String excelPath) async{
 // 重置
 Future<void> reset() async {
   await sendEmptyRequest(_service, _reset);
+}
+
+// pdf相似度检查
+Future<SimilarityResultMsg> similarPdf(String refPdf, List<String> pdfFiles) async {
+  final data = await sendRequest(_service, _similarPdf, SimilarityMsg(refPdf: refPdf, files: pdfFiles));
+  return SimilarityResultMsg.bincodeDeserialize(data);
 }

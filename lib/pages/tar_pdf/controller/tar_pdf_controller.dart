@@ -308,4 +308,47 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
     Pasteboard.writeText(state.exportFilePath);
     info("已复制文件路径:${state.exportFilePath}");
   }
+
+  // 相似性检查
+  void similarityCal(String refPdf) async {
+    _start();
+    state.selectedPdfFile = refPdf;
+    try {
+      final data = await $api.similarPdf(refPdf, state.pdfFiles);
+      state.similarityValues = data.values;
+    } finally {
+      _end();
+    }
+  }
+
+  // 删除指定文件
+  void deleteFile(String file) {
+    final index = state.pdfFiles.indexWhere((e) => e == file);
+    if (index == -1) {
+      error("删除文件失败: $file");
+      return;
+    }
+    state.pdfFiles.removeAt(index);
+    if (state.selectedPdfFile == file) {
+      state.selectedPdfFile = "";
+    }
+    if (state.similarityValues.length > index) {
+      state.similarityValues.removeAt(index);
+    }
+    update();
+  }
+
+  /// 相似性检查
+  bool similarityCheck() {
+    for (final item in state.similarityValues) {
+      if (item.item2.isNotEmpty) {
+        return false;
+      }
+      if (item.item1 <= 0.2) {
+        return false;
+      }
+    }
+    return true;
+  }
+
 }

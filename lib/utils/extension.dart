@@ -17,3 +17,15 @@ mixin GetxUpdateMixin on GetxController {
     }
   }
 }
+
+// 扩展方法：为List添加安全访问功能
+extension SafeListAccess<T> on List<T> {
+  // 获取指定索引的元素，越界则返回null
+  T? safeGet(int index) {
+    // 检查索引是否在有效范围内
+    if (index >= 0 && index < length) {
+      return this[index];
+    }
+    return null;
+  }
+}

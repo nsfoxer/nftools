@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:nftools/src/bindings/bindings.dart';
 import 'package:nftools/utils/nf_widgets.dart';
+import 'package:tuple/tuple.dart';
 
 
 class TarPdfState {
@@ -21,6 +22,8 @@ class TarPdfState {
 
   // order2
   List<String> pdfFiles = [];
+  List<Tuple2<double, String>> similarityValues = [];
+  String selectedPdfFile = "";
 
   // order3
   bool isRefOcrLoading = false;
@@ -52,6 +55,8 @@ class TarPdfState {
     isLoading = false;
     processEnum = DisplayProcessEnum.order1;
     pdfFiles.clear();
+    similarityValues.clear();
+    selectedPdfFile = "";
     isRefOcrLoading = false;
     refOcrDatas.clear();
     selectedTags.clear();

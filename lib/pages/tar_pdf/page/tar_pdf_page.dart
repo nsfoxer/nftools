@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 import 'package:list_ext/list_ext.dart';
+import 'package:nftools/utils/extension.dart';
 import 'package:path/path.dart' as path;
 import 'package:go_router/go_router.dart';
 import 'package:nftools/common/style.dart';
@@ -121,14 +122,20 @@ class TarPdfPage extends StatelessWidget {
 
   Widget _buildOrder2(TarPdfController logic, BuildContext context) {
     final typography = FluentTheme.of(context).typography;
-    return NFTable(
-        minWidth: 750,
-        empty: Center(child: Text("empty")),
-        header: [
-          NFHeader(flex: 8, child: Text("文件名称", style: typography.bodyStrong)),
-          NFHeader(flex: 2, child: Text("操作", style: typography.bodyStrong)),
-        ],
-        source: _Order2DataSource(logic.state.pdfFiles, logic, context));
+    return NFLoadingWidgets(
+        loading: logic.state.isLoading,
+        hint: "计算中...",
+        child: NFTable(
+            minWidth: 750,
+            empty: Center(child: Text("未能查找到pdf文件")),
+            header: [
+              NFHeader(
+                  flex: 8, child: Text("文件名称", style: typography.bodyStrong)),
+              NFHeader(flex: 1, child: Text("相似度")),
+              NFHeader(
+                  flex: 3, child: Text("操作", style: typography.bodyStrong)),
+            ],
+            source: _Order2DataSource(logic.state.pdfFiles, logic, context)));
   }
 
   Widget _buildOrder3(TarPdfController logic, BuildContext context) {
@@ -531,6 +538,8 @@ class _DataSource extends NFDataTableSource {
   int? get itemCount => data.length;
 }
 
+
+/// order2
 class _Order2DataSource extends NFDataTableSource {
   final List<String> data;
   final TarPdfController logic;
@@ -544,12 +553,29 @@ class _Order2DataSource extends NFDataTableSource {
 
   @override
   NFRow getRow(BuildContext context, int index) {
-    final pdf = path.basename(data[index]);
+    debug("$index");
+    final file = data[index];
+    final pdf = path.basename(file);
+    final score = logic.state.similarityValues.safeGet(index);
+    final Widget scoreWidget;
+    if (score == null) {
+      scoreWidget = Container();
+    } else {
+      if (score.item2.isNotEmpty) {
+        scoreWidget = Text(score.item2, style: _typography.caption?.copyWith(color: Colors.red));
+      } else if (score.item1 < 0.2) {
+        scoreWidget = Text("${score.item1} 相似度过低", style: _typography.caption?.copyWith(color: Colors.red));
+      } else {
+        scoreWidget = Text("${score.item1} pass", style: _typography.caption?.copyWith(color: Colors.green));
+      }
+    }
+
     return NFRow(children: [
       Text(
         pdf,
         style: _typography.caption,
       ),
+      scoreWidget,
       Row(
           mainAxisAlignment: MainAxisAlignment.center,
           spacing: NFLayout.v2,
@@ -558,12 +584,27 @@ class _Order2DataSource extends NFDataTableSource {
             FilledButton(
                 child: Text("选中", style: _typography.caption),
                 onPressed: () async {
-                  final result =
-                      await confirmDialog(context, "确认选中", "确认选择【$pdf】为参考吗?");
+                  // 1. 相似性计算
+                  if (logic.state.selectedPdfFile != file) {
+                    logic.similarityCal(file);
+                    return;
+                  }
+
+                  // 2. 相似性检查
+                  final pass = logic.similarityCheck();
+                  if (!pass && !(await confirmDialog(context, "相似度过低", "存在不相似文件, 是否继续?"))) {
+                    return;
+                  }
+
+                  // 3. 再次检查确认
+                  final result = await confirmDialog(context, "确认选中", "确认选择【$pdf】为参考吗?");
                   if (result) {
                     logic.order2SelectRef(data[index]);
                   }
                 }),
+            IconButton(icon: Icon(FluentIcons.delete, color: Colors.red), onPressed: () {
+              logic.deleteFile(file);
+            }),
           ]),
     ]);
   }
