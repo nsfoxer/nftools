@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
@@ -13,6 +14,7 @@ import 'package:nftools/common/style.dart';
 import 'package:nftools/controller/router_controller.dart';
 import 'package:nftools/router/router.dart';
 import 'package:nftools/src/bindings/bindings.dart';
+import 'package:nftools/utils/log.dart';
 import 'package:nftools/utils/utils.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:rinf/rinf.dart';
@@ -49,21 +51,37 @@ Future<void> _init() async {
 
   // 3. 初始化托盘
   initSystemTray();
+
+  // 4. 初始化全局异常捕获
+  FlutterError.onError = (FlutterErrorDetails details) {
+    Zone.current.handleUncaughtError(details.exception, details.stack ?? StackTrace.empty);
+  };
 }
 
 Future<void> main() async {
-  try {
-    await _init();
-  } catch (e) {
-    final errorMsg = e.toString();
-    String? hint;
-    if (errorMsg.contains("hub.dll") || errorMsg.contains("libhub.so")) {
-      hint = "可能缺失依赖库";
-    }
-    runApp(ErrorMessageApp(msg: "初始化失败: ${e.toString()}", hint: hint ?? "请联系开发者"));
-    return;
-  }
-  runApp(const MainApp());
+  runZonedGuarded(
+    () async {
+      // 1. 初始化
+      try {
+        await _init();
+      } catch (e) {
+        final errorMsg = e.toString();
+        String? hint;
+        if (errorMsg.contains("hub.dll") || errorMsg.contains("libhub.so")) {
+          hint = "可能缺失依赖库";
+        }
+        runApp(ErrorMessageApp(
+            msg: "初始化失败: ${e.toString()}", hint: hint ?? "请联系开发者"));
+        return;
+      }
+
+      runApp(const MainApp());
+    },
+    (Object errorMsg, StackTrace stackTrace) {
+      debugPrintStack(stackTrace: stackTrace);
+      error(errorMsg.toString()); // 统一处理所有异常
+    },
+  );
 }
 
 class ErrorMessageApp extends StatelessWidget {
@@ -71,6 +89,7 @@ class ErrorMessageApp extends StatelessWidget {
   final String hint;
 
   const ErrorMessageApp({super.key, required this.msg, required this.hint});
+
   @override
   Widget build(BuildContext context) {
     return FluentApp(
@@ -82,33 +101,39 @@ class ErrorMessageApp extends StatelessWidget {
         content: Center(
           child: SizedBox(
               width: 400,
-              child:Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(FluentIcons.critical_error_solid, size: 18, color: Colors.red),
-                  NFLayout.hlineh2,
-                  Text(msg, style: TextStyle(fontSize: 16, color: Colors.red)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(FluentIcons.critical_error_solid,
+                          size: 18, color: Colors.red),
+                      NFLayout.hlineh2,
+                      Text(msg,
+                          style: TextStyle(fontSize: 16, color: Colors.red)),
+                    ],
+                  ),
+                  NFLayout.vlineh0,
+                  Text(hint, style: TextStyle(fontSize: 14)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Button(
+                          child: Text("复制错误信息"),
+                          onPressed: () {
+                            Pasteboard.writeText(msg);
+                          }),
+                      NFLayout.hlineh2,
+                      Button(
+                          child: Text("退出"),
+                          onPressed: () {
+                            exit(1);
+                          })
+                    ],
+                  )
                 ],
-              ),
-              NFLayout.vlineh0,
-              Text(hint, style: TextStyle(fontSize: 14)),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Button(child: Text("复制错误信息"), onPressed: () {
-                   Pasteboard.writeText(msg);
-                  }),
-                  NFLayout.hlineh2,
-                  Button(child: Text("退出"), onPressed: () {
-                    exit(1);
-                  })
-                ],
-              )
-            ],
-          )),
+              )),
         ),
       ),
     );
@@ -124,7 +149,6 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp>
     with WindowListener, TrayListener, WidgetsBindingObserver {
-
   @override
   void initState() {
     super.initState();
@@ -199,6 +223,7 @@ class _MainAppState extends State<MainApp>
     Get.find<RouterController>().updatePrimaryColor();
     super.didChangePlatformBrightness();
   }
+
   FluentThemeData _getTheme(context, RouterController routerLogic) {
     final primaryColor = routerLogic.primaryColor;
     final Map<String, Color> swatch = {
@@ -208,7 +233,7 @@ class _MainAppState extends State<MainApp>
     final FluentThemeData theme;
     if (!isDark(context)) {
       //  light
-      theme =  FluentThemeData.light().copyWith(
+      theme = FluentThemeData.light().copyWith(
         accentColor: AccentColor.swatch(swatch),
       );
     } else {
@@ -219,22 +244,21 @@ class _MainAppState extends State<MainApp>
 
     return theme.copyWith(
       typography: theme.typography.apply(fontFamily: fonts),
-      tooltipTheme: const TooltipThemeData(waitDuration: Duration(milliseconds: 300)),
+      tooltipTheme:
+          const TooltipThemeData(waitDuration: Duration(milliseconds: 300)),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<RouterController>(
-       builder:  (routerLogic) => _build(context, routerLogic)
-    );
+        builder: (routerLogic) => _build(context, routerLogic));
   }
-
-
 
   Widget _build(BuildContext context, RouterController routerLogic) {
     final primaryColor = routerLogic.primaryColor;
     final Map<String, Color> swatch = {
-      "normal":  primaryColor,
+      "normal": primaryColor,
     };
     final fonts = "mi_sans";
 
@@ -306,7 +330,9 @@ class MainPage extends StatelessWidget {
         children.add(PaneItem(
             icon: Icon(value.icon),
             title: Text(value.label),
-            infoBadge: value.infoBadge != null ? InfoBadge(source: Text(value.infoBadge!)) : null,
+            infoBadge: value.infoBadge != null
+                ? InfoBadge(source: Text(value.infoBadge!))
+                : null,
             body: value.body,
             onTap: () {
               if (MyRouterConfig.currentUrl != value.url) {
@@ -449,7 +475,8 @@ Future<void> initSystemTray() async {
   // We first init the systray menu
   await trayManager.setIcon(path);
   if (Platform.isWindows) {
-    await trayManager.setToolTip(kReleaseMode? Constants.appName: Constants.appNameTest);
+    await trayManager
+        .setToolTip(kReleaseMode ? Constants.appName : Constants.appNameTest);
   }
   Menu menu = Menu(
     items: [

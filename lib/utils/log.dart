@@ -1,4 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:logger/logger.dart';
 import 'package:nftools/router/router.dart';
 
@@ -44,14 +45,20 @@ void _print(String message, Level level) async {
     return;
   }
 
-  await displayInfoBar(context, duration: const Duration(seconds: 3),
-      builder: (context, close) {
-    return InfoBar(
-      content: Text(message),
-      severity: value.$1,
-      title: Text(value.$2),
-      isLong: message.length > 30,
-      isIconVisible: true,
-    );
+  SchedulerBinding.instance.addPostFrameCallback((_) {
+    if (!context.mounted) {
+      return;
+    }
+    displayInfoBar(context, duration: const Duration(seconds: 3),
+    builder: (context, close) {
+      return InfoBar(
+        content: Text(message),
+        severity: value.$1,
+        title: Text(value.$2),
+        isLong: message.length > 30,
+        isIconVisible: true,
+      );
+    });
   });
+
 }
