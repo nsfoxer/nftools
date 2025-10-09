@@ -17,12 +17,13 @@ use ahash::{AHashMap, AHashSet};
 use calamine::{Data, Reader, Xlsx};
 use image::DynamicImage;
 use log::{debug, warn};
-use strfmt::strfmt;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::wrappers::ReadDirStream;
 use crate::common::utils::{index_to_string, path_to_file_name, path_to_string};
 use crate::service::pdf::ocr::{OcrData, OcrResult};
 use crate::service::pdf::orb::OrbFeature;
+use crate::service::pdf::str_format;
+use crate::service::pdf::str_format::FormatString;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 struct OcrConfig {
@@ -221,6 +222,7 @@ impl TarPdfService {
         let url = self.config.ocr_url();
         let count = pdf_files.len();
         let mut order = 1;
+        let template = str_format::parser_template(&self.ref_config.template)?;
         for pdf_file in pdf_files.into_iter() {
             // 发送当前处理进度
             let file_name = pdf_file
@@ -237,7 +239,7 @@ impl TarPdfService {
             tx.send(Ok(Some(msg?)))?;
 
             // 文本处理
-            let (ocr_data, next) = self.handle_pdf(pdf_file, &url, order).await;
+            let (ocr_data, next) = self.handle_pdf(pdf_file, &url, order, &template).await;
             if next {
                 order += 1;
             }
@@ -447,7 +449,8 @@ impl TarPdfService {
 
         data_map.insert("pages".to_string(), 10.to_string());
         data_map.insert("order".to_string(), 1.to_string());
-        let result = strfmt(&template.value, &data_map)?;
+        let template_str = str_format::parser_template(&template.value)?;
+        let result = str_format::format_string(&template_str, &data_map)?;
 
         self.ref_config.template = template.value;
         Ok(StringMsg{
@@ -516,7 +519,7 @@ impl TarPdfService {
     }
 
     /// 处理一个pdf
-    async fn handle_pdf(&self, pdf: PathBuf, url: &str, index: u32) -> (OcrPdfData, bool) {
+    async fn handle_pdf(&self, pdf: PathBuf, url: &str, index: u32, template: &FormatString<'_>) -> (OcrPdfData, bool) {
         // 1. 基本处理 获得ocr结果
         let (pages, ocr_result) = match self.base_handle_pdf(&pdf, url).await {
             Ok(r) => r,
@@ -568,7 +571,7 @@ impl TarPdfService {
                 template_map.insert(tag.clone(), data.clone());
             }
         }
-        let template_result = strfmt(&self.ref_config.template, &mut template_map).map_err(|e| anyhow!(e));
+        let template_result = str_format::format_string(template, &mut template_map).map_err(|e| anyhow!(e));
 
         (OcrPdfData {
             pdf,

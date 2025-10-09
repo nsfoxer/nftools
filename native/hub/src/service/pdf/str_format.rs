@@ -1,7 +1,6 @@
 use std::borrow::Borrow;
+use std::collections::HashMap;
 use std::hash::Hash;
-use std::str::FromStr;
-use ahash::HashMap;
 use anyhow::anyhow;
 use nom::branch::alt;
 use nom::Parser;
@@ -13,12 +12,11 @@ use nom::character::complete::{char, digit0, u32};
 use nom::error::ErrorKind;
 use nom::IResult;
 use nom::sequence::{delimited, separated_pair};
-use strfmt::DisplayStr;
 
 pub type FormatString<'a> = Vec<ParserEnum<'a>>;
 
 #[derive(Debug)]
-enum ParserEnum<'a> {
+pub enum ParserEnum<'a> {
     GeneralString(&'a str),
     Tag(TagData<'a>)
 }
