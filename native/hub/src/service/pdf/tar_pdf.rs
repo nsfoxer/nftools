@@ -504,7 +504,6 @@ impl TarPdfService {
 
 
     const MIN_SCORE: f64 = 0.9;
-    const SIMILAR_SCORE: f64 = 0.2;
 
     /// ocr一个pdf 基本检查
     async fn base_handle_pdf(&self, pdf: &Path, url: &str) -> Result<(usize, OcrResult)> {

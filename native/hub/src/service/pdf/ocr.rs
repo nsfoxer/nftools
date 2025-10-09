@@ -27,18 +27,6 @@ pub struct OcrTexts {
 }
 impl OcrTexts {
     /// 转换为OCR识别数据
-    pub fn as_ocr_data(&self) -> Vec<OcrData> {
-        let mut texts = Vec::new();
-        for (i, text) in self.texts.iter().enumerate() {
-            texts.push(OcrData {
-                text: text.clone(),
-                location: self.boxes[i].clone(),
-            });
-        }
-        texts
-    }
-
-    /// 转换为OCR识别数据
     pub fn into_ocr_data(self) -> Vec<OcrData> {
         let boxes = self.boxes;
         let mut texts = Vec::with_capacity(boxes.len());
@@ -91,10 +79,6 @@ pub struct OcrData {
 }
 
 impl OcrData {
-    /// new OcrData
-    pub fn new(text: String, location: BoxPosition) -> Self {
-        Self { text, location }
-    }
 
     /// 查找与当前文本相似的文本
     /// 依据location及文本相似度

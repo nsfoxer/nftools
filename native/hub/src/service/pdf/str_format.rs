@@ -1,3 +1,6 @@
+use std::borrow::Borrow;
+use std::hash::Hash;
+use std::str::FromStr;
 use ahash::HashMap;
 use anyhow::anyhow;
 use nom::branch::alt;
@@ -10,6 +13,7 @@ use nom::character::complete::{char, digit0, u32};
 use nom::error::ErrorKind;
 use nom::IResult;
 use nom::sequence::{delimited, separated_pair};
+use strfmt::DisplayStr;
 
 pub type FormatString<'a> = Vec<ParserEnum<'a>>;
 
@@ -187,7 +191,9 @@ pub fn parser_template(template: &str) -> anyhow::Result<FormatString<'_>> {
 }
 
 /// 生成数据
-pub fn format_string(format_string: &FormatString, data: &HashMap<&str, &str>) -> anyhow::Result<String> {
+pub fn format_string<K, T: AsRef<str>>(format_string: &FormatString, data: &HashMap<K, T>) -> anyhow::Result<String>
+where K: Hash + Eq + AsRef<str> + Borrow<str>
+{
     let mut result = String::new();
     for output in format_string {
         match output {
@@ -196,7 +202,7 @@ pub fn format_string(format_string: &FormatString, data: &HashMap<&str, &str>) -
             },
             ParserEnum::Tag(tag) => {
                 let value = data.get(tag.tag).ok_or_else(|| anyhow::anyhow!("tag {0} not found", tag.tag))?;
-                let value = tag.format(value)?;
+                let value = tag.format(value.as_ref())?;
                 result.push_str(value);
             },
         };
