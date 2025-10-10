@@ -68,20 +68,6 @@ impl TagData<'_> {
     }
 }
 
-impl ParserEnum<'_> {
-    fn write_to_string(&self, buf: &mut String) {
-        match self {
-            ParserEnum::GeneralString(s) => {
-                buf.push_str(s);
-            }
-            ParserEnum::Tag(d) => {
-                buf.push_str(d.tag);
-            }
-        }
-    }
-}
-
-
 /// 获取字符串中标签外的数据 直到`{`或`}`
 fn find_tag(input: &str) -> IResult<&str, ParserEnum<'_>> {
     let (input, output) = take_till(|c| c == '{' || c == '}').parse(input)?;
