@@ -160,8 +160,8 @@ class TarPdfController extends GetxController with GetxUpdateMixin {
       return false;
     }
     state.refTemplateController.text = state.refTemplateController.text.trim();
-    if (state.refTemplateController.text.isEmpty) {
-      warn("请填写参考文件模板");
+    if (state.refTemplateController.text.isEmpty || !state.refTemplateController.text.endsWith(".pdf")) {
+      warn("请填写正确的参考文件模板(必须以.pdf结尾)");
       return false;
     }
     final result = await tryGetRefTemplateResult();

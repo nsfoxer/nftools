@@ -247,12 +247,15 @@ class TarPdfPage extends StatelessWidget {
                                       controller:
                                           logic.state.refTemplateController,
                                     onChanged: (value) {
-                                      logic.tryGetRefTemplateResult();
+                                        NFDebounce.debounce("TarPdfPage-Order3-OnChange", Duration(milliseconds: 300), Duration(milliseconds: 600), () {
+                                          logic.tryGetRefTemplateResult();
+                                        });
                                     },
                                   ))),
                           Expanded(
                             flex: 3,
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               spacing: NFLayout.v4,
                               children: [
                                 Text("表达式执行结果:", style: typography.caption),
@@ -260,7 +263,7 @@ class TarPdfPage extends StatelessWidget {
                                             .isNotEmpty
                                         ? Text(
                                             logic.state.refTemplateResultErrorMsg,
-                                            style: typography.caption?.copyWith(color: Colors.red),)
+                                            style: typography.caption?.copyWith(color: Colors.red))
                                         : Text(
                                             logic.state.refTemplateResultValue,
                                             style: typography.caption)
