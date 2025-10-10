@@ -15,14 +15,14 @@ use nom::sequence::{delimited, separated_pair};
 
 pub type FormatString<'a> = Vec<ParserEnum<'a>>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialOrd, PartialEq)]
 pub enum ParserEnum<'a> {
     GeneralString(&'a str),
     Tag(TagData<'a>)
 }
 
-#[derive(Debug)]
-struct TagData<'a> {
+#[derive(Debug, PartialOrd, PartialEq)]
+pub struct TagData<'a> {
     tag: &'a str,
     start: Option<u32>,
     end: Option<u32>
@@ -110,7 +110,7 @@ fn handle_brace_data(input: & str) -> IResult<& str, ParserEnum<'_>> {
 /// 处理标签中的数据
 fn handle_tag_data(input: &str) -> IResult<&str, ParserEnum<'_>> {
     // 1. 获取标签名称
-    let (input, tag) = take_until("[")(input)?;
+    let (input, tag) = take_till(|c| c == '[')(input)?;
     let tag = tag.trim();
     if input.is_empty() {
         return Ok((input, ParserEnum::Tag(TagData {
@@ -253,10 +253,17 @@ mod test {
             ParserEnum::GeneralString(_) => {}
             ParserEnum::Tag(d) => {
                 assert_eq!(d.tag, "tagA");
-                println!("output: {:?}", d);
             }
         };
-        println!("input: {}", input);
+
+        let input = "{tagA}";
+        let (input, output) = handle_brace_data(input).unwrap();
+        assert_eq!(input, "");
+        assert_eq!(output, ParserEnum::Tag(TagData {
+            tag: "tagA",
+            start: None,
+            end: None,
+        }))
     }
 
     #[test]
@@ -312,12 +319,9 @@ mod test {
 
     #[test]
     fn test_parse() {
-        let template = "abc [{tagA[2:]}]abc{{-}}";
-        let template =  parser_template(template).unwrap();
-        let mut datas = HashMap::default();
-        datas.insert("tagA", "1234567");
-        let r = format_string(&template, &datas).unwrap();
-        println!("result: {}", r);
+        let template = "{d}.pdf";
+        let format_string = parser_template(template).unwrap();
+        println!("format_string: {:?}", format_string);
 
     }
 }

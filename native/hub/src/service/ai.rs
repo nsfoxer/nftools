@@ -14,7 +14,6 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use futures_util::StreamExt;
 use reqwest::Client;
-use rinf::debug_print;
 use serde::{Deserialize, Serialize};
 use std::cmp::PartialEq;
 use tokio::sync::mpsc::UnboundedSender;
