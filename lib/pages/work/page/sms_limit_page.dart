@@ -13,7 +13,7 @@ class SmsLimitPage extends StatelessWidget {
     final typography = FluentTheme.of(context).typography;
     return ScaffoldPage.withPadding(
         header: PageHeader(
-          title: Text("验证码获取"),
+          title: Text("去除短信限制"),
           commandBar: GetBuilder<SmsLimitController>(
               builder: (logic) => CommandBar(
                   mainAxisAlignment: MainAxisAlignment.end,
