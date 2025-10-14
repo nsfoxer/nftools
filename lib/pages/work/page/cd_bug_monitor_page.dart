@@ -56,7 +56,7 @@ class CdBugMonitorPage extends StatelessWidget {
               }
               return Link(
                   uri: Uri.parse(
-                      "${logic.state.urlController.text}/zentao/my-work-task.html"),
+                      "${logic.state.urlController.text}/zentao/my-work-bug.html"),
                   builder: (context, open) {
                     return HyperlinkButton(
                         onPressed: open,
