@@ -54,6 +54,9 @@ dependencies:
   keymap: ^0.0.5
   dio: ^5.9.0
   json_annotation: ^4.9.0
+  crypto: ^3.0.6
+  dio_cookie_manager: ^3.3.0
+  cookie_jar: ^4.0.8
 
 dev_dependencies:
   flutter_lints: ^5.0.0

@@ -101,10 +101,22 @@ class CdBugMonitorPage extends StatelessWidget {
                               },
                             )),
                         InfoLabel(
-                            label: "cookie",
+                            label: "用户名",
                             child: TextFormBox(
-                              controller: logic.state.cookieController,
-                              placeholder: "cookie",
+                              controller: logic.state.userController,
+                              placeholder: "用户名",
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return '不能为空';
+                                }
+                                return null;
+                              },
+                            )),
+                        InfoLabel(
+                            label: "密码",
+                            child: TextFormBox(
+                              controller: logic.state.passwdController,
+                              placeholder: "密码",
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return '不能为空';

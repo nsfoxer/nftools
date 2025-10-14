@@ -6,7 +6,8 @@ class CdBugsMonitorState {
   GlobalKey<FormState> formKey = GlobalKey();
   // 配置
   final TextEditingController urlController = TextEditingController();
-  final TextEditingController cookieController = TextEditingController();
+  final TextEditingController userController = TextEditingController();
+  final TextEditingController passwdController = TextEditingController();
   bool enableMonitor = false;
 
   // bug数量
