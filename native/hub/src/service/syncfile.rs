@@ -490,7 +490,7 @@ impl SyncFileService {
             if entry.is_err() {
                 continue;
             }
-            let entry = entry.unwrap();
+            let entry = entry?;
             if entry.path().is_symlink() {
                 continue;
             }
