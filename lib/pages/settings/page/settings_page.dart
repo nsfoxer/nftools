@@ -52,30 +52,9 @@ class _AboutPage extends StatelessWidget {
             ],
           ),
           header: Text(
-            "版本: ${logic.state.version}",
+            "版本: v0.0.1-works",
           ),
-          trailing: () {
-            final compare = logic.compareVersion();
-            if (compare == 0) {
-              return null;
-            }
-            if (logic.state.isInstalling) {
-              return const Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [Text("下载中  "), ProgressBar()],
-              );
-            }
-            return FilledButton(
-                onPressed: compare < 0
-                    ? () {
-                        logic.installNewest();
-                      }
-                    : null,
-                child: Text(
-                  "最新版本 ${logic.state.newestVersion}",
-                  style: typography.body,
-                ));
-          }(),
+
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -99,11 +78,11 @@ class _AboutPage extends StatelessWidget {
                   );
                 },
               ),
-              const Text("更新记录"),
+              const Text("介绍"),
               Padding(
                 padding: const EdgeInsets.all(NFLayout.v1),
                 child: Text(
-                  logic.state.record,
+                  "此版本属于nftools分支(work_utils)版本, 用来作为工作相关的小工具",
                   style: typography.caption,
                 ),
               ),

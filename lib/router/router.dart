@@ -72,6 +72,11 @@ class RouterServiceData {
       Get.lazyPut<DisplayModeController>(() => DisplayModeController(),  fenix: true);
       Get.lazyPut<SystemModeController>(() => SystemModeController(), fenix: true);
     }),
+
+    "/settings": MenuData("/settings", Icons.settings, "设置", const SettingsPage(), [ServiceNameConstant.about, ServiceNameConstant.utils, ServiceNameConstant.autoStart], () {
+      Get.lazyPut<AutoStartController>(() => AutoStartController(), fenix: true);
+      Get.put<AboutController>(AboutController(), permanent: true);
+    }, isFooter: true),
   };
 }
 
