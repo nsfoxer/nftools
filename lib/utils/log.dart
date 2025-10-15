@@ -36,20 +36,26 @@ void fatal(String message) {
   _print(message, Level.fatal);
 }
 
+
+/// 仅展示1个log
+bool _hasLog = false;
+
+/// 输出
 void _print(String message, Level level) async {
   _logger.log(level, message);
 
   final context = MyRouterConfig.themeContext;
   final value = _infoMap[level];
-  if (context == null || value == null) {
+  if (context == null || value == null || _hasLog) {
     return;
   }
 
-  SchedulerBinding.instance.addPostFrameCallback((_) {
+  _hasLog = true;
+  SchedulerBinding.instance.addPostFrameCallback((_) async {
     if (!context.mounted) {
       return;
     }
-    displayInfoBar(context, duration: const Duration(seconds: 3),
+    await displayInfoBar(context, duration: const Duration(seconds: 3),
     builder: (context, close) {
       return InfoBar(
         content: Text(message),
@@ -59,6 +65,7 @@ void _print(String message, Level level) async {
         isIconVisible: true,
       );
     });
+    _hasLog = false;
   });
 
 }

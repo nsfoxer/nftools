@@ -14,8 +14,10 @@ class TestPage extends StatelessWidget {
         content:
         Center(
           child: Button(child: Text("测试"), onPressed: () async {
-            final d = await confirmDialog2(context, "aaa", "sss");
-            debug("d $d");
+            for (int i = 0; i < 10; i++) {
+              info("测试 $i");
+              await Future.delayed(Duration(seconds: 1));
+            }
           }),
         )
 
