@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.baidu.com)",
+      "mcp__chrome-mcp-stdio__chrome_navigate",
+      "mcp__chrome-mcp-stdio__chrome_get_web_content",
+      "Bash(cargo check:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
