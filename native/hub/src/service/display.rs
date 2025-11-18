@@ -274,7 +274,6 @@ pub mod display_os {
 
 #[cfg(target_os = "linux")]
 pub mod display_os {
-    use std::cell::OnceCell;
     use crate::common::global_data::GlobalData;
     use crate::common::APP_NAME;
     use crate::dbus::power_manager::OrgFreedesktopPowerManagementInhibit;

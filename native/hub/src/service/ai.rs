@@ -84,7 +84,6 @@ enum AiModelEnum {
     Spark,
 }
 
-const BAIDU_AI: &str = "BaiduAiService";
 const APP_ID: &str = "BaiduAiService:APP_ID";
 const SECRET: &str = "BaiduAiService:SECRET";
 const HISTORY: &str = "BaiduAiService:HISTORY";
