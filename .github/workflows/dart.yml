@@ -6,6 +6,7 @@ on:
     branches: [ "work_utils" ]
   pull_request:
     branches: [ "work_utils" ]
+  workflow_dispatch:  # 新增：启用手动触发
 
 jobs:
   build-macos-release:
