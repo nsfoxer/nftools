@@ -12,5 +12,3 @@ pub type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 /// app名称
 pub const APP_NAME:&str = "nftools";
 
-/// webdav同步目录名称
-pub const WEBDAV_SYNC_DIR:&str = "/nftools/";

@@ -6,7 +6,6 @@ import 'dart:io';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meta/meta.dart';
-import 'package:nftools/api/utils.dart';
 import 'package:nftools/utils/log.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -276,51 +275,6 @@ bool isRectTooSmall(Rect rect, double minSize) {
   return width < minSize || height < minSize;
 }
 
-/// NFImage 图片信息
-/// 会对本地大图片进行压缩,以优化展示
-/// 如果压缩失败,会回退到原始图片
-@Immutable()
-class NFImage {
-  /// 展示的图片
-  final ImageProvider<Object> displayImg;
-
-  /// 图片信息
-  final ImageInfo displayImgInfo;
-
-  /// 压缩后的图片路径
-  final String displayPath;
-
-  /// 原始的图片路径
-  final String originalPath;
-
-  NFImage(
-      {required this.displayImg,
-      required this.displayImgInfo,
-      required this.displayPath,
-      required this.originalPath});
-
-  static Future<NFImage> fromOriginalPath(String originalPath) async {
-    // 1. 压缩图片
-    String compressedPath;
-    try {
-      compressedPath =
-          (await compressLocalFile(originalPath, 600, 400)).localFile;
-    } catch (e) {
-      error("压缩图片失败: $e");
-      compressedPath = originalPath;
-    }
-    // 2. 加载图片
-    final displayImg = FileImage(File(compressedPath));
-    final displayImgInfo = await getImageInfoFromProvider(displayImg);
-
-    // 3. 返回数据
-    return NFImage(
-        displayImg: displayImg,
-        displayImgInfo: displayImgInfo,
-        displayPath: compressedPath,
-        originalPath: originalPath);
-  }
-}
 
 /// 简单的字符串加密解密工具
 final int _key = 11;

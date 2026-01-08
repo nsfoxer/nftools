@@ -11,7 +11,6 @@ class WorkPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Typography typography = FluentTheme.of(context).typography;
     return GetBuilder<WorkController>(
         builder: (logic) => ScaffoldPage(
             header: PageHeader(

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:logger/logger.dart';
 import 'package:nftools/router/router.dart';

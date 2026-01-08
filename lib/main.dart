@@ -191,14 +191,6 @@ class _MainAppState extends State<MainApp>
     super.dispose();
   }
 
-  @override
-  void didChangePlatformBrightness() async {
-    if (Platform.isLinux) {
-      await Future.delayed(const Duration(seconds: 5));
-    }
-    Get.find<RouterController>().updatePrimaryColor();
-    super.didChangePlatformBrightness();
-  }
 
   @override
   Widget build(BuildContext context) {

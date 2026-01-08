@@ -3,7 +3,6 @@
 
 mod api;
 mod common;
-mod dbus;
 mod messages;
 mod service;
 
@@ -167,16 +166,4 @@ fn lock() -> anyhow::Result<PathBuf> {
     path.push(format!("{name}_^o^_{pid}.lock"));
     let _ = std::fs::File::create(&path)?;
     Ok(path)
-}
-
-mod test {
-    use crate::lock;
-
-    #[test]
-    fn s() {
-        let result = lock();
-        eprintln!("{:?}", result);
-        let result = lock();
-        eprintln!("{:?}", result);
-    }
 }

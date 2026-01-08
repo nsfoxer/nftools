@@ -1,11 +1,10 @@
-use std::env;
+use anyhow::Result;
+use dirs::{cache_dir, config_dir};
+use notify_rust::Timeout;
+use sha2::Digest;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
-use dirs::{cache_dir, config_dir};
-use anyhow::{anyhow, Result};
-use notify_rust::Timeout;
-use sha2::{Digest, Sha256};
 
 /// 工具类
 
@@ -38,26 +37,6 @@ pub fn get_config_dir() -> Result<PathBuf>  {
     Ok(path)
 }
 
-/// 获取本机唯一id
-pub fn get_machine_id() -> Result<String>  {
-    Ok(machine_uid::machine_id::get_machine_id().or(Err(anyhow!("无法获取本机唯一id")))?)
-}
-
-/// 将数据转换为sha256小写hex
-pub fn sha256(data: &[u8]) -> String {
-    let mut sha256 = Sha256::new();
-    sha256.update(data);
-    format!("{:x}", sha256.finalize())
-}
-
-/// 获取当前用户名，没有则返回空
-pub fn get_user_name() -> String {
-    if cfg!(target_os = "windows") {
-        std::env::var("USERNAME").unwrap_or_default()
-    } else {
-        std::env::var("USER").unwrap_or_default()
-    }
-}
 
 /// 桌面通知
 pub fn notify(body: &str) -> Result<()> {
@@ -70,20 +49,4 @@ pub fn notify(body: &str) -> Result<()> {
     Ok(())
 }
 
-/// 获取当前版本号
-pub fn version() -> String {
-    format!("v{}", env!("CARGO_PKG_VERSION"))
-}
 
-/// 获取当前执行程序的执行路径
-pub fn location_path() -> Result<PathBuf> {
-    Ok(env::current_exe()?)
-}
-
-/// 生成临时文件路径
-pub fn generate_path(suffix: &str) -> Result<PathBuf> {
-    let mut path = get_cache_dir()?;
-    let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
-    path.push(format!("{}.{}", now.as_millis(), suffix));
-    Ok(path)
-}

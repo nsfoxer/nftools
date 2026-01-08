@@ -10,12 +10,6 @@ use tokio::sync::Mutex;
 use crate::api::{BaseRequest, BaseResponse};
 use crate::common::global_data::GlobalData;
 use crate::messages::common::{BoolMsg, StringMsg};
-use crate::service::ai::BaiduAiService;
-use crate::service::display::display_os::{DisplayLight, DisplayMode};
-use crate::service::img::img_split::ImageSplitService;
-use crate::service::settings::about::AboutService;
-use crate::service::settings::autostart::AutoStartService;
-use crate::service::syncfile::SyncFileService;
 use crate::service::utils::UtilsService;
 
 /// 服务类型枚举
@@ -421,13 +415,6 @@ impl ApiService {
 
 
     const UTILS_SERVICE: &'static str = "UtilsService";
-    const SYNC_FILE_SERVICE: &'static str = "SyncFileService";
-    const AUTO_START_SERVICE: &'static str = "AutoStartService";
-    const DISPLAY_LIGHT_SERVICE: &'static str = "DisplayLightService";
-    const DISPLAY_MODE_SERVICE: &'static str = "DisplayModeService";
-    const ABOUT_SERVICE: &'static str = "AboutService";
-    const AI_SERVICE: &'static str = "AiService";
-    const IMAGE_SPLIT_SERVICE: &'static str = "ImageSplitService";
 
     async fn enable_service(&mut self, service: StringMsg) -> anyhow::Result<()> {
         let service = service.value;
@@ -438,47 +425,8 @@ impl ApiService {
         if service == Self::UTILS_SERVICE {
             self.add_imm_service(Box::new(UtilsService::new(self.global_data.clone())), Self::UTILS_SERVICE);
         }
-        
-        if service == Self::SYNC_FILE_SERVICE {
-            let service = SyncFileService::new(self.global_data.clone()).await?;
-            self.add_service(Box::new(service), Self::SYNC_FILE_SERVICE);
-        } 
-        
-        if service == Self::AUTO_START_SERVICE {
-            self.add_imm_service(Box::new(AutoStartService::new()?), Self::AUTO_START_SERVICE);
-        }
-        
-        if service == Self::ABOUT_SERVICE{
-            self.add_service(Box::new(AboutService::new()), Self::ABOUT_SERVICE);
-        }
-        
-        if service == Self::DISPLAY_LIGHT_SERVICE {
-            #[cfg(target_os = "windows")] {
-                self.add_imm_service(Box::new(DisplayLight::new()), Self::DISPLAY_LIGHT_SERVICE);
-            }
-            #[cfg(target_os = "linux")] {
-                self.add_service(Box::new(DisplayLight::new().await.ok_or(anyhow!("创建light服务失败"))?), Self::DISPLAY_LIGHT_SERVICE);
-            }
-        }
-        
-        if service == Self::DISPLAY_MODE_SERVICE {
-            #[cfg(target_os = "windows")]
-            {
-                self.add_lazy_service(Box::new(DisplayMode::new(self.global_data.clone()).await), Self::DISPLAY_MODE_SERVICE);
-            }
-            #[cfg(target_os = "linux")]
-            {
-                self.add_service(Box::new(DisplayMode::new(self.global_data.clone()).await?), Self::DISPLAY_MODE_SERVICE);
-            }
-        }
-        
-        if service == Self::AI_SERVICE {
-            self.add_stream_service(Box::new(BaiduAiService::new(self.global_data.clone()).await), Self::AI_SERVICE);
-        }
-        if service == Self::IMAGE_SPLIT_SERVICE {
-            self.add_service(Box::new(ImageSplitService::new()), Self::IMAGE_SPLIT_SERVICE);
-        }
-        
+
+
         Ok(())
     }
 

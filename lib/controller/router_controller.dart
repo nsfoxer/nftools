@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:nftools/state/router_state.dart';
 
 import '../api/base.dart' as $api;
-import '../api/display_api.dart';
 import '../main.dart';
 import '../router/router.dart';
 
@@ -46,7 +45,6 @@ class RouterController extends GetxController {
     }
     routerState.router = _generateRouter();
 
-    updatePrimaryColor();
   }
 
   // 生成路由
@@ -119,12 +117,6 @@ class RouterController extends GetxController {
   int calculateIndex(BuildContext context) {
     final local = GoRouterState.of(context).uri.toString();
     return routerState.urlData.indexOf(local);
-  }
-
-  /// 更新主题颜色
-  void updatePrimaryColor() async {
-    primaryColor = await getSystemColor();
-    update();
   }
 
   // 根据url查找menuData

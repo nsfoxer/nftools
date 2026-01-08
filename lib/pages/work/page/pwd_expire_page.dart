@@ -2,17 +2,13 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:get/get.dart';
 
 import '../../../common/style.dart';
-import '../../../utils/nf_widgets.dart';
 import '../controller/pwd_expire_controller.dart';
-import '../controller/sms_limit_controller.dart';
-import '../state/sms_limit_state.dart';
 
 class PwdExpirePage extends StatelessWidget {
   const PwdExpirePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final typography = FluentTheme.of(context).typography;
     return ScaffoldPage.withPadding(
         header: PageHeader(
           title: Text("密码过期时间重置"),
