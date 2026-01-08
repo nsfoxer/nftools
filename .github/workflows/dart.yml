@@ -1,0 +1,69 @@
+# Dart + Rust + Flutter macOS M4 构建流程
+name: Rust + Dart + Flutter (macOS M4 Release)
+
+on:
+  push:
+    branches: [ "work_utils" ]
+  pull_request:
+    branches: [ "work_utils" ]
+
+jobs:
+  build-macos-release:
+    runs-on: macos-latest # GitHub M4/M1芯片的macOS环境（aarch64-apple-darwin）
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # ====================== 1. Rust 编译（M4原生）======================
+      - name: 安装Rust工具链（适配M4）
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+          targets: aarch64-apple-darwin # M4芯片核心架构
+
+      - name: 安装rinf依赖
+        run: cargo install rinf
+
+      # ====================== 2. Dart & Flutter 环境配置 =======================
+      - name: 安装Flutter SDK（自带Dart，无需单独装）
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0' # 【可选】指定Flutter版本，建议用项目实际版本
+          channel: 'stable'
+
+      - name: 验证Flutter环境（适配M4）
+        run: |
+          flutter doctor -v
+          flutter config --enable-macos-desktop # 确保启用macOS桌面支持
+
+      - name: 安装Flutter/Dart依赖
+        run: flutter pub get
+        working-directory: ./ # 【替换】你的Flutter项目根目录
+
+      # ====================== 3. 运行Dart脚本 =======================
+      - name: 执行Dart脚本
+        run: dart enhance_rinf.dart # 【替换】你的dart脚本路径（如./scripts/build.dart）
+        working-directory: ./ # 【替换】脚本所在目录
+
+      # ====================== 4. 编译Flutter macOS Release版本（M4原生）======================
+      - name: Flutter构建macOS Release（M4）
+        run: flutter build macos --release --verbose
+        working-directory: ./ # 【替换】你的Flutter项目根目录
+        env:
+          # 强制使用M4原生架构编译
+          ARCHS: arm64
+          MACOSX_DEPLOYMENT_TARGET: 14.0 # 适配M4的macOS Sonoma
+
+      # ====================== 5. 上传产物（可选，便于下载）======================
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-m4-release
+          path: |
+            # 【替换】Flutter macOS产物路径
+            ./build/macos/Build/Products/Release/
